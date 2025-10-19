@@ -8,7 +8,7 @@ Briefly describe what this PR does.
 - [ ] New feature
 - [ ] Documentation update
 - [ ] Refactoring
-- [ ] Other: ******\_******
+- [ ] Other: **\*\***\_**\*\***
 
 ## Testing
 

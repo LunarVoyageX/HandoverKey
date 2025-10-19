@@ -1,4 +1,7 @@
-import { validateEmail, isValidUUID } from "./validation";
+import {
+  validateEmail,
+  isValidUUID,
+} from "@handoverkey/shared/src/utils/validation";
 
 describe("Basic Validation", () => {
   describe("validateEmail", () => {
