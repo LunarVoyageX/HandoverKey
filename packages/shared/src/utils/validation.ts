@@ -80,7 +80,7 @@ export const validatePassword = (
   };
 };
 
-export const sanitizeInput = (input: any): string => {
+export const sanitizeInput = (input: unknown): string => {
   // Handle null, undefined, and non-string inputs first
   if (input === null || input === undefined) {
     return "";

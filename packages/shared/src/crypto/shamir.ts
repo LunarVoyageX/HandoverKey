@@ -120,8 +120,8 @@ export class ShamirSecretSharing {
     }
 
     // Node.js fallback - check if crypto is available on global
-    if (typeof global !== "undefined" && (global as any).crypto) {
-      return (global as any).crypto;
+    if (typeof global !== "undefined" && (global as Record<string, unknown>).crypto) {
+      return (global as Record<string, unknown>).crypto as Crypto;
     }
 
     throw new Error(

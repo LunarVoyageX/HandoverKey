@@ -231,7 +231,7 @@ export const sanitizeInput = (
           }
           return value;
         });
-      } catch (error) {
+      } catch {
         return String(obj);
       }
     };

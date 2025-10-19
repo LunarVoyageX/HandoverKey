@@ -65,7 +65,7 @@ app.get("/health", async (req, res) => {
         inactivityMonitor: inactivityInterval ? "ok" : "stopped",
       },
     });
-  } catch (error) {
+  } catch {
     res.status(503).json({
       status: "error",
       timestamp: new Date().toISOString(),

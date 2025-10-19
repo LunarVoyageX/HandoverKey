@@ -80,8 +80,9 @@ export class VaultManager {
         ) {
           results.push(entry);
         }
-      } catch (error) {
-        console.error(`Failed to decrypt entry ${entry.id}:`, error);
+      } catch {
+        // Skip entries that can't be decrypted (corrupted or wrong key)
+        continue;
       }
     }
 

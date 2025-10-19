@@ -22,6 +22,18 @@ export default [
         require: "readonly",
         exports: "readonly",
         global: "readonly",
+        // Crypto API
+        CryptoKey: "readonly",
+        crypto: "readonly",
+        // Web APIs
+        TextEncoder: "readonly",
+        TextDecoder: "readonly",
+        File: "readonly",
+        Crypto: "readonly",
+        BufferSource: "readonly",
+        // Browser globals
+        window: "readonly",
+        globalThis: "readonly",
       },
     },
     plugins: {
@@ -36,11 +48,12 @@ export default [
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-explicit-any": "warn",
-      "no-console": "off", // Allow console in API
+      "no-console": "warn",
+      "no-useless-escape": "error",
     },
   },
   {
-    files: ["**/*.test.ts", "**/__tests__/**/*.ts", "**/test-setup.ts"],
+    files: ["**/*.test.ts", "**/__tests__/**/*.ts"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
@@ -57,6 +70,18 @@ export default [
         require: "readonly",
         exports: "readonly",
         global: "readonly",
+        // Crypto API
+        CryptoKey: "readonly",
+        crypto: "readonly",
+        // Web APIs
+        TextEncoder: "readonly",
+        TextDecoder: "readonly",
+        File: "readonly",
+        Crypto: "readonly",
+        BufferSource: "readonly",
+        // Browser globals
+        window: "readonly",
+        globalThis: "readonly",
         // Jest globals
         jest: "readonly",
         describe: "readonly",
@@ -82,6 +107,7 @@ export default [
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-explicit-any": "warn",
       "no-console": "off",
+      "no-useless-escape": "error",
     },
   },
   {

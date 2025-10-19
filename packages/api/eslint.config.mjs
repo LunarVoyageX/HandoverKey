@@ -22,9 +22,12 @@ export default [
         require: "readonly",
         exports: "readonly",
         global: "readonly",
-        // Crypto API
-        CryptoKey: "readonly",
-        crypto: "readonly",
+        // Node.js globals
+        NodeJS: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
       },
     },
     plugins: {
@@ -39,12 +42,11 @@ export default [
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-explicit-any": "warn",
-      "no-console": "warn",
-      "no-useless-escape": "error",
+      "no-console": "off", // Allow console in API
     },
   },
   {
-    files: ["**/*.test.ts", "**/__tests__/**/*.ts"],
+    files: ["**/*.test.ts", "**/__tests__/**/*.ts", "**/test-setup.ts"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
@@ -61,9 +63,6 @@ export default [
         require: "readonly",
         exports: "readonly",
         global: "readonly",
-        // Crypto API
-        CryptoKey: "readonly",
-        crypto: "readonly",
         // Jest globals
         jest: "readonly",
         describe: "readonly",
@@ -89,7 +88,6 @@ export default [
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-explicit-any": "warn",
       "no-console": "off",
-      "no-useless-escape": "error",
     },
   },
   {

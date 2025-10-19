@@ -23,7 +23,7 @@ export class KeyDerivation {
     const derivedBits = await crypto.subtle.deriveBits(
       {
         name: "PBKDF2",
-        salt: finalSalt,
+        salt: finalSalt as BufferSource,
         iterations,
         hash: this.DEFAULT_HASH,
       },
@@ -65,7 +65,7 @@ export class KeyDerivation {
     const derivedBits = await crypto.subtle.deriveBits(
       {
         name: "PBKDF2",
-        salt: purposeSalt,
+        salt: purposeSalt as BufferSource,
         iterations: 1000,
         hash: "SHA-256",
       },

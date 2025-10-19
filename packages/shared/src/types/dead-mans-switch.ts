@@ -7,7 +7,7 @@ export interface ActivityRecord {
   clientType: ClientType;
   ipAddress?: string;
   userAgent?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   signature: string;
   createdAt: Date;
 }
@@ -42,7 +42,7 @@ export interface HandoverProcess {
   completedAt?: Date;
   cancelledAt?: Date;
   cancellationReason?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,7 +123,7 @@ export interface HandoverAuditEntry {
   handoverProcessId: string;
   eventType: string;
   timestamp: Date;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   signature: string;
 }
 
@@ -242,7 +242,7 @@ export interface ActivityTracker {
   recordActivity(
     userId: string,
     activityType: ActivityType,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
   ): Promise<void>;
   getLastActivity(userId: string): Promise<ActivityRecord | null>;
   getUserActivityStatus(userId: string): Promise<ActivityStatus>;
@@ -269,7 +269,7 @@ export interface HandoverOrchestrator {
   processSuccessorResponse(
     handoverId: string,
     successorId: string,
-    response: any,
+    response: Record<string, unknown>,
   ): Promise<void>;
   getHandoverStatus(userId: string): Promise<HandoverProcess | null>;
 }

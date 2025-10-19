@@ -58,6 +58,6 @@ export interface HandoverEvent {
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
   triggeredAt?: Date;
   completedAt?: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
