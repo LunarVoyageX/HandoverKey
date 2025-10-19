@@ -2,7 +2,7 @@ import { InactivityMonitorService } from "../../services/inactivity-monitor";
 import { ActivityService } from "../../services/activity-service";
 import { NotificationService } from "../../services/notification-service";
 import { HandoverOrchestrator } from "../../services/handover-orchestrator";
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../../database/connection";
 import {
   HandoverStatus,
   ReminderType,
@@ -13,7 +13,7 @@ import {
 jest.mock("../../services/activity-service");
 jest.mock("../../services/notification-service");
 jest.mock("../../services/handover-orchestrator");
-jest.mock("@handoverkey/database");
+jest.mock("../../database/connection");
 
 const mockActivityService = ActivityService as jest.MockedClass<
   typeof ActivityService

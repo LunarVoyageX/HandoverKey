@@ -1,4 +1,4 @@
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../database/connection";
 import {
   HandoverOrchestrator as IHandoverOrchestrator,
   HandoverProcess,

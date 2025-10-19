@@ -1,5 +1,5 @@
 import { ActivityService } from "../../services/activity-service";
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../../database/connection";
 import {
   ActivityType,
   ClientType,
@@ -7,7 +7,7 @@ import {
 } from "@handoverkey/shared/src/types/dead-mans-switch";
 
 // Mock the database connection
-jest.mock("@handoverkey/database");
+jest.mock("../../database/connection");
 const mockDatabaseConnection = DatabaseConnection as jest.Mocked<
   typeof DatabaseConnection
 >;

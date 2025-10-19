@@ -6,9 +6,7 @@ const MIGRATION_FILES = [
   "users.sql",
   "successors.sql",
   "vault.sql",
-  "activity.sql",
-  "handover.sql",
-  "dead_mans_switch.sql",
+  "simplified_schema.sql",
 ];
 
 async function runMigrations(): Promise<void> {
@@ -72,3 +70,5 @@ async function runMigrations(): Promise<void> {
 if (require.main === module) {
   runMigrations();
 }
+
+export { runMigrations };

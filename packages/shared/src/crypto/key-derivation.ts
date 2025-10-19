@@ -1,4 +1,4 @@
-import { KeyDerivationParams, MasterKey } from "@handoverkey/shared";
+import { KeyDerivationParams, MasterKey } from "../types/crypto";
 
 export class KeyDerivation {
   private static readonly DEFAULT_ITERATIONS = 100000;
@@ -47,7 +47,7 @@ export class KeyDerivation {
   }
 
   static async deriveKeyFromMaster(
-    masterKey: CryptoKey,
+    _masterKey: CryptoKey,
     purpose: string,
     salt?: Uint8Array,
   ): Promise<CryptoKey> {

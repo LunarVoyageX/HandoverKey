@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { Encryption } from "@handoverkey/core";
+import { Encryption } from "@handoverkey/shared";
 
 export class PasswordUtils {
   private static readonly SALT_ROUNDS = parseInt(

@@ -1,5 +1,5 @@
 import { createHmac } from "crypto";
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../database/connection";
 import {
   ActivityRecord,
   ActivityStatus,

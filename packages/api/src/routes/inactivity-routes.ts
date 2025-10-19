@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { InactivityController } from "../controllers/inactivity-controller";
 import { authenticateJWT, requireAuth } from "../middleware/auth";
-import { ActivityMiddleware } from "../middleware/activity-middleware";
+import { SimpleActivityMiddleware } from "../middleware/simple-activity";
 
 const router = Router();
 
@@ -10,7 +10,7 @@ router.use(authenticateJWT);
 router.use(requireAuth);
 
 // Track settings access for all routes
-router.use(ActivityMiddleware.trackSettingsAccess());
+router.use(SimpleActivityMiddleware.trackActivity("SETTINGS_ACCESS"));
 
 /**
  * Get user's inactivity settings
@@ -19,33 +19,37 @@ router.use(ActivityMiddleware.trackSettingsAccess());
 router.get("/settings", InactivityController.getSettings);
 
 /**
- * Update user's inactivity threshold
- * PUT /api/v1/inactivity/threshold
+ * Update user's inactivity settings
+ * PUT /api/v1/inactivity/settings
  *
  * Body:
  * {
- *   "threshold_days": 90
+ *   "thresholdDays": 90,
+ *   "requireMajority": false,
+ *   "isPaused": false
  * }
  */
 router.put(
-  "/threshold",
-  InactivityController.updateThresholdValidation,
-  InactivityController.updateThreshold,
+  "/settings",
+  InactivityController.updateSettingsValidation,
+  InactivityController.updateSettings,
 );
 
 /**
- * Update user's notification methods
- * PUT /api/v1/inactivity/notifications
+ * Pause the dead man's switch
+ * POST /api/v1/inactivity/pause
  *
  * Body:
  * {
- *   "notification_methods": ["email", "sms"]
+ *   "pauseUntil": "2024-01-01T00:00:00Z" // optional
  * }
  */
-router.put(
-  "/notifications",
-  InactivityController.updateNotificationMethodsValidation,
-  InactivityController.updateNotificationMethods,
-);
+router.post("/pause", InactivityController.pauseSwitch);
+
+/**
+ * Resume the dead man's switch
+ * POST /api/v1/inactivity/resume
+ */
+router.post("/resume", InactivityController.resumeSwitch);
 
 export default router;

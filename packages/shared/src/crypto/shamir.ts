@@ -1,4 +1,4 @@
-import { ShamirShare } from "@handoverkey/shared";
+import { ShamirShare } from "../types/crypto";
 import { v4 as uuidv4 } from "uuid";
 
 export class ShamirSecretSharing {

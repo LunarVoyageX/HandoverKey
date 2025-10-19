@@ -3,9 +3,10 @@ export interface User {
   email: string;
   passwordHash: string;
   salt: Uint8Array;
+  emailVerified: boolean;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
-  lastLogin?: Date;
+  lastActivity?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

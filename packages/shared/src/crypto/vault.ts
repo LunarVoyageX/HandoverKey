@@ -1,4 +1,4 @@
-import { VaultEntry } from "@handoverkey/shared";
+import { VaultEntry } from "../types/crypto";
 import { Encryption } from "./encryption";
 import { v4 as uuidv4 } from "uuid";
 
@@ -86,49 +86,6 @@ export class VaultManager {
     }
 
     return results;
-  }
-
-  static async exportEntry(
-    entry: VaultEntry,
-    key: CryptoKey,
-  ): Promise<{
-    id: string;
-    data: string;
-    category?: string;
-    tags?: string[];
-    version: number;
-    createdAt: Date;
-    updatedAt: Date;
-  }> {
-    const decryptedData = await this.decryptEntry(entry, key);
-
-    return {
-      id: entry.id,
-      data: decryptedData,
-      category: entry.category,
-      tags: entry.tags,
-      version: entry.version,
-      createdAt: entry.createdAt,
-      updatedAt: entry.updatedAt,
-    };
-  }
-
-  static async importEntry(
-    userId: string,
-    exportedData: {
-      data: string;
-      category?: string;
-      tags?: string[];
-    },
-    key: CryptoKey,
-  ): Promise<VaultEntry> {
-    return this.createEntry(
-      userId,
-      exportedData.data,
-      key,
-      exportedData.category,
-      exportedData.tags,
-    );
   }
 
   static getEntriesByCategory(

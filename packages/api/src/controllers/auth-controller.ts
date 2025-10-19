@@ -88,13 +88,7 @@ export class AuthController {
       const user = await UserService.createUser(registration);
 
       // Log successful registration
-      await UserService.logActivity(
-        user.id,
-        "USER_REGISTERED",
-        req.ip,
-        req.get("User-Agent"),
-        true,
-      );
+      await UserService.logActivity(user.id, "USER_REGISTERED", req.ip);
 
       // Generate tokens
       const accessToken = JWTManager.generateAccessToken(user.id, user.email);
@@ -127,9 +121,6 @@ export class AuthController {
               existingUser.id,
               "REGISTRATION_FAILED_DUPLICATE_EMAIL",
               req.ip,
-              req.get("User-Agent"),
-              false,
-              { attemptedEmail: req.body.email },
             );
           }
         } catch (logError) {
@@ -190,9 +181,6 @@ export class AuthController {
               existingUser.id,
               "LOGIN_FAILED_INVALID_CREDENTIALS",
               req.ip,
-              req.get("User-Agent"),
-              false,
-              { attemptedEmail: login.email },
             );
           }
         } catch (logError) {
@@ -234,13 +222,7 @@ export class AuthController {
       }
 
       // Log successful login
-      await UserService.logActivity(
-        user.id,
-        "USER_LOGIN",
-        req.ip,
-        req.get("User-Agent"),
-        true,
-      );
+      await UserService.logActivity(user.id, "USER_LOGIN", req.ip);
 
       // Generate tokens
       const accessToken = JWTManager.generateAccessToken(user.id, user.email);
@@ -252,7 +234,7 @@ export class AuthController {
           id: user.id,
           email: user.email,
           twoFactorEnabled: user.twoFactorEnabled,
-          lastLogin: user.lastLogin,
+          lastActivity: user.lastActivity,
         },
         tokens: {
           accessToken,
@@ -275,13 +257,7 @@ export class AuthController {
       }
 
       // Log logout (req.user is validated by SessionService)
-      await UserService.logActivity(
-        req.user!.userId,
-        "USER_LOGOUT",
-        req.ip,
-        req.get("User-Agent"),
-        true,
-      );
+      await UserService.logActivity(req.user!.userId, "USER_LOGOUT", req.ip);
 
       res.json({ message: "Logout successful" });
     } catch (error) {
@@ -354,7 +330,7 @@ export class AuthController {
           id: user.id,
           email: user.email,
           twoFactorEnabled: user.twoFactorEnabled,
-          lastLogin: user.lastLogin,
+          lastActivity: user.lastActivity,
           createdAt: user.createdAt,
         },
       });

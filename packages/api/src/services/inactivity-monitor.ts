@@ -1,4 +1,4 @@
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../database/connection";
 import { ActivityService } from "./activity-service";
 import { NotificationService } from "./notification-service";
 import { HandoverOrchestrator } from "./handover-orchestrator";

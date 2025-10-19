@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "./database/connection";
 import {
   securityHeaders,
   rateLimiter,
@@ -13,7 +13,7 @@ import authRoutes from "./routes/auth-routes";
 import vaultRoutes from "./routes/vault-routes";
 import activityRoutes from "./routes/activity-routes";
 import inactivityRoutes from "./routes/inactivity-routes";
-import { JobManager } from "./services/job-manager";
+import { InactivityService } from "./services/inactivity-service";
 
 dotenv.config();
 
@@ -22,10 +22,20 @@ const app = express();
 // Initialize database connection
 DatabaseConnection.initialize();
 
-// Initialize and start background jobs (only in non-test environment)
-const jobManager = JobManager.getInstance();
+// Start simple background job for inactivity checking (only in non-test environment)
+let inactivityInterval: NodeJS.Timeout | null = null;
 if (process.env.NODE_ENV !== "test") {
-  jobManager.start();
+  // Check for inactive users every hour
+  inactivityInterval = setInterval(
+    async () => {
+      try {
+        await InactivityService.checkAllUsers();
+      } catch (error) {
+        console.error("Inactivity check failed:", error);
+      }
+    },
+    60 * 60 * 1000,
+  ); // 1 hour
 }
 
 // Security middleware
@@ -45,19 +55,15 @@ app.use(sanitizeInput);
 app.get("/health", async (req, res) => {
   try {
     const dbHealthy = await DatabaseConnection.testConnection();
-    const jobHealth = await jobManager.getHealthStatus();
 
-    const isHealthy = dbHealthy && jobHealth.isHealthy;
-
-    res.status(isHealthy ? 200 : 503).json({
-      status: isHealthy ? "ok" : "degraded",
+    res.status(dbHealthy ? 200 : 503).json({
+      status: dbHealthy ? "ok" : "degraded",
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version || "0.1.0",
       checks: {
         database: dbHealthy ? "ok" : "failed",
-        jobs: jobHealth.isHealthy ? "ok" : "failed",
+        inactivityMonitor: inactivityInterval ? "ok" : "stopped",
       },
-      jobs: jobHealth.jobs,
     });
   } catch (error) {
     res.status(503).json({
@@ -105,14 +111,18 @@ app.use(
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down gracefully");
-  jobManager.stop();
+  if (inactivityInterval) {
+    clearInterval(inactivityInterval);
+  }
   await DatabaseConnection.close();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
   console.log("SIGINT received, shutting down gracefully");
-  jobManager.stop();
+  if (inactivityInterval) {
+    clearInterval(inactivityInterval);
+  }
   await DatabaseConnection.close();
   process.exit(0);
 });

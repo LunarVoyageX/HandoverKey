@@ -1,4 +1,4 @@
-import { EncryptedData } from "@handoverkey/shared";
+import { EncryptedData } from "../types/crypto";
 
 export class Encryption {
   private static readonly ALGORITHM = "AES-GCM";

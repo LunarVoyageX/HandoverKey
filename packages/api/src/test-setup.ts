@@ -1,5 +1,5 @@
 // Mock the database connection for tests
-jest.mock("@handoverkey/database", () => ({
+jest.mock("./database/connection", () => ({
   DatabaseConnection: {
     initialize: jest.fn(),
     testConnection: jest.fn().mockResolvedValue(true),

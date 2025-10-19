@@ -1,4 +1,4 @@
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../database/connection";
 import { VaultEntry, EncryptedData } from "@handoverkey/shared";
 import { v4 as uuidv4 } from "uuid";
 

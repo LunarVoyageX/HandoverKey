@@ -1,5 +1,5 @@
 import { NotificationService } from "../../services/notification-service";
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../../database/connection";
 import {
   ReminderType,
   NotificationMethod,
@@ -7,7 +7,7 @@ import {
 } from "@handoverkey/shared/src/types/dead-mans-switch";
 
 // Mock the database connection
-jest.mock("@handoverkey/database");
+jest.mock("../../database/connection");
 const mockDatabaseConnection = DatabaseConnection as jest.Mocked<
   typeof DatabaseConnection
 >;

@@ -1,4 +1,4 @@
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../database/connection";
 import { PasswordUtils } from "../auth/password";
 import { User, UserRegistration, UserLogin } from "@handoverkey/shared";
 
@@ -42,9 +42,10 @@ export class UserService {
       email: user.email,
       passwordHash: user.password_hash,
       salt: user.salt,
-      twoFactorEnabled: user.two_factor_enabled,
+      emailVerified: user.email_verified || false,
+      twoFactorEnabled: user.two_factor_enabled || false,
       twoFactorSecret: user.two_factor_secret,
-      lastLogin: user.last_login,
+      lastActivity: user.last_activity,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -64,9 +65,10 @@ export class UserService {
       email: user.email,
       passwordHash: user.password_hash,
       salt: user.salt,
-      twoFactorEnabled: user.two_factor_enabled,
+      emailVerified: user.email_verified || false,
+      twoFactorEnabled: user.two_factor_enabled || false,
       twoFactorSecret: user.two_factor_secret,
-      lastLogin: user.last_login,
+      lastActivity: user.last_activity,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -86,9 +88,10 @@ export class UserService {
       email: user.email,
       passwordHash: user.password_hash,
       salt: user.salt,
-      twoFactorEnabled: user.two_factor_enabled,
+      emailVerified: user.email_verified || false,
+      twoFactorEnabled: user.two_factor_enabled || false,
       twoFactorSecret: user.two_factor_secret,
-      lastLogin: user.last_login,
+      lastActivity: user.last_activity,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -110,14 +113,14 @@ export class UserService {
       return null;
     }
 
-    // Update last login
-    await this.updateLastLogin(user.id);
+    // Update last activity
+    await this.updateLastActivity(user.id);
 
     return user;
   }
 
-  static async updateLastLogin(userId: string): Promise<void> {
-    const query = "UPDATE users SET last_login = NOW() WHERE id = $1";
+  static async updateLastActivity(userId: string): Promise<void> {
+    const query = "UPDATE users SET last_activity = NOW() WHERE id = $1";
     await DatabaseConnection.query(query, [userId]);
   }
 
@@ -164,9 +167,10 @@ export class UserService {
       email: user.email,
       passwordHash: user.password_hash,
       salt: user.salt,
-      twoFactorEnabled: user.two_factor_enabled,
+      emailVerified: user.email_verified || false,
+      twoFactorEnabled: user.two_factor_enabled || false,
       twoFactorSecret: user.two_factor_secret,
-      lastLogin: user.last_login,
+      lastActivity: user.last_activity,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -179,24 +183,22 @@ export class UserService {
 
   static async logActivity(
     userId: string,
-    action: string,
+    activityType: string,
     ipAddress?: string,
-    userAgent?: string,
-    success: boolean = true,
-    metadata?: any,
   ): Promise<void> {
     const query = `
-      INSERT INTO activity_logs (user_id, action, ip_address, user_agent, success, metadata, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      INSERT INTO activity_records (user_id, activity_type, ip_address, timestamp)
+      VALUES ($1, $2, $3, NOW())
     `;
 
-    await DatabaseConnection.query(query, [
-      userId,
-      action,
-      ipAddress,
-      userAgent,
-      success,
-      metadata ? JSON.stringify(metadata) : null,
-    ]);
+    await DatabaseConnection.query(query, [userId, activityType, ipAddress]);
+
+    // Also update user's last_activity
+    await this.updateLastActivity(userId);
+  }
+
+  static async verifyEmail(userId: string): Promise<void> {
+    const query = "UPDATE users SET email_verified = true WHERE id = $1";
+    await DatabaseConnection.query(query, [userId]);
   }
 }

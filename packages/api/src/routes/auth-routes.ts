@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AuthController } from "../controllers/auth-controller";
 import { authenticateJWT, requireAuth } from "../middleware/auth";
 import { authRateLimiter } from "../middleware/security";
-import { ActivityMiddleware } from "../middleware/activity-middleware";
+import { SimpleActivityMiddleware } from "../middleware/simple-activity";
 
 const router = Router();
 
@@ -20,7 +20,7 @@ router.post(
   authRateLimiter,
   AuthController.loginValidation,
   AuthController.login,
-  ActivityMiddleware.trackLogin(),
+  SimpleActivityMiddleware.trackActivity("LOGIN"),
 );
 
 // Logout endpoint (requires authentication)
@@ -34,7 +34,7 @@ router.get(
   "/profile",
   authenticateJWT,
   requireAuth,
-  ActivityMiddleware.trackActivity(),
+  SimpleActivityMiddleware.trackActivity("PROFILE_ACCESS"),
   AuthController.getProfile,
 );
 

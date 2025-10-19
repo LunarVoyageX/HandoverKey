@@ -1,11 +1,11 @@
 import { Response } from "express";
 import { InactivityController } from "../../controllers/inactivity-controller";
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../../database/connection";
 import { ActivityService } from "../../services/activity-service";
 import { AuthenticatedRequest } from "../../middleware/auth";
 
 // Mock dependencies
-jest.mock("@handoverkey/database");
+jest.mock("../../database/connection");
 jest.mock("../../services/activity-service");
 
 const mockDatabaseConnection = DatabaseConnection as jest.Mocked<

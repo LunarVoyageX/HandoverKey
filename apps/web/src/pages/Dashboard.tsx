@@ -99,8 +99,8 @@ const Dashboard: React.FC = () => {
               <div>
                 <p className="font-medium text-gray-900">Last Login</p>
                 <p className="text-sm text-gray-600">
-                  {user?.lastLogin
-                    ? new Date(user.lastLogin).toLocaleString()
+                  {user?.lastActivity
+                    ? new Date(user.lastActivity).toLocaleString()
                     : "Never"}
                 </p>
               </div>

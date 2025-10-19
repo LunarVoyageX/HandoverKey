@@ -99,17 +99,6 @@ async function seedDatabase(): Promise<void> {
 
     console.log("✓ Created test vault entries");
 
-    // Create test activity log
-    await DatabaseConnection.query(
-      `
-      INSERT INTO activity_logs (user_id, action, success, created_at)
-      VALUES ($1, $2, $3, NOW())
-    `,
-      [userId, "USER_REGISTERED", true],
-    );
-
-    console.log("✓ Created test activity log");
-
     console.log("Database seeding completed successfully!");
     console.log("");
     console.log("Test credentials:");

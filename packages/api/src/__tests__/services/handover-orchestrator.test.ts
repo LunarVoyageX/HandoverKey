@@ -1,9 +1,9 @@
 import { HandoverOrchestrator } from "../../services/handover-orchestrator";
-import { DatabaseConnection } from "@handoverkey/database";
+import { DatabaseConnection } from "../../database/connection";
 import { HandoverProcessStatus } from "@handoverkey/shared/src/types/dead-mans-switch";
 
 // Mock the database connection
-jest.mock("@handoverkey/database");
+jest.mock("../../database/connection");
 const mockDatabaseConnection = DatabaseConnection as jest.Mocked<
   typeof DatabaseConnection
 >;
