@@ -7,12 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "jest --passWithNoTests",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --passWithNoTests",
+    "test": "jest",
     "lint": "eslint src",
-    "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.5",

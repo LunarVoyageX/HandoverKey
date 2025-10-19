@@ -35,18 +35,17 @@ HandoverKey is a zero-knowledge, end-to-end encrypted digital legacy platform th
 ```bash
 # Clone the repository
 git clone https://github.com/handoverkey/handoverkey.git
-cd HandoverKey
+cd handoverkey
 
-# Install dependencies
+# Quick start
+chmod +x scripts/dev.sh
+./scripts/dev.sh
+
+# Or manual setup
 npm install
-
-# Start all services
-chmod +x scripts/start-all.sh
-./scripts/start-all.sh
-
-# Stop all services
-chmod +x scripts/stop-all.sh
-./scripts/stop-all.sh
+npm run build
+docker-compose up -d
+npm run db:migrate
 ```
 
 Visit `http://localhost:3000` to access the web application.
