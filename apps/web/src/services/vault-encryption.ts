@@ -240,7 +240,7 @@ export class VaultEncryptionService {
     try {
       await this.decryptEntryData(entry, password);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

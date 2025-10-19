@@ -159,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               },
             },
           });
-        } catch (error) {
+        } catch {
           dispatch({ type: "LOGOUT" });
         }
       } else {

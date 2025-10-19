@@ -211,7 +211,7 @@ export function validateDecryptionParams(params: DecryptionParams): void {
     }
     CryptoJS.enc.Base64.parse(iv);
     CryptoJS.enc.Base64.parse(salt);
-  } catch (error) {
+  } catch {
     throw new Error("Invalid IV or salt format - must be valid base64");
   }
 }

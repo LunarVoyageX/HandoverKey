@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   // more env variables...
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
@@ -27,11 +28,6 @@ declare global {
 
   // Jest globals
   const jest: typeof import("jest");
-
-  // HTML Element types
-  interface HTMLInputElement extends globalThis.HTMLInputElement {}
-  interface HTMLDivElement extends globalThis.HTMLDivElement {}
-  interface HTMLSelectElement extends globalThis.HTMLSelectElement {}
 }
 
 export {};
