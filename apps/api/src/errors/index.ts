@@ -114,7 +114,7 @@ export class ExternalServiceError extends AppError {
  * Internal server error for unexpected failures
  */
 export class InternalServerError extends AppError {
-  constructor(message: string = 'Internal server error', originalError?: Error) {
+  constructor(message: string = 'Internal server error', _originalError?: Error) {
     super(message, 500, 'INTERNAL_ERROR', false);
     this.name = 'InternalServerError';
     Object.setPrototypeOf(this, InternalServerError.prototype);

@@ -1,13 +1,19 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
-    files: ['**/*.ts'],
+    files: ['src/**/*.ts'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
-        project: './tsconfig.json',
+        project: path.resolve(__dirname, './tsconfig.json'),
+        tsconfigRootDir: __dirname,
       },
     },
     plugins: {

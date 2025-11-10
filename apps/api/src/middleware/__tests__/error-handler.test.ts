@@ -183,7 +183,7 @@ describe('Error Handler Middleware', () => {
 
   describe('asyncHandler', () => {
     it('should handle successful async operations', async () => {
-      const handler = asyncHandler(async (req, res, next) => {
+      const handler = asyncHandler(async (_req, res, _next) => {
         res.json({ success: true });
       });
 
@@ -195,7 +195,7 @@ describe('Error Handler Middleware', () => {
 
     it('should catch and pass errors to next', async () => {
       const error = new Error('Async error');
-      const handler = asyncHandler(async (req, res, next) => {
+      const handler = asyncHandler(async (_req, _res, _next) => {
         throw error;
       });
 
@@ -206,17 +206,17 @@ describe('Error Handler Middleware', () => {
 
     it('should handle rejected promises', (done) => {
       const error = new Error('Promise rejection');
-      const handler = asyncHandler(async (req, res, next) => {
+      const handler = asyncHandler(async (_req, _res, _next) => {
         return Promise.reject(error);
       });
 
       handler(mockRequest as Request, mockResponse as Response, mockNext);
 
-      // Use setImmediate to wait for promise to resolve
-      setImmediate(() => {
+      // Use setTimeout to wait for promise to resolve
+      setTimeout(() => {
         expect(mockNext).toHaveBeenCalledWith(error);
         done();
-      });
+      }, 0);
     });
   });
 });

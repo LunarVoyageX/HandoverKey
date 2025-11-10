@@ -1,5 +1,5 @@
 import { Kysely } from 'kysely';
-import { Database, CheckinToken, NewCheckinToken, CheckinTokenUpdate } from '../types';
+import { Database, CheckinToken, NewCheckinToken } from '../types';
 import { NotFoundError, QueryError } from '../errors';
 
 export class CheckinTokenRepository {

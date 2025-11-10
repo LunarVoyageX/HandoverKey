@@ -1,7 +1,7 @@
 import { getDatabaseClient, UserRepository, ActivityRepository } from "@handoverkey/database";
 import { PasswordUtils } from "../auth/password";
 import { User, UserRegistration, UserLogin } from "@handoverkey/shared";
-import { ValidationError, ConflictError, AuthenticationError, NotFoundError } from "../errors";
+import { ValidationError, ConflictError, AuthenticationError } from "../errors";
 
 export class UserService {
   private static getUserRepository(): UserRepository {

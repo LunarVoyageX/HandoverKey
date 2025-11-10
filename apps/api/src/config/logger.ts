@@ -123,7 +123,7 @@ export function createChildLogger(context: Record<string, unknown>) {
 /**
  * Log levels for reference
  */
-export const LogLevel = {
+export const LOG_LEVELS = {
   FATAL: 'fatal',
   ERROR: 'error',
   WARN: 'warn',
@@ -132,4 +132,4 @@ export const LogLevel = {
   TRACE: 'trace',
 } as const;
 
-export type LogLevel = typeof LogLevel[keyof typeof LogLevel];
+export type LogLevel = typeof LOG_LEVELS[keyof typeof LOG_LEVELS];

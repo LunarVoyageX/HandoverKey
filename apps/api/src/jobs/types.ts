@@ -36,7 +36,8 @@ export interface BaseJobData {
  * Inactivity check job data
  */
 export interface InactivityCheckJobData extends BaseJobData {
-  // No additional data needed - checks all users
+  // Placeholder for future fields
+  _placeholder?: never;
 }
 
 /**

@@ -220,7 +220,7 @@ export async function decryptFile(
     );
 
     return new Uint8Array(decryptedBuffer);
-  } catch (error) {
+  } catch {
     throw new DecryptionError(
       'File decryption failed - invalid key or tampered data'
     );

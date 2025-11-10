@@ -11,7 +11,7 @@ export function errorHandler(
   error: Error,
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): void {
   // Generate request ID if not present
   const requestId = (req as any).id || 'unknown';

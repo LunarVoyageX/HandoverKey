@@ -19,7 +19,6 @@ import authRoutes from "./routes/auth-routes";
 import vaultRoutes from "./routes/vault-routes";
 import activityRoutes from "./routes/activity-routes";
 import inactivityRoutes from "./routes/inactivity-routes";
-import { InactivityService } from "./services/inactivity-service";
 import { JobProcessor, JobScheduler } from "./jobs";
 import { closeAllQueues } from "./config/queue";
 

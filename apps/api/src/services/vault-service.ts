@@ -108,7 +108,7 @@ export class VaultService {
     try {
       await vaultRepo.delete(entryId, userId);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
