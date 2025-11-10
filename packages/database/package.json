@@ -1,7 +1,7 @@
 {
-  "name": "@handoverkey/shared",
+  "name": "@handoverkey/database",
   "version": "1.0.0",
-  "description": "Shared types and utilities for HandoverKey",
+  "description": "Type-safe database operations with Kysely",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -9,18 +9,21 @@
     "dev": "tsc --watch",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --passWithNoTests",
+    "test:coverage": "jest --coverage",
     "lint": "eslint src",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "migrate:latest": "node dist/migrations/runner.js",
+    "migrate:rollback": "node dist/migrations/runner.js rollback"
   },
   "dependencies": {
-    "uuid": "^9.0.0"
+    "kysely": "^0.27.4",
+    "pg": "^8.11.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^20.19.22",
-    "@types/uuid": "^9.0.0",
+    "@types/pg": "^8.10.0",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",
     "typescript": "^5.9.3"

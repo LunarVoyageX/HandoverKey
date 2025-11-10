@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { encryptData, decryptData } from "./encryption";
 
 describe("Encryption Service", () => {

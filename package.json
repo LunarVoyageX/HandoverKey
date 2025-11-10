@@ -1,13 +1,12 @@
 {
   "name": "handoverkey",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A stupidly secure, open-source digital legacy platform with dead man's switch functionality",
   "private": true,
   "packageManager": "npm@10.9.2",
   "workspaces": [
     "apps/*",
-    "packages/shared",
-    "packages/api"
+    "packages/*"
   ],
   "scripts": {
     "dev": "turbo run dev",
@@ -17,7 +16,7 @@
     "clean": "turbo run clean",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "db:migrate": "cd packages/api && npm run migrate",
+    "db:migrate": "cd apps/api && npm run migrate",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {

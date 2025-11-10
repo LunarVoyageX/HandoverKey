@@ -10,5 +10,6 @@ module.exports = {
   moduleNameMapper: {
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     "^@handoverkey/shared$": "<rootDir>/../../packages/shared/src",
+    "^@handoverkey/crypto$": "<rootDir>/../../packages/crypto/src",
   },
 };
