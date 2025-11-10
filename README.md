@@ -3,8 +3,9 @@
 **A stupidly secure, open-source digital legacy platform with dead man's switch functionality.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Security: Verified](https://img.shields.io/badge/Security-Verified-green.svg)](https://github.com/handoverkey/security)
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/handoverkey/actions)
+[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/handoverkey/handoverkey/releases)
+[![Tests](https://img.shields.io/badge/Tests-227%20Passing-brightgreen.svg)](https://github.com/handoverkey/handoverkey/actions)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 
 ## What is HandoverKey?
 
@@ -12,14 +13,23 @@ HandoverKey is a zero-knowledge, end-to-end encrypted digital legacy platform th
 
 ### Key Features
 
-- **Zero-Knowledge Encryption**: Your data is encrypted client-side before it ever reaches our servers
+- **Zero-Knowledge Encryption**: Your data is encrypted client-side using Web Crypto API (AES-256-GCM) before it ever reaches our servers
 - **Dead Man's Switch**: Automatic handover after configurable inactivity period (default: 90 days)
-- **Multi-Party Handover**: Require multiple trusted contacts to confirm before release
+- **Multi-Party Handover**: Require multiple trusted contacts to confirm before release using Shamir's Secret Sharing
 - **Secure Vault Management**: Full-featured web interface for managing encrypted digital assets
-- **Cross-Platform**: Web application with mobile and CLI tools planned
-- **Hardware Key Support**: YubiKey, FIDO2, and other security keys (planned)
+- **Production-Ready**: Comprehensive observability with structured logging (Pino), metrics (Prometheus), and monitoring
+- **Reliable Background Jobs**: BullMQ-powered job queue with Redis for inactivity monitoring and notifications
+- **Type-Safe**: Full TypeScript implementation with runtime validation using Zod
 - **Audit Trail**: Complete transparency of all access attempts and system events
-- **Open Source**: Full transparency - inspect, verify, and contribute
+- **Open Source**: 100% open source stack - no proprietary dependencies
+
+## Tech Stack
+
+- **Frontend**: React 18, TypeScript, TanStack Query, Tailwind CSS
+- **Backend**: Node.js 22, Express, Kysely, Zod, BullMQ
+- **Observability**: Pino (logging), Prometheus (metrics)
+- **Database**: PostgreSQL 14+, Redis 6+
+- **Encryption**: Web Crypto API (AES-256-GCM, PBKDF2)
 
 ## Quick Start
 
@@ -37,34 +47,88 @@ HandoverKey is a zero-knowledge, end-to-end encrypted digital legacy platform th
 git clone https://github.com/handoverkey/handoverkey.git
 cd handoverkey
 
-# Quick start
-chmod +x scripts/dev.sh
-./scripts/dev.sh
-
-# Or manual setup
+# Install dependencies
 npm install
-npm run build
+
+# Start infrastructure (PostgreSQL + Redis)
 docker-compose up -d
+
+# Run database migrations
 npm run db:migrate
+
+# Build all packages
+npm run build
+
+# Start development servers
+npm run dev
 ```
 
 Visit `http://localhost:3000` to access the web application.
 
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests for specific package
+npm test --workspace=@handoverkey/api
+
+# Run tests with coverage
+npm test -- --coverage
+```
+
 ## Security
 
-HandoverKey uses zero-knowledge, end-to-end encryption with client-side AES-256-GCM encryption and PBKDF2 key derivation. See [Architecture Guide](docs/architecture.md) for detailed security implementation.
+- Client-side AES-256-GCM encryption (zero-knowledge)
+- PBKDF2 key derivation (100k+ iterations)
+- Shamir's Secret Sharing for multi-party handover
+- Input validation, rate limiting, security headers
+- Full audit logging
+
+See [Security Model](docs/security.md) for details.
+
+## Observability
+
+- **Logging**: Pino structured JSON logs with request tracing
+- **Metrics**: Prometheus metrics at `/metrics`
+- **Health**: Health check at `/health`
+- **Jobs**: BullMQ for reliable background processing
 
 ## Documentation
 
-- [Architecture Guide](docs/architecture.md)
-- [Security Model](docs/security.md)
-- [API Reference](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
+- [Architecture Guide](docs/architecture.md) - System design and components
+- [Security Model](docs/security.md) - Encryption and security implementation
+- [API Reference](docs/api.md) - REST API documentation
+- [Deployment Guide](docs/deployment.md) - Production deployment
+- [Testing Guide](docs/testing.md) - Testing strategy and guidelines
+- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
+
+## Development
+
+```bash
+npm run dev              # Start dev servers
+npm run build            # Build all packages
+npm test                 # Run tests (227 passing)
+npm run lint             # Lint code
+npm run db:migrate       # Run migrations
+```
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! HandoverKey is built by the community, for the community.
+
+### How to Contribute
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests (`npm test`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+See [Contributing Guidelines](CONTRIBUTING.md) for detailed guidelines.
 
 ## License
 
@@ -72,9 +136,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- Email: support@handoverkey.com
-- Issues: [GitHub Issues](https://github.com/handoverkey/handoverkey/issues)
-- Docs: [Documentation](https://github.com/handoverkey/handoverkey/docs)
+- **Issues**: [GitHub Issues](https://github.com/handoverkey/handoverkey/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/handoverkey/handoverkey/discussions)
+- **Documentation**: [docs/](docs/)
+
+## Roadmap
+
+- [ ] Mobile applications (iOS & Android)
+- [ ] CLI tool for power users
+- [ ] Hardware key support (YubiKey, FIDO2)
+- [ ] Encrypted file attachments
+- [ ] Multi-language support
+- [ ] Self-hosted deployment guides
+- [ ] Kubernetes deployment manifests
 
 ## Disclaimer
 
@@ -82,4 +156,4 @@ HandoverKey is designed for digital legacy planning and should not be used as a 
 
 ---
 
-**Made by the HandoverKey community**
+**Made with ❤️ by the HandoverKey community**
