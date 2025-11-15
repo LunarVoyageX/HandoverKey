@@ -92,6 +92,29 @@ export class AuthController {
         twoFactorCode,
       };
 
+      // First, check if user exists to get userId for lockout check
+      const existingUser = await UserService.findUserByEmail(email);
+      
+      if (existingUser) {
+        // Check if account is locked
+        const { AccountLockoutService } = await import("../services/account-lockout-service");
+        const lockStatus = await AccountLockoutService.isLocked(existingUser.id);
+        
+        if (lockStatus.isLocked) {
+          const timeRemaining = await AccountLockoutService.getTimeUntilUnlock(existingUser.id);
+          
+          await UserService.logActivity(
+            existingUser.id,
+            "LOGIN_FAILED_ACCOUNT_LOCKED",
+            req.ip
+          );
+          
+          throw new AuthenticationError(
+            `Account is locked due to too many failed login attempts. Please try again in ${Math.ceil((timeRemaining || 0) / 60)} minutes.`
+          );
+        }
+      }
+
       const user = await UserService.authenticateUser(login);
 
       // Secure 2FA check
@@ -105,6 +128,10 @@ export class AuthController {
         // For now, we require the code to be present and properly formatted
         // This should be implemented with proper TOTP verification
       }
+
+      // Clear failed login attempts on successful login
+      const { AccountLockoutService } = await import("../services/account-lockout-service");
+      await AccountLockoutService.clearAttempts(user.id);
 
       // Log successful login
       await UserService.logActivity(user.id, "USER_LOGIN", req.ip);
@@ -144,18 +171,42 @@ export class AuthController {
         },
       });
     } catch (error) {
-      // Log failed login attempt
-      if (req.body.email) {
+      // Record failed login attempt and check for lockout
+      if (req.body.email && error instanceof AuthenticationError) {
         try {
           const existingUser = await UserService.findUserByEmail(req.body.email);
           if (existingUser) {
+            // Record failed attempt
+            const { AccountLockoutService } = await import("../services/account-lockout-service");
+            const lockStatus = await AccountLockoutService.recordFailedAttempt(
+              existingUser.id,
+              req.ip
+            );
+
+            // Log the failed attempt
             await UserService.logActivity(
               existingUser.id,
-              "LOGIN_FAILED_INVALID_CREDENTIALS",
+              lockStatus.isLocked ? "LOGIN_FAILED_ACCOUNT_LOCKED" : "LOGIN_FAILED_INVALID_CREDENTIALS",
               req.ip,
             );
+
+            // If account was just locked, update the error message
+            if (lockStatus.isLocked) {
+              throw new AuthenticationError(
+                `Account locked due to too many failed login attempts. Please try again in ${Math.ceil((lockStatus.lockedUntil!.getTime() - Date.now()) / 60000)} minutes.`
+              );
+            } else if (lockStatus.attemptsRemaining !== undefined) {
+              // Add attempts remaining to error message
+              throw new AuthenticationError(
+                `Invalid credentials. ${lockStatus.attemptsRemaining} attempt(s) remaining before account lockout.`
+              );
+            }
           }
         } catch (logError) {
+          // If it's an AuthenticationError from lockout, re-throw it
+          if (logError instanceof AuthenticationError) {
+            throw logError;
+          }
           console.error("Failed to log login error:", logError);
         }
       }

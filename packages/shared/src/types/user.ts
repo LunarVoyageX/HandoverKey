@@ -7,6 +7,9 @@ export interface User {
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
   lastActivity?: Date;
+  failedLoginAttempts: number;
+  lockedUntil?: Date | null;
+  inactivityThresholdDays: number;
   createdAt: Date;
   updatedAt: Date;
 }

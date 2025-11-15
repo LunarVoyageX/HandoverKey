@@ -156,6 +156,9 @@ export class UserService {
       twoFactorEnabled: dbUser.two_factor_enabled ?? false,
       twoFactorSecret: dbUser.two_factor_secret ?? undefined,
       lastActivity: dbUser.last_login ?? undefined,
+      failedLoginAttempts: dbUser.failed_login_attempts ?? 0,
+      lockedUntil: dbUser.locked_until ?? null,
+      inactivityThresholdDays: dbUser.inactivity_threshold_days ?? 90,
       createdAt: dbUser.created_at,
       updatedAt: dbUser.updated_at,
     };

@@ -21,9 +21,11 @@ import vaultRoutes from "./routes/vault-routes";
 import activityRoutes from "./routes/activity-routes";
 import inactivityRoutes from "./routes/inactivity-routes";
 import sessionRoutes from "./routes/session-routes";
+import adminRoutes from "./routes/admin-routes";
 import { JobProcessor, JobScheduler } from "./jobs";
 import { closeAllQueues } from "./config/queue";
 import { SessionService } from "./services/session-service";
+import { initializeRedis, closeRedis, checkRedisHealth } from "./config/redis";
 
 dotenv.config();
 
@@ -39,12 +41,16 @@ dbClient.initialize({
   password: process.env.DB_PASSWORD || "postgres",
   min: 2,
   max: 10,
-}).then(() => {
+}).then(async () => {
   // Initialize SessionService with database client
   SessionService.initialize(dbClient);
   logger.info("SessionService initialized");
+
+  // Initialize Redis
+  await initializeRedis();
+  logger.info("Redis initialized");
 }).catch((error) => {
-  logger.fatal({ err: error }, "Failed to initialize database");
+  logger.fatal({ err: error }, "Failed to initialize database or Redis");
   process.exit(1);
 });
 
@@ -91,13 +97,17 @@ app.use(sanitizeInput);
 app.get("/health", async (req, res) => {
   try {
     const dbHealthy = await dbClient.healthCheck();
+    const redisHealthy = await checkRedisHealth();
 
-    res.status(dbHealthy ? 200 : 503).json({
-      status: dbHealthy ? "ok" : "degraded",
+    const allHealthy = dbHealthy && redisHealthy;
+
+    res.status(allHealthy ? 200 : 503).json({
+      status: allHealthy ? "ok" : "degraded",
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version || "0.1.0",
       checks: {
         database: dbHealthy ? "ok" : "failed",
+        redis: redisHealthy ? "ok" : "failed",
         jobQueue: "ok", // TODO: Add actual queue health check
       },
     });
@@ -129,6 +139,7 @@ app.use("/api/v1/vault", vaultRoutes);
 app.use("/api/v1/activity", activityRoutes);
 app.use("/api/v1/inactivity", inactivityRoutes);
 app.use("/api/v1/sessions", sessionRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 // 404 handler - must be after all routes
 app.use(notFoundHandler);
@@ -144,6 +155,9 @@ process.on("SIGTERM", async () => {
   await JobProcessor.close();
   await closeAllQueues();
   
+  // Close Redis
+  await closeRedis();
+  
   // Close database
   await dbClient.close();
   
@@ -157,6 +171,9 @@ process.on("SIGINT", async () => {
   // Close job processors and queues
   await JobProcessor.close();
   await closeAllQueues();
+  
+  // Close Redis
+  await closeRedis();
   
   // Close database
   await dbClient.close();
