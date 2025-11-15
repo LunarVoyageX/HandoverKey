@@ -281,14 +281,18 @@ export class JobProcessor {
     
     logger.info({ olderThanDays }, 'Cleaning up old sessions');
     
-    // TODO: Implement actual session cleanup
-    // This would delete sessions older than the specified days
+    // Import SessionService dynamically to avoid circular dependencies
+    const { SessionService } = await import('../services/session-service');
+    
+    // Clean up expired sessions
+    const deletedCount = await SessionService.cleanupExpiredSessions();
     
     return {
       success: true,
       message: 'Sessions cleaned up',
       data: {
         olderThanDays,
+        deletedCount,
       },
     };
   }

@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { getDatabaseClient } from "@handoverkey/database";
 import {
@@ -19,8 +20,10 @@ import authRoutes from "./routes/auth-routes";
 import vaultRoutes from "./routes/vault-routes";
 import activityRoutes from "./routes/activity-routes";
 import inactivityRoutes from "./routes/inactivity-routes";
+import sessionRoutes from "./routes/session-routes";
 import { JobProcessor, JobScheduler } from "./jobs";
 import { closeAllQueues } from "./config/queue";
+import { SessionService } from "./services/session-service";
 
 dotenv.config();
 
@@ -36,6 +39,10 @@ dbClient.initialize({
   password: process.env.DB_PASSWORD || "postgres",
   min: 2,
   max: 10,
+}).then(() => {
+  // Initialize SessionService with database client
+  SessionService.initialize(dbClient);
+  logger.info("SessionService initialized");
 }).catch((error) => {
   logger.fatal({ err: error }, "Failed to initialize database");
   process.exit(1);
@@ -74,6 +81,7 @@ app.use(rateLimiter);
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }) as express.RequestHandler);
 app.use(express.urlencoded({ extended: true, limit: "10mb" }) as express.RequestHandler);
+app.use(cookieParser());
 
 // Validation and sanitization middleware
 app.use(validateContentType);
@@ -120,6 +128,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/vault", vaultRoutes);
 app.use("/api/v1/activity", activityRoutes);
 app.use("/api/v1/inactivity", inactivityRoutes);
+app.use("/api/v1/sessions", sessionRoutes);
 
 // 404 handler - must be after all routes
 app.use(notFoundHandler);

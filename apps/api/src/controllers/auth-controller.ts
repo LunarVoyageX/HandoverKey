@@ -23,9 +23,26 @@ export class AuthController {
       // Log successful registration
       await UserService.logActivity(user.id, "USER_REGISTERED", req.ip);
 
-      // Generate tokens
-      const accessToken = JWTManager.generateAccessToken(user.id, user.email);
+      // Generate tokens with session tracking
+      const { token: accessToken } = await JWTManager.generateAccessToken(
+        user.id,
+        user.email,
+        {
+          ipAddress: req.ip,
+          userAgent: req.get("user-agent"),
+        }
+      );
       const refreshToken = JWTManager.generateRefreshToken(user.id, user.email);
+
+      // Set secure cookie options
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict" as const,
+        maxAge: 60 * 60 * 1000, // 1 hour
+      };
+
+      res.cookie("accessToken", accessToken, cookieOptions);
 
       res.status(201).json({
         message: "User registered successfully",
@@ -92,9 +109,26 @@ export class AuthController {
       // Log successful login
       await UserService.logActivity(user.id, "USER_LOGIN", req.ip);
 
-      // Generate tokens
-      const accessToken = JWTManager.generateAccessToken(user.id, user.email);
+      // Generate tokens with session tracking
+      const { token: accessToken } = await JWTManager.generateAccessToken(
+        user.id,
+        user.email,
+        {
+          ipAddress: req.ip,
+          userAgent: req.get("user-agent"),
+        }
+      );
       const refreshToken = JWTManager.generateRefreshToken(user.id, user.email);
+
+      // Set secure cookie options
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict" as const,
+        maxAge: 60 * 60 * 1000, // 1 hour
+      };
+
+      res.cookie("accessToken", accessToken, cookieOptions);
 
       res.json({
         message: "Login successful",
@@ -139,8 +173,16 @@ export class AuthController {
         throw new AuthenticationError("Not authenticated");
       }
 
+      // Invalidate the session in database
+      if (req.user?.sessionId) {
+        await SessionService.invalidateSession(req.user.sessionId);
+      }
+
       // Log logout (req.user is validated by SessionService)
       await UserService.logActivity(req.user!.userId, "USER_LOGOUT", req.ip);
+
+      // Clear the cookie
+      res.clearCookie("accessToken");
 
       res.json({ message: "Logout successful" });
     } catch (error) {
@@ -163,15 +205,29 @@ export class AuthController {
         throw new AuthenticationError("Invalid refresh token");
       }
 
-      // Generate new tokens
-      const newAccessToken = JWTManager.generateAccessToken(
+      // Generate new tokens with session tracking
+      const { token: newAccessToken } = await JWTManager.generateAccessToken(
         user.id,
         user.email,
+        {
+          ipAddress: req.ip,
+          userAgent: req.get("user-agent"),
+        }
       );
       const newRefreshToken = JWTManager.generateRefreshToken(
         user.id,
         user.email,
       );
+
+      // Set secure cookie
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict" as const,
+        maxAge: 60 * 60 * 1000, // 1 hour
+      };
+
+      res.cookie("accessToken", newAccessToken, cookieOptions);
 
       res.json({
         tokens: {
