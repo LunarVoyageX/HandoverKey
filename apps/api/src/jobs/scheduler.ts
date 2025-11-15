@@ -228,11 +228,11 @@ export class JobScheduler {
   static async getRepeatableJobs(jobType: JobType): Promise<Array<{
     key: string;
     name: string;
-    id: string;
-    endDate: number | null;
-    tz: string | null;
-    pattern: string | null;
-    every: string | null;
+    id?: string | null;
+    endDate?: number | null;
+    tz?: string | null;
+    pattern?: string | null;
+    every?: string | null;
   }>> {
     const queueName = this.getQueueName(jobType);
     const queue = getQueue(queueName);

@@ -3,7 +3,7 @@ import { TextEncoder, TextDecoder } from "util";
 import { webcrypto } from "crypto";
 
 // Polyfill for Web Crypto API in Jest/jsdom environment
-global.TextEncoder = TextEncoder;
+global.TextEncoder = TextEncoder as typeof global.TextEncoder;
 global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 
 // Use Node.js Web Crypto API implementation
