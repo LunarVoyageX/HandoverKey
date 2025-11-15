@@ -35,6 +35,9 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@handoverkey/crypto": "*",
+    "@handoverkey/database": "*",
+    "@handoverkey/shared": "*",
     "@types/bcryptjs": "^2.4.2",
     "@types/cors": "^2.8.13",
     "@types/dompurify": "^3.0.5",
@@ -53,8 +56,5 @@
     "ts-node": "^10.9.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
-  },
-  "peerDependencies": {
-    "@handoverkey/shared": "*"
   }
 }
