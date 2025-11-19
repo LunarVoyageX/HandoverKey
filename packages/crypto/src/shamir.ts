@@ -1,4 +1,4 @@
-import { ValidationError } from './errors';
+import { ValidationError } from "./errors";
 
 /**
  * Shamir's Secret Sharing implementation
@@ -83,7 +83,7 @@ function bigIntToBytes(value: bigint, length: number): Uint8Array {
   let temp = value;
 
   for (let i = length - 1; i >= 0; i--) {
-    bytes[i] = Number(temp & 0xFFn);
+    bytes[i] = Number(temp & 0xffn);
     temp = temp >> 8n;
   }
 
@@ -102,34 +102,34 @@ function bigIntToBytes(value: bigint, length: number): Uint8Array {
 export function splitSecret(
   secret: Uint8Array,
   totalShares: number,
-  threshold: number
+  threshold: number,
 ): Uint8Array[] {
   // Validate inputs
   if (!(secret instanceof Uint8Array) || secret.length === 0) {
-    throw new ValidationError('Secret must be a non-empty Uint8Array');
+    throw new ValidationError("Secret must be a non-empty Uint8Array");
   }
 
   if (!Number.isInteger(totalShares) || totalShares < 2) {
-    throw new ValidationError('Total shares must be at least 2');
+    throw new ValidationError("Total shares must be at least 2");
   }
 
   if (!Number.isInteger(threshold) || threshold < 2) {
-    throw new ValidationError('Threshold must be at least 2');
+    throw new ValidationError("Threshold must be at least 2");
   }
 
   if (threshold > totalShares) {
-    throw new ValidationError('Threshold cannot exceed total shares');
+    throw new ValidationError("Threshold cannot exceed total shares");
   }
 
   if (totalShares > 255) {
-    throw new ValidationError('Total shares cannot exceed 255');
+    throw new ValidationError("Total shares cannot exceed 255");
   }
 
   // Convert secret to bigint
   const secretValue = bytesToBigInt(secret);
 
   if (secretValue >= PRIME) {
-    throw new ValidationError('Secret is too large for the finite field');
+    throw new ValidationError("Secret is too large for the finite field");
   }
 
   // Generate random coefficients for polynomial
@@ -167,7 +167,7 @@ export function splitSecret(
 export function reconstructSecret(shares: Uint8Array[]): Uint8Array {
   // Validate inputs
   if (!Array.isArray(shares) || shares.length < 2) {
-    throw new ValidationError('At least 2 shares are required');
+    throw new ValidationError("At least 2 shares are required");
   }
 
   // Parse shares
@@ -176,11 +176,11 @@ export function reconstructSecret(shares: Uint8Array[]): Uint8Array {
 
   for (const share of shares) {
     if (!(share instanceof Uint8Array)) {
-      throw new ValidationError('All shares must be Uint8Arrays');
+      throw new ValidationError("All shares must be Uint8Arrays");
     }
 
     if (share.length !== 34) {
-      throw new ValidationError('Invalid share format');
+      throw new ValidationError("Invalid share format");
     }
 
     const x = BigInt(share[0]);
@@ -190,7 +190,7 @@ export function reconstructSecret(shares: Uint8Array[]): Uint8Array {
     if (secretLength === 0) {
       secretLength = length;
     } else if (secretLength !== length) {
-      throw new ValidationError('Inconsistent secret length in shares');
+      throw new ValidationError("Inconsistent secret length in shares");
     }
 
     parsedShares.push([x, y]);
@@ -199,7 +199,7 @@ export function reconstructSecret(shares: Uint8Array[]): Uint8Array {
   // Check for duplicate x values
   const xValues = new Set(parsedShares.map(([x]) => x));
   if (xValues.size !== parsedShares.length) {
-    throw new ValidationError('Duplicate shares detected');
+    throw new ValidationError("Duplicate shares detected");
   }
 
   // Reconstruct secret using Lagrange interpolation

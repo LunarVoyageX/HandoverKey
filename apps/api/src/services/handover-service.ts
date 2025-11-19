@@ -1,4 +1,7 @@
-import { getDatabaseClient, HandoverProcessRepository } from "@handoverkey/database";
+import {
+  getDatabaseClient,
+  HandoverProcessRepository,
+} from "@handoverkey/database";
 
 export interface HandoverProcess {
   id: string;
@@ -85,7 +88,7 @@ export class HandoverService {
    */
   static async completeHandover(handoverId: string): Promise<boolean> {
     const handoverRepo = this.getHandoverProcessRepository();
-    
+
     try {
       await handoverRepo.update(handoverId, {
         status: "COMPLETED",
@@ -111,7 +114,7 @@ export class HandoverService {
    */
   static async moveToConfirmation(handoverId: string): Promise<boolean> {
     const handoverRepo = this.getHandoverProcessRepository();
-    
+
     try {
       await handoverRepo.update(handoverId, {
         status: "PENDING_CONFIRMATION",

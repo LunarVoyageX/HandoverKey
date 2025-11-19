@@ -131,17 +131,18 @@ JOB_CONCURRENCY=5
 The API uses Pino for structured JSON logging:
 
 ```typescript
-import { logger } from './config/logger';
+import { logger } from "./config/logger";
 
 // Basic logging
-logger.info('User logged in');
-logger.error({ err: error }, 'Failed to process request');
+logger.info("User logged in");
+logger.error({ err: error }, "Failed to process request");
 
 // With context
-logger.info({ userId, action: 'login' }, 'User action');
+logger.info({ userId, action: "login" }, "User action");
 ```
 
 **Log Levels:**
+
 - `fatal` - Application cannot continue
 - `error` - Error that needs attention
 - `warn` - Warning that should be investigated
@@ -150,6 +151,7 @@ logger.info({ userId, action: 'login' }, 'User action');
 - `trace` - Very detailed debugging information
 
 **Features:**
+
 - Request ID correlation
 - Automatic PII redaction
 - Pretty-printed in development
@@ -160,11 +162,13 @@ logger.info({ userId, action: 'login' }, 'User action');
 Prometheus metrics are exposed at `/metrics`:
 
 **HTTP Metrics:**
+
 - `handoverkey_http_request_duration_seconds` - Request duration
 - `handoverkey_http_requests_total` - Total requests
 - `handoverkey_http_request_errors_total` - Error count
 
 **Business Metrics:**
+
 - `handoverkey_active_users` - Active users
 - `handoverkey_total_users` - Total users
 - `handoverkey_vault_entries_total` - Vault entries
@@ -172,6 +176,7 @@ Prometheus metrics are exposed at `/metrics`:
 - `handoverkey_auth_attempts_total` - Auth attempts
 
 **Infrastructure Metrics:**
+
 - `handoverkey_db_connection_pool` - DB pool usage
 - `handoverkey_db_query_duration_seconds` - Query duration
 - `handoverkey_inactivity_checks_total` - Inactivity checks
@@ -206,15 +211,15 @@ The API uses BullMQ for reliable background job processing:
 ### Job Configuration
 
 ```typescript
-import { JobScheduler } from './jobs';
+import { JobScheduler } from "./jobs";
 
 // Schedule recurring job
 await JobScheduler.scheduleInactivityCheck();
 
 // Schedule one-time job
 await JobScheduler.scheduleReminder({
-  userId: 'user-id',
-  level: 'warning',
+  userId: "user-id",
+  level: "warning",
   daysRemaining: 7,
   thresholdDays: 90,
 });
@@ -223,6 +228,7 @@ await JobScheduler.scheduleReminder({
 ### Job Monitoring
 
 Jobs can be monitored via:
+
 - Prometheus metrics
 - Structured logs
 - Job status API (planned)
@@ -232,19 +238,20 @@ Jobs can be monitored via:
 All API inputs are validated using Zod schemas:
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 const CreateVaultEntrySchema = z.object({
   encryptedData: z.string().min(1).max(10485760),
   iv: z.string().regex(/^[A-Za-z0-9+/]+=*$/),
   salt: z.string().regex(/^[A-Za-z0-9+/]+=*$/),
-  algorithm: z.literal('AES-256-GCM'),
+  algorithm: z.literal("AES-256-GCM"),
   category: z.string().max(100).optional(),
   tags: z.array(z.string().max(50)).max(10).optional(),
 });
 ```
 
 **Features:**
+
 - Runtime type validation
 - Automatic input sanitization
 - Consistent error responses
@@ -260,16 +267,17 @@ import {
   AuthenticationError,
   NotFoundError,
   RateLimitError,
-} from './errors';
+} from "./errors";
 
 // Throw custom errors
-throw new ValidationError('Invalid input');
-throw new AuthenticationError('Invalid credentials');
-throw new NotFoundError('User');
+throw new ValidationError("Invalid input");
+throw new AuthenticationError("Invalid credentials");
+throw new NotFoundError("User");
 throw new RateLimitError(60); // Retry after 60 seconds
 ```
 
 **Error Response Format:**
+
 ```json
 {
   "error": {
@@ -333,6 +341,7 @@ npm test -- --watch
 ```
 
 **Test Coverage:**
+
 - Unit tests for services and utilities
 - Integration tests for API endpoints
 - Validation tests for Zod schemas
@@ -404,6 +413,7 @@ CMD ["node", "dist/index.js"]
 ### Environment
 
 Ensure all environment variables are set:
+
 - Database credentials
 - Redis connection
 - JWT secret
@@ -412,6 +422,7 @@ Ensure all environment variables are set:
 ### Monitoring
 
 Set up monitoring for:
+
 - `/health` endpoint (every 30s)
 - `/metrics` endpoint (Prometheus scraping)
 - Error logs (centralized logging)

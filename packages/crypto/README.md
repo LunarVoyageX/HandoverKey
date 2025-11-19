@@ -13,18 +13,18 @@ Unified cryptographic operations using Web Crypto API.
 ## Usage
 
 ```typescript
-import { encrypt, decrypt, deriveKey, generateSalt } from '@handoverkey/crypto';
+import { encrypt, decrypt, deriveKey, generateSalt } from "@handoverkey/crypto";
 
 // Derive key from password
 const salt = generateSalt();
-const key = await deriveKey('password', salt);
+const key = await deriveKey("password", salt);
 
 // Encrypt/decrypt
-const encrypted = await encrypt('data', key);
+const encrypted = await encrypt("data", key);
 const decrypted = await decrypt(encrypted, key);
 
 // Shamir's Secret Sharing (5 shares, need 3)
-import { splitSecret, reconstructSecret } from '@handoverkey/crypto';
+import { splitSecret, reconstructSecret } from "@handoverkey/crypto";
 const shares = splitSecret(secret, 5, 3);
 const reconstructed = reconstructSecret([shares[0], shares[2], shares[4]]);
 ```

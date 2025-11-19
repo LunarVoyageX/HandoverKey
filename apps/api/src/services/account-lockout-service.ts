@@ -31,7 +31,10 @@ export class AccountLockoutService {
   /**
    * Record a failed login attempt
    */
-  static async recordFailedAttempt(userId: string, ipAddress?: string): Promise<LockoutStatus> {
+  static async recordFailedAttempt(
+    userId: string,
+    ipAddress?: string,
+  ): Promise<LockoutStatus> {
     const redis = getRedisClient();
     const attemptKey = this.getAttemptKey(userId);
     const lockKey = this.getLockKey(userId);
@@ -52,7 +55,7 @@ export class AccountLockoutService {
           ipAddress,
           maxAttempts: this.MAX_ATTEMPTS,
         },
-        "Failed login attempt recorded"
+        "Failed login attempt recorded",
       );
 
       // Check if we've reached the lockout threshold
@@ -66,7 +69,7 @@ export class AccountLockoutService {
             ipAddress,
             lockoutDuration: this.LOCKOUT_DURATION,
           },
-          "Account locked due to too many failed attempts"
+          "Account locked due to too many failed attempts",
         );
 
         return {
@@ -104,13 +107,13 @@ export class AccountLockoutService {
 
       // Update database with locked_until timestamp
       const lockedUntil = new Date(Date.now() + this.LOCKOUT_DURATION * 1000);
-      
+
       // Directly update using repository to avoid UserService mapping
       const { UserRepository } = await import("@handoverkey/database");
       const { getDatabaseClient } = await import("@handoverkey/database");
       const dbClient = getDatabaseClient();
       const userRepo = new UserRepository(dbClient.getKysely());
-      
+
       await userRepo.update(userId, {
         locked_until: lockedUntil,
         failed_login_attempts: this.MAX_ATTEMPTS,
@@ -121,7 +124,7 @@ export class AccountLockoutService {
           userId,
           lockedUntil,
         },
-        "Account locked in database"
+        "Account locked in database",
       );
     } catch (error) {
       logger.error({ error, userId }, "Failed to lock account");
@@ -187,7 +190,7 @@ export class AccountLockoutService {
       const { getDatabaseClient } = await import("@handoverkey/database");
       const dbClient = getDatabaseClient();
       const userRepo = new UserRepository(dbClient.getKysely());
-      
+
       await userRepo.update(userId, {
         failed_login_attempts: 0,
         locked_until: null,
@@ -218,7 +221,7 @@ export class AccountLockoutService {
       const { getDatabaseClient } = await import("@handoverkey/database");
       const dbClient = getDatabaseClient();
       const userRepo = new UserRepository(dbClient.getKysely());
-      
+
       await userRepo.update(userId, {
         failed_login_attempts: 0,
         locked_until: null,

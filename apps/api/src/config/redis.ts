@@ -48,7 +48,9 @@ export async function initializeRedis(): Promise<void> {
  */
 export function getRedisClient(): RedisClientType {
   if (!redisClient) {
-    throw new Error("Redis client not initialized. Call initializeRedis() first.");
+    throw new Error(
+      "Redis client not initialized. Call initializeRedis() first.",
+    );
   }
   return redisClient;
 }

@@ -1,6 +1,6 @@
-import { Kysely } from 'kysely';
-import { Database, SystemStatus, NewSystemStatus } from '../types';
-import { QueryError } from '../errors';
+import { Kysely } from "kysely";
+import { Database, SystemStatus, NewSystemStatus } from "../types";
+import { QueryError } from "../errors";
 
 export class SystemStatusRepository {
   constructor(private db: Kysely<Database>) {}
@@ -8,7 +8,7 @@ export class SystemStatusRepository {
   async create(data: NewSystemStatus): Promise<SystemStatus> {
     try {
       const status = await this.db
-        .insertInto('system_status')
+        .insertInto("system_status")
         .values(data)
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -16,7 +16,7 @@ export class SystemStatusRepository {
       return status;
     } catch (error) {
       throw new QueryError(
-        `Failed to create system status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to create system status: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -25,16 +25,16 @@ export class SystemStatusRepository {
   async getCurrent(): Promise<SystemStatus | null> {
     try {
       const status = await this.db
-        .selectFrom('system_status')
+        .selectFrom("system_status")
         .selectAll()
-        .orderBy('created_at', 'desc')
+        .orderBy("created_at", "desc")
         .limit(1)
         .executeTakeFirst();
 
       return status ?? null;
     } catch (error) {
       throw new QueryError(
-        `Failed to get current system status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to get current system status: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -43,18 +43,18 @@ export class SystemStatusRepository {
   async getDowntimeSince(since: Date): Promise<SystemStatus[]> {
     try {
       const statuses = await this.db
-        .selectFrom('system_status')
+        .selectFrom("system_status")
         .selectAll()
-        .where('status', 'in', ['maintenance', 'outage'])
-        .where('downtime_start', '>=', since)
-        .where('downtime_end', 'is not', null)
-        .orderBy('downtime_start', 'asc')
+        .where("status", "in", ["maintenance", "outage"])
+        .where("downtime_start", ">=", since)
+        .where("downtime_end", "is not", null)
+        .orderBy("downtime_start", "asc")
         .execute();
 
       return statuses;
     } catch (error) {
       throw new QueryError(
-        `Failed to get downtime since date: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to get downtime since date: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -63,21 +63,21 @@ export class SystemStatusRepository {
   async endCurrentDowntime(): Promise<void> {
     try {
       await this.db
-        .updateTable('system_status')
+        .updateTable("system_status")
         .set({ downtime_end: new Date() })
-        .where('id', '=', (eb) =>
+        .where("id", "=", (eb) =>
           eb
-            .selectFrom('system_status')
-            .select('id')
-            .where('status', 'in', ['maintenance', 'outage'])
-            .where('downtime_end', 'is', null)
-            .orderBy('created_at', 'desc')
-            .limit(1)
+            .selectFrom("system_status")
+            .select("id")
+            .where("status", "in", ["maintenance", "outage"])
+            .where("downtime_end", "is", null)
+            .orderBy("created_at", "desc")
+            .limit(1),
         )
         .execute();
     } catch (error) {
       throw new QueryError(
-        `Failed to end current downtime: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to end current downtime: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }

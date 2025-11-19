@@ -10,7 +10,7 @@ export class SessionController {
   static async getSessions(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -41,7 +41,7 @@ export class SessionController {
   static async invalidateSession(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -74,7 +74,7 @@ export class SessionController {
   static async invalidateAllOtherSessions(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {

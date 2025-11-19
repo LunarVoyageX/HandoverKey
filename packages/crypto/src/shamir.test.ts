@@ -1,8 +1,8 @@
-import { splitSecret, reconstructSecret, verifyShares } from './shamir';
-import { ValidationError } from './errors';
+import { splitSecret, reconstructSecret, verifyShares } from "./shamir";
+import { ValidationError } from "./errors";
 
-describe('Shamir Secret Sharing', () => {
-  it('should split and reconstruct a secret with minimum shares', () => {
+describe("Shamir Secret Sharing", () => {
+  it("should split and reconstruct a secret with minimum shares", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 5, 3);
 
@@ -13,7 +13,7 @@ describe('Shamir Secret Sharing', () => {
     expect(reconstructed).toEqual(secret);
   });
 
-  it('should reconstruct with more than threshold shares', () => {
+  it("should reconstruct with more than threshold shares", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 5, 3);
 
@@ -27,7 +27,7 @@ describe('Shamir Secret Sharing', () => {
     expect(reconstructed).toEqual(secret);
   });
 
-  it('should reconstruct with all shares', () => {
+  it("should reconstruct with all shares", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 5, 3);
 
@@ -35,7 +35,7 @@ describe('Shamir Secret Sharing', () => {
     expect(reconstructed).toEqual(secret);
   });
 
-  it('should work with different share combinations', () => {
+  it("should work with different share combinations", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 5, 3);
 
@@ -53,7 +53,7 @@ describe('Shamir Secret Sharing', () => {
     }
   });
 
-  it('should handle large secrets', () => {
+  it("should handle large secrets", () => {
     const secret = new Uint8Array(32);
     for (let i = 0; i < secret.length; i++) {
       secret[i] = i;
@@ -65,7 +65,7 @@ describe('Shamir Secret Sharing', () => {
     expect(reconstructed).toEqual(secret);
   });
 
-  it('should produce different shares each time', () => {
+  it("should produce different shares each time", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
 
     const shares1 = splitSecret(secret, 5, 3);
@@ -79,7 +79,7 @@ describe('Shamir Secret Sharing', () => {
     expect(reconstructSecret(shares2.slice(0, 3))).toEqual(secret);
   });
 
-  it('should throw ValidationError for invalid inputs', () => {
+  it("should throw ValidationError for invalid inputs", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
 
     // Invalid total shares
@@ -98,44 +98,44 @@ describe('Shamir Secret Sharing', () => {
     expect(() => splitSecret(secret, 256, 3)).toThrow(ValidationError);
   });
 
-  it('should fail to reconstruct correctly with insufficient shares', () => {
+  it("should fail to reconstruct correctly with insufficient shares", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 5, 3);
 
     // With only 2 shares (threshold is 3), reconstruction will succeed
     // but produce incorrect result
     const reconstructed = reconstructSecret([shares[0], shares[1]]);
-    
+
     // Should not match the original secret
     expect(reconstructed).not.toEqual(secret);
   });
 
-  it('should throw ValidationError for duplicate shares', () => {
+  it("should throw ValidationError for duplicate shares", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 5, 3);
 
     // Try to reconstruct with duplicate shares
-    expect(() =>
-      reconstructSecret([shares[0], shares[0], shares[1]])
-    ).toThrow(ValidationError);
-  });
-
-  it('should throw ValidationError for invalid share format', () => {
-    const invalidShare = new Uint8Array([1, 2, 3]); // Wrong length
-
-    expect(() => reconstructSecret([invalidShare, invalidShare])).toThrow(
-      ValidationError
+    expect(() => reconstructSecret([shares[0], shares[0], shares[1]])).toThrow(
+      ValidationError,
     );
   });
 
-  it('should verify valid shares', () => {
+  it("should throw ValidationError for invalid share format", () => {
+    const invalidShare = new Uint8Array([1, 2, 3]); // Wrong length
+
+    expect(() => reconstructSecret([invalidShare, invalidShare])).toThrow(
+      ValidationError,
+    );
+  });
+
+  it("should verify valid shares", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 5, 3);
 
     expect(verifyShares([shares[0], shares[1], shares[2]])).toBe(true);
   });
 
-  it('should reject invalid shares', () => {
+  it("should reject invalid shares", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 5, 3);
 
@@ -145,7 +145,7 @@ describe('Shamir Secret Sharing', () => {
     expect(verifyShares([shares[0], shares[1], shares[2]])).toBe(false);
   });
 
-  it('should handle 2-of-2 threshold', () => {
+  it("should handle 2-of-2 threshold", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 2, 2);
 
@@ -155,7 +155,7 @@ describe('Shamir Secret Sharing', () => {
     expect(reconstructed).toEqual(secret);
   });
 
-  it('should handle high threshold', () => {
+  it("should handle high threshold", () => {
     const secret = new Uint8Array([1, 2, 3, 4, 5]);
     const shares = splitSecret(secret, 10, 8);
 

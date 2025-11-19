@@ -7,7 +7,11 @@ import { UserRegistration, UserLogin } from "@handoverkey/shared";
 import { AuthenticationError, NotFoundError } from "../errors";
 
 export class AuthController {
-  static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async register(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       // Data is already validated and sanitized by Zod middleware
       const { email, password, confirmPassword } = req.body;
@@ -30,7 +34,7 @@ export class AuthController {
         {
           ipAddress: req.ip,
           userAgent: req.get("user-agent"),
-        }
+        },
       );
       const refreshToken = JWTManager.generateRefreshToken(user.id, user.email);
 
@@ -81,7 +85,11 @@ export class AuthController {
     }
   }
 
-  static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async login(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       // Data is already validated and sanitized by Zod middleware
       const { email, password, twoFactorCode } = req.body;
@@ -94,23 +102,29 @@ export class AuthController {
 
       // First, check if user exists to get userId for lockout check
       const existingUser = await UserService.findUserByEmail(email);
-      
+
       if (existingUser) {
         // Check if account is locked
-        const { AccountLockoutService } = await import("../services/account-lockout-service");
-        const lockStatus = await AccountLockoutService.isLocked(existingUser.id);
-        
+        const { AccountLockoutService } = await import(
+          "../services/account-lockout-service"
+        );
+        const lockStatus = await AccountLockoutService.isLocked(
+          existingUser.id,
+        );
+
         if (lockStatus.isLocked) {
-          const timeRemaining = await AccountLockoutService.getTimeUntilUnlock(existingUser.id);
-          
+          const timeRemaining = await AccountLockoutService.getTimeUntilUnlock(
+            existingUser.id,
+          );
+
           await UserService.logActivity(
             existingUser.id,
             "LOGIN_FAILED_ACCOUNT_LOCKED",
-            req.ip
+            req.ip,
           );
-          
+
           throw new AuthenticationError(
-            `Account is locked due to too many failed login attempts. Please try again in ${Math.ceil((timeRemaining || 0) / 60)} minutes.`
+            `Account is locked due to too many failed login attempts. Please try again in ${Math.ceil((timeRemaining || 0) / 60)} minutes.`,
           );
         }
       }
@@ -130,7 +144,9 @@ export class AuthController {
       }
 
       // Clear failed login attempts on successful login
-      const { AccountLockoutService } = await import("../services/account-lockout-service");
+      const { AccountLockoutService } = await import(
+        "../services/account-lockout-service"
+      );
       await AccountLockoutService.clearAttempts(user.id);
 
       // Log successful login
@@ -143,7 +159,7 @@ export class AuthController {
         {
           ipAddress: req.ip,
           userAgent: req.get("user-agent"),
-        }
+        },
       );
       const refreshToken = JWTManager.generateRefreshToken(user.id, user.email);
 
@@ -174,31 +190,37 @@ export class AuthController {
       // Record failed login attempt and check for lockout
       if (req.body.email && error instanceof AuthenticationError) {
         try {
-          const existingUser = await UserService.findUserByEmail(req.body.email);
+          const existingUser = await UserService.findUserByEmail(
+            req.body.email,
+          );
           if (existingUser) {
             // Record failed attempt
-            const { AccountLockoutService } = await import("../services/account-lockout-service");
+            const { AccountLockoutService } = await import(
+              "../services/account-lockout-service"
+            );
             const lockStatus = await AccountLockoutService.recordFailedAttempt(
               existingUser.id,
-              req.ip
+              req.ip,
             );
 
             // Log the failed attempt
             await UserService.logActivity(
               existingUser.id,
-              lockStatus.isLocked ? "LOGIN_FAILED_ACCOUNT_LOCKED" : "LOGIN_FAILED_INVALID_CREDENTIALS",
+              lockStatus.isLocked
+                ? "LOGIN_FAILED_ACCOUNT_LOCKED"
+                : "LOGIN_FAILED_INVALID_CREDENTIALS",
               req.ip,
             );
 
             // If account was just locked, update the error message
             if (lockStatus.isLocked) {
               throw new AuthenticationError(
-                `Account locked due to too many failed login attempts. Please try again in ${Math.ceil((lockStatus.lockedUntil!.getTime() - Date.now()) / 60000)} minutes.`
+                `Account locked due to too many failed login attempts. Please try again in ${Math.ceil((lockStatus.lockedUntil!.getTime() - Date.now()) / 60000)} minutes.`,
               );
             } else if (lockStatus.attemptsRemaining !== undefined) {
               // Add attempts remaining to error message
               throw new AuthenticationError(
-                `Invalid credentials. ${lockStatus.attemptsRemaining} attempt(s) remaining before account lockout.`
+                `Invalid credentials. ${lockStatus.attemptsRemaining} attempt(s) remaining before account lockout.`,
               );
             }
           }
@@ -216,7 +238,11 @@ export class AuthController {
     }
   }
 
-  static async logout(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async logout(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       // Use server-side session validation instead of user-controlled data
       const isAuthenticated = await SessionService.isAuthenticated(req);
@@ -241,7 +267,11 @@ export class AuthController {
     }
   }
 
-  static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async refreshToken(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const { refreshToken } = req.body;
 
@@ -263,7 +293,7 @@ export class AuthController {
         {
           ipAddress: req.ip,
           userAgent: req.get("user-agent"),
-        }
+        },
       );
       const newRefreshToken = JWTManager.generateRefreshToken(
         user.id,

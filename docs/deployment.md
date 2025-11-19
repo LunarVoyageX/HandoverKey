@@ -73,13 +73,13 @@ This guide provides instructions for deploying the HandoverKey project. It cover
 
 To stop all running Docker containers and Node.js processes:
 
-```bash
+````bash
 ```bash
 # If running with docker-compose
 docker-compose down
 
 # If running dev.sh, simply Ctrl+C in the terminal
-```
+````
 
 ## 3. Staging Environment Deployment
 

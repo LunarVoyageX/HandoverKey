@@ -478,7 +478,8 @@ The HandoverKey Team
     status: DeliveryStatus;
     errorMessage?: string;
   }): Promise<void> {
-    const deliveryRepo = NotificationService.getNotificationDeliveryRepository();
+    const deliveryRepo =
+      NotificationService.getNotificationDeliveryRepository();
     await deliveryRepo.create({
       user_id: delivery.userId,
       notification_type: delivery.notificationType,

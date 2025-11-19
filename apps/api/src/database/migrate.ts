@@ -41,7 +41,7 @@ async function runMigrations(): Promise<void> {
 
     await dbClient.query(async (db) => {
       // Execute raw SQL using sql template tag
-      const { sql } = await import('kysely');
+      const { sql } = await import("kysely");
       await sql.raw(createMigrationsTableSQL).execute(db);
     });
     console.log("✓ Ensured migrations table exists");
@@ -71,7 +71,7 @@ async function runMigrations(): Promise<void> {
 
       await dbClient.query(async (db) => {
         // Execute raw SQL using sql template tag
-        const { sql } = await import('kysely');
+        const { sql } = await import("kysely");
         await sql.raw(migrationSQL).execute(db);
         await db
           .insertInto("migrations" as any)

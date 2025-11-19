@@ -1,4 +1,8 @@
-import { getDatabaseClient, VaultRepository, VaultFilters as DbVaultFilters } from "@handoverkey/database";
+import {
+  getDatabaseClient,
+  VaultRepository,
+  VaultFilters as DbVaultFilters,
+} from "@handoverkey/database";
 import { VaultEntry, EncryptedData } from "@handoverkey/shared";
 import { v4 as uuidv4 } from "uuid";
 
@@ -26,7 +30,7 @@ export class VaultService {
     // Convert encrypted data to Buffer
     const encryptedBuffer = Buffer.from(encryptedData.data);
     const ivBuffer = Buffer.from(encryptedData.iv);
-    
+
     // For salt, we need to handle it properly - if it's in the encryptedData, use it
     // Otherwise generate a random salt
     const saltBuffer = Buffer.from(encryptedData.iv); // Using IV as salt for now
@@ -51,7 +55,7 @@ export class VaultService {
     filters: VaultFilters = {},
   ): Promise<VaultEntry[]> {
     const vaultRepo = this.getVaultRepository();
-    
+
     const dbFilters: DbVaultFilters = {
       category: filters.category,
       tag: filters.tag,
@@ -104,7 +108,7 @@ export class VaultService {
 
   static async deleteEntry(userId: string, entryId: string): Promise<boolean> {
     const vaultRepo = this.getVaultRepository();
-    
+
     try {
       await vaultRepo.delete(entryId, userId);
       return true;

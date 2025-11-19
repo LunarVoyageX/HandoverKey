@@ -4,23 +4,27 @@ import { authenticateJWT, requireAuth } from "../middleware/auth";
 import { authRateLimiter } from "../middleware/security";
 import { SimpleActivityMiddleware } from "../middleware/simple-activity";
 import { validateRequest } from "../validation";
-import { RegisterSchema, LoginSchema, RefreshTokenSchema } from "../validation/schemas";
+import {
+  RegisterSchema,
+  LoginSchema,
+  RefreshTokenSchema,
+} from "../validation/schemas";
 
 const router = Router();
 
 // Registration endpoint
 router.post(
   "/register",
-  authRateLimiter,
-  validateRequest(RegisterSchema, 'body'),
+  authRateLimiter as unknown as import("express").RequestHandler,
+  validateRequest(RegisterSchema, "body"),
   AuthController.register,
 );
 
 // Login endpoint
 router.post(
   "/login",
-  authRateLimiter,
-  validateRequest(LoginSchema, 'body'),
+  authRateLimiter as unknown as import("express").RequestHandler,
+  validateRequest(LoginSchema, "body"),
   AuthController.login,
   SimpleActivityMiddleware.trackActivity("LOGIN"),
 );
@@ -31,8 +35,8 @@ router.post("/logout", authenticateJWT, requireAuth, AuthController.logout);
 // Token refresh endpoint
 router.post(
   "/refresh",
-  authRateLimiter,
-  validateRequest(RefreshTokenSchema, 'body'),
+  authRateLimiter as unknown as import("express").RequestHandler,
+  validateRequest(RefreshTokenSchema, "body"),
   AuthController.refreshToken,
 );
 

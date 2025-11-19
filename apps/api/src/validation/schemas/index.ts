@@ -10,7 +10,7 @@ export {
   PasswordResetRequestSchema,
   PasswordResetConfirmSchema,
   PasswordChangeSchema,
-} from './auth.schemas';
+} from "./auth.schemas";
 
 // Vault schemas
 export {
@@ -18,7 +18,7 @@ export {
   UpdateVaultEntrySchema,
   VaultQuerySchema,
   VaultEntryIdSchema,
-} from './vault.schemas';
+} from "./vault.schemas";
 
 // Inactivity schemas
 export {
@@ -29,9 +29,7 @@ export {
   AddSuccessorSchema,
   UpdateSuccessorSchema,
   SuccessorIdSchema,
-} from './inactivity.schemas';
+} from "./inactivity.schemas";
 
 // Activity schemas
-export {
-  CheckInSchema,
-} from './activity.schemas';
+export { CheckInSchema } from "./activity.schemas";

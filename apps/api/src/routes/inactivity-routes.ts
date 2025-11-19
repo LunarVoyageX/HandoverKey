@@ -37,7 +37,7 @@ router.get("/settings", InactivityController.getSettings);
  */
 router.put(
   "/settings",
-  validateRequest(UpdateInactivitySettingsSchema, 'body'),
+  validateRequest(UpdateInactivitySettingsSchema, "body"),
   InactivityController.updateSettings,
 );
 
@@ -52,7 +52,7 @@ router.put(
  */
 router.post(
   "/pause",
-  validateRequest(PauseSwitchSchema, 'body'),
+  validateRequest(PauseSwitchSchema, "body"),
   InactivityController.pauseSwitch,
 );
 
@@ -62,7 +62,7 @@ router.post(
  */
 router.post(
   "/resume",
-  validateRequest(ResumeSwitchSchema, 'body'),
+  validateRequest(ResumeSwitchSchema, "body"),
   InactivityController.resumeSwitch,
 );
 

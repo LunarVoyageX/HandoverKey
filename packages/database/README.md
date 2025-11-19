@@ -27,19 +27,19 @@ npm install @handoverkey/database
 ### Database Client
 
 ```typescript
-import { getDatabaseClient } from '@handoverkey/database';
+import { getDatabaseClient } from "@handoverkey/database";
 
 // Get singleton instance
 const db = getDatabaseClient();
 
 // Initialize connection
 await db.initialize({
-  host: 'localhost',
+  host: "localhost",
   port: 5432,
-  database: 'handoverkey',
-  user: 'postgres',
-  password: 'password',
-  min: 2,  // Minimum connections
+  database: "handoverkey",
+  user: "postgres",
+  password: "password",
+  min: 2, // Minimum connections
   max: 10, // Maximum connections
 });
 
@@ -53,65 +53,65 @@ await db.close();
 ### Repositories
 
 ```typescript
-import { UserRepository, VaultEntryRepository } from '@handoverkey/database';
+import { UserRepository, VaultEntryRepository } from "@handoverkey/database";
 
 // User operations
-const user = await UserRepository.findById('user-id');
-const userByEmail = await UserRepository.findByEmail('user@example.com');
+const user = await UserRepository.findById("user-id");
+const userByEmail = await UserRepository.findByEmail("user@example.com");
 
 const newUser = await UserRepository.create({
-  email: 'new@example.com',
-  passwordHash: 'hashed-password',
-  salt: Buffer.from('salt'),
+  email: "new@example.com",
+  passwordHash: "hashed-password",
+  salt: Buffer.from("salt"),
 });
 
-await UserRepository.update('user-id', {
+await UserRepository.update("user-id", {
   lastLogin: new Date(),
 });
 
 // Vault operations
-const entries = await VaultEntryRepository.findByUserId('user-id');
+const entries = await VaultEntryRepository.findByUserId("user-id");
 
 const entry = await VaultEntryRepository.create({
-  userId: 'user-id',
-  encryptedData: Buffer.from('encrypted'),
-  iv: Buffer.from('iv'),
-  salt: Buffer.from('salt'),
-  algorithm: 'AES-256-GCM',
+  userId: "user-id",
+  encryptedData: Buffer.from("encrypted"),
+  iv: Buffer.from("iv"),
+  salt: Buffer.from("salt"),
+  algorithm: "AES-256-GCM",
   sizeBytes: 1024,
 });
 
-await VaultEntryRepository.update('entry-id', {
-  encryptedData: Buffer.from('new-encrypted'),
+await VaultEntryRepository.update("entry-id", {
+  encryptedData: Buffer.from("new-encrypted"),
 });
 
-await VaultEntryRepository.delete('entry-id'); // Soft delete
+await VaultEntryRepository.delete("entry-id"); // Soft delete
 ```
 
 ### Transactions
 
 ```typescript
-import { getDatabaseClient } from '@handoverkey/database';
+import { getDatabaseClient } from "@handoverkey/database";
 
 const db = getDatabaseClient();
 
 await db.transaction(async (trx) => {
   // All operations use the same transaction
   const user = await trx
-    .selectFrom('users')
-    .where('id', '=', userId)
+    .selectFrom("users")
+    .where("id", "=", userId)
     .selectAll()
     .executeTakeFirst();
-    
+
   await trx
-    .insertInto('activity_logs')
+    .insertInto("activity_logs")
     .values({
       userId: user.id,
-      action: 'LOGIN',
+      action: "LOGIN",
       timestamp: new Date(),
     })
     .execute();
-    
+
   // Transaction commits automatically if no error
   // Rolls back automatically on error
 });
@@ -120,18 +120,18 @@ await db.transaction(async (trx) => {
 ### Direct Queries
 
 ```typescript
-import { getDatabaseClient } from '@handoverkey/database';
+import { getDatabaseClient } from "@handoverkey/database";
 
 const db = getDatabaseClient();
 
 // Type-safe query
 const users = await db.query((db) =>
   db
-    .selectFrom('users')
-    .where('email', 'like', '%@example.com')
-    .where('deletedAt', 'is', null)
+    .selectFrom("users")
+    .where("email", "like", "%@example.com")
+    .where("deletedAt", "is", null)
     .selectAll()
-    .execute()
+    .execute(),
 );
 ```
 
@@ -144,6 +144,7 @@ const users = await db.query((db) =>
 Initializes the database connection pool.
 
 **Parameters:**
+
 - `config.host: string` - Database host
 - `config.port: number` - Database port
 - `config.database: string` - Database name
@@ -159,6 +160,7 @@ Initializes the database connection pool.
 Executes a query with type safety.
 
 **Parameters:**
+
 - `queryFn: (db: Kysely<Database>) => Promise<T>` - Query function
 
 **Returns:** `Promise<T>` - Query result
@@ -168,6 +170,7 @@ Executes a query with type safety.
 Executes operations in a transaction.
 
 **Parameters:**
+
 - `txFn: (trx: Transaction<Database>) => Promise<T>` - Transaction function
 
 **Returns:** `Promise<T>` - Transaction result
@@ -224,6 +227,7 @@ All repositories follow the same pattern:
 ### Tables
 
 #### users
+
 - `id` - UUID primary key
 - `email` - Unique email address
 - `password_hash` - Bcrypt password hash
@@ -237,6 +241,7 @@ All repositories follow the same pattern:
 - `deleted_at` - Soft delete timestamp
 
 #### vault_entries
+
 - `id` - UUID primary key
 - `user_id` - Foreign key to users
 - `encrypted_data` - Encrypted vault data
@@ -251,6 +256,7 @@ All repositories follow the same pattern:
 - `deleted_at` - Soft delete timestamp
 
 #### sessions
+
 - `id` - UUID primary key
 - `user_id` - Foreign key to users
 - `token_hash` - Hashed session token
@@ -261,6 +267,7 @@ All repositories follow the same pattern:
 - `last_activity` - Last activity timestamp
 
 #### activity_logs
+
 - `id` - UUID primary key
 - `user_id` - Foreign key to users
 - `action` - Action type
@@ -286,18 +293,18 @@ npm run migrate:rollback
 Migrations are TypeScript files in `src/migrations/`:
 
 ```typescript
-import { Kysely } from 'kysely';
+import { Kysely } from "kysely";
 
 export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
-    .createTable('new_table')
-    .addColumn('id', 'uuid', (col) => col.primaryKey())
-    .addColumn('name', 'varchar(255)', (col) => col.notNull())
+    .createTable("new_table")
+    .addColumn("id", "uuid", (col) => col.primaryKey())
+    .addColumn("name", "varchar(255)", (col) => col.notNull())
     .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
-  await db.schema.dropTable('new_table').execute();
+  await db.schema.dropTable("new_table").execute();
 }
 ```
 
@@ -332,14 +339,14 @@ const isHealthy = await db.healthCheck();
 ## Error Handling
 
 ```typescript
-import { DatabaseError } from '@handoverkey/database';
+import { DatabaseError } from "@handoverkey/database";
 
 try {
-  const user = await UserRepository.findById('user-id');
+  const user = await UserRepository.findById("user-id");
 } catch (error) {
   if (error instanceof DatabaseError) {
     // Database operation failed
-    console.error('Database error:', error.message);
+    console.error("Database error:", error.message);
   }
 }
 ```

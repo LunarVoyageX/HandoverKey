@@ -4,9 +4,9 @@ import {
   DEFAULT_ALGORITHM,
   DEFAULT_IV_LENGTH,
   DEFAULT_TAG_LENGTH,
-} from './types';
-import { EncryptionError, DecryptionError, ValidationError } from './errors';
-import { generateIV } from './utils';
+} from "./types";
+import { EncryptionError, DecryptionError, ValidationError } from "./errors";
+import { generateIV } from "./utils";
 
 /**
  * Encrypts data using AES-256-GCM
@@ -21,33 +21,33 @@ import { generateIV } from './utils';
 export async function encrypt(
   data: string | Uint8Array,
   key: CryptoKey,
-  options: EncryptionOptions = {}
+  options: EncryptionOptions = {},
 ): Promise<EncryptedData> {
   // Validate inputs
   if (data === null || data === undefined) {
-    throw new ValidationError('Data must be provided');
+    throw new ValidationError("Data must be provided");
   }
 
-  if (typeof data === 'string' && data.length === 0) {
-    throw new ValidationError('Data string cannot be empty');
+  if (typeof data === "string" && data.length === 0) {
+    throw new ValidationError("Data string cannot be empty");
   }
 
   if (data instanceof Uint8Array && data.length === 0) {
-    throw new ValidationError('Data array cannot be empty');
+    throw new ValidationError("Data array cannot be empty");
   }
 
   // Check if key is a CryptoKey (handle Jest/test environments where CryptoKey might not be defined)
-  if (typeof CryptoKey !== 'undefined' && !(key instanceof CryptoKey)) {
-    throw new ValidationError('Key must be a CryptoKey');
-  }
-  
-  // Additional validation for key object structure
-  if (!key || typeof key !== 'object' || !key.algorithm) {
-    throw new ValidationError('Invalid key object');
+  if (typeof CryptoKey !== "undefined" && !(key instanceof CryptoKey)) {
+    throw new ValidationError("Key must be a CryptoKey");
   }
 
-  if (key.algorithm.name !== 'AES-GCM') {
-    throw new ValidationError('Key must be an AES-GCM key');
+  // Additional validation for key object structure
+  if (!key || typeof key !== "object" || !key.algorithm) {
+    throw new ValidationError("Invalid key object");
+  }
+
+  if (key.algorithm.name !== "AES-GCM") {
+    throw new ValidationError("Key must be an AES-GCM key");
   }
 
   const ivLength = options.ivLength || DEFAULT_IV_LENGTH;
@@ -60,17 +60,17 @@ export async function encrypt(
 
     // Convert string to Uint8Array if needed
     const dataBuffer =
-      typeof data === 'string' ? new TextEncoder().encode(data) : data;
+      typeof data === "string" ? new TextEncoder().encode(data) : data;
 
     // Encrypt the data
     const encryptedBuffer = await crypto.subtle.encrypt(
       {
-        name: 'AES-GCM',
+        name: "AES-GCM",
         iv: iv as BufferSource,
         tagLength: tagLength,
       },
       key,
-      dataBuffer as BufferSource
+      dataBuffer as BufferSource,
     );
 
     return {
@@ -83,7 +83,7 @@ export async function encrypt(
       throw error;
     }
     throw new EncryptionError(
-      `Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Encryption failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -99,53 +99,53 @@ export async function encrypt(
  */
 export async function decrypt(
   encryptedData: EncryptedData,
-  key: CryptoKey
+  key: CryptoKey,
 ): Promise<string> {
   // Validate inputs
-  if (!encryptedData || typeof encryptedData !== 'object') {
-    throw new ValidationError('Encrypted data must be an object');
+  if (!encryptedData || typeof encryptedData !== "object") {
+    throw new ValidationError("Encrypted data must be an object");
   }
 
   if (!(encryptedData.data instanceof Uint8Array)) {
-    throw new ValidationError('Encrypted data must contain a Uint8Array');
+    throw new ValidationError("Encrypted data must contain a Uint8Array");
   }
 
   if (!(encryptedData.iv instanceof Uint8Array)) {
-    throw new ValidationError('IV must be a Uint8Array');
+    throw new ValidationError("IV must be a Uint8Array");
   }
 
   if (encryptedData.data.length === 0) {
-    throw new ValidationError('Encrypted data cannot be empty');
+    throw new ValidationError("Encrypted data cannot be empty");
   }
 
   if (encryptedData.iv.length === 0) {
-    throw new ValidationError('IV cannot be empty');
+    throw new ValidationError("IV cannot be empty");
   }
 
   // Check if key is a CryptoKey (handle Jest/test environments where CryptoKey might not be defined)
-  if (typeof CryptoKey !== 'undefined' && !(key instanceof CryptoKey)) {
-    throw new ValidationError('Key must be a CryptoKey');
-  }
-  
-  // Additional validation for key object structure
-  if (!key || typeof key !== 'object' || !key.algorithm) {
-    throw new ValidationError('Invalid key object');
+  if (typeof CryptoKey !== "undefined" && !(key instanceof CryptoKey)) {
+    throw new ValidationError("Key must be a CryptoKey");
   }
 
-  if (key.algorithm.name !== 'AES-GCM') {
-    throw new ValidationError('Key must be an AES-GCM key');
+  // Additional validation for key object structure
+  if (!key || typeof key !== "object" || !key.algorithm) {
+    throw new ValidationError("Invalid key object");
+  }
+
+  if (key.algorithm.name !== "AES-GCM") {
+    throw new ValidationError("Key must be an AES-GCM key");
   }
 
   try {
     // Decrypt the data
     const decryptedBuffer = await crypto.subtle.decrypt(
       {
-        name: 'AES-GCM',
+        name: "AES-GCM",
         iv: encryptedData.iv as BufferSource,
         tagLength: DEFAULT_TAG_LENGTH,
       },
       key,
-      encryptedData.data as BufferSource
+      encryptedData.data as BufferSource,
     );
 
     // Convert buffer to string
@@ -158,7 +158,7 @@ export async function decrypt(
     }
     // GCM authentication failure or wrong key
     throw new DecryptionError(
-      'Decryption failed - invalid key or tampered data'
+      "Decryption failed - invalid key or tampered data",
     );
   }
 }
@@ -172,7 +172,7 @@ export async function decrypt(
  */
 export async function encryptFile(
   data: File | Uint8Array,
-  key: CryptoKey
+  key: CryptoKey,
 ): Promise<EncryptedData> {
   const fileData =
     data instanceof File ? new Uint8Array(await data.arrayBuffer()) : data;
@@ -189,40 +189,40 @@ export async function encryptFile(
  */
 export async function decryptFile(
   encryptedData: EncryptedData,
-  key: CryptoKey
+  key: CryptoKey,
 ): Promise<Uint8Array> {
   // Validate inputs (similar to decrypt)
-  if (!encryptedData || typeof encryptedData !== 'object') {
-    throw new ValidationError('Encrypted data must be an object');
+  if (!encryptedData || typeof encryptedData !== "object") {
+    throw new ValidationError("Encrypted data must be an object");
   }
 
   if (!(encryptedData.data instanceof Uint8Array)) {
-    throw new ValidationError('Encrypted data must contain a Uint8Array');
+    throw new ValidationError("Encrypted data must contain a Uint8Array");
   }
 
   if (!(encryptedData.iv instanceof Uint8Array)) {
-    throw new ValidationError('IV must be a Uint8Array');
+    throw new ValidationError("IV must be a Uint8Array");
   }
 
   if (!(key instanceof CryptoKey)) {
-    throw new ValidationError('Key must be a CryptoKey');
+    throw new ValidationError("Key must be a CryptoKey");
   }
 
   try {
     const decryptedBuffer = await crypto.subtle.decrypt(
       {
-        name: 'AES-GCM',
+        name: "AES-GCM",
         iv: encryptedData.iv as BufferSource,
         tagLength: DEFAULT_TAG_LENGTH,
       },
       key,
-      encryptedData.data as BufferSource
+      encryptedData.data as BufferSource,
     );
 
     return new Uint8Array(decryptedBuffer);
   } catch {
     throw new DecryptionError(
-      'File decryption failed - invalid key or tampered data'
+      "File decryption failed - invalid key or tampered data",
     );
   }
 }
@@ -236,10 +236,10 @@ export async function decryptFile(
  */
 export async function encryptObject<T>(
   obj: T,
-  key: CryptoKey
+  key: CryptoKey,
 ): Promise<EncryptedData> {
   if (obj === null || obj === undefined) {
-    throw new ValidationError('Object must be provided');
+    throw new ValidationError("Object must be provided");
   }
 
   try {
@@ -247,7 +247,7 @@ export async function encryptObject<T>(
     return encrypt(jsonString, key);
   } catch (error) {
     throw new EncryptionError(
-      `Object encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Object encryption failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -261,7 +261,7 @@ export async function encryptObject<T>(
  */
 export async function decryptObject<T>(
   encryptedData: EncryptedData,
-  key: CryptoKey
+  key: CryptoKey,
 ): Promise<T> {
   try {
     const jsonString = await decrypt(encryptedData, key);
@@ -271,7 +271,7 @@ export async function decryptObject<T>(
       throw error;
     }
     throw new DecryptionError(
-      `Object decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Object decryption failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }

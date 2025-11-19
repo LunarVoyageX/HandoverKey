@@ -1,6 +1,6 @@
-import { Kysely } from 'kysely';
-import { Database, User, NewUser, UserUpdate } from '../types';
-import { NotFoundError, QueryError } from '../errors';
+import { Kysely } from "kysely";
+import { Database, User, NewUser, UserUpdate } from "../types";
+import { NotFoundError, QueryError } from "../errors";
 
 export class UserRepository {
   constructor(private db: Kysely<Database>) {}
@@ -8,16 +8,16 @@ export class UserRepository {
   async findById(id: string): Promise<User | null> {
     try {
       const user = await this.db
-        .selectFrom('users')
+        .selectFrom("users")
         .selectAll()
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
+        .where("id", "=", id)
+        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       return user ?? null;
     } catch (error) {
       throw new QueryError(
-        `Failed to find user by id: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to find user by id: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -26,16 +26,16 @@ export class UserRepository {
   async findByEmail(email: string): Promise<User | null> {
     try {
       const user = await this.db
-        .selectFrom('users')
+        .selectFrom("users")
         .selectAll()
-        .where('email', '=', email)
-        .where('deleted_at', 'is', null)
+        .where("email", "=", email)
+        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       return user ?? null;
     } catch (error) {
       throw new QueryError(
-        `Failed to find user by email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to find user by email: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -44,7 +44,7 @@ export class UserRepository {
   async create(data: NewUser): Promise<User> {
     try {
       const user = await this.db
-        .insertInto('users')
+        .insertInto("users")
         .values(data)
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -52,7 +52,7 @@ export class UserRepository {
       return user;
     } catch (error) {
       throw new QueryError(
-        `Failed to create user: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to create user: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -61,18 +61,18 @@ export class UserRepository {
   async update(id: string, data: UserUpdate): Promise<User> {
     try {
       const user = await this.db
-        .updateTable('users')
+        .updateTable("users")
         .set({
           ...data,
           updated_at: new Date(),
         })
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
+        .where("id", "=", id)
+        .where("deleted_at", "is", null)
         .returningAll()
         .executeTakeFirst();
 
       if (!user) {
-        throw new NotFoundError('User');
+        throw new NotFoundError("User");
       }
 
       return user;
@@ -81,7 +81,7 @@ export class UserRepository {
         throw error;
       }
       throw new QueryError(
-        `Failed to update user: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to update user: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -91,21 +91,21 @@ export class UserRepository {
     try {
       // Soft delete
       const result = await this.db
-        .updateTable('users')
+        .updateTable("users")
         .set({ deleted_at: new Date() })
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
+        .where("id", "=", id)
+        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       if (result.numUpdatedRows === 0n) {
-        throw new NotFoundError('User');
+        throw new NotFoundError("User");
       }
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       throw new QueryError(
-        `Failed to delete user: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to delete user: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -114,17 +114,17 @@ export class UserRepository {
   async updateLastLogin(id: string): Promise<void> {
     try {
       await this.db
-        .updateTable('users')
+        .updateTable("users")
         .set({
           last_login: new Date(),
           failed_login_attempts: 0,
           locked_until: null,
         })
-        .where('id', '=', id)
+        .where("id", "=", id)
         .execute();
     } catch (error) {
       throw new QueryError(
-        `Failed to update last login: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to update last login: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -133,15 +133,15 @@ export class UserRepository {
   async incrementFailedAttempts(id: string): Promise<void> {
     try {
       await this.db
-        .updateTable('users')
+        .updateTable("users")
         .set((eb) => ({
-          failed_login_attempts: eb('failed_login_attempts', '+', 1),
+          failed_login_attempts: eb("failed_login_attempts", "+", 1),
         }))
-        .where('id', '=', id)
+        .where("id", "=", id)
         .execute();
     } catch (error) {
       throw new QueryError(
-        `Failed to increment failed attempts: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to increment failed attempts: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -150,13 +150,13 @@ export class UserRepository {
   async lockAccount(id: string, until: Date): Promise<void> {
     try {
       await this.db
-        .updateTable('users')
+        .updateTable("users")
         .set({ locked_until: until })
-        .where('id', '=', id)
+        .where("id", "=", id)
         .execute();
     } catch (error) {
       throw new QueryError(
-        `Failed to lock account: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to lock account: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -168,16 +168,16 @@ export class UserRepository {
       cutoffDate.setDate(cutoffDate.getDate() - thresholdDays);
 
       const users = await this.db
-        .selectFrom('users')
+        .selectFrom("users")
         .selectAll()
-        .where('last_login', '<', cutoffDate)
-        .where('deleted_at', 'is', null)
+        .where("last_login", "<", cutoffDate)
+        .where("deleted_at", "is", null)
         .execute();
 
       return users;
     } catch (error) {
       throw new QueryError(
-        `Failed to find inactive users: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to find inactive users: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }

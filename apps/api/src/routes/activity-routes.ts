@@ -15,7 +15,7 @@ router.use(authenticateJWT);
  */
 router.post(
   "/check-in",
-  validateRequest(CheckInSchema, 'body'),
+  validateRequest(CheckInSchema, "body"),
   SimpleActivityMiddleware.handleManualCheckIn,
 );
 

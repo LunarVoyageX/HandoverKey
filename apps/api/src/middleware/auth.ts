@@ -59,7 +59,7 @@ export const authenticateJWT = (
       "Authentication failed:",
       error instanceof Error ? error.message : "Unknown error",
     );
-    
+
     // Pass to error handler
     if (error instanceof AuthenticationError) {
       next(error);
@@ -86,7 +86,7 @@ export const requireAuth = async (
     if (process.env.NODE_ENV !== "test") {
       console.error("Authentication validation error:", error);
     }
-    
+
     // Pass to error handler
     if (error instanceof AuthenticationError) {
       next(error);

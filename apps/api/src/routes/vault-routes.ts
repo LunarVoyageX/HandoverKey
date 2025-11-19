@@ -22,21 +22,21 @@ router.use(SimpleActivityMiddleware.trackActivity("VAULT_ACCESS"));
 // Create vault entry
 router.post(
   "/entries",
-  validateRequest(CreateVaultEntrySchema, 'body'),
+  validateRequest(CreateVaultEntrySchema, "body"),
   VaultController.createEntry,
 );
 
 // Get all vault entries for user
 router.get(
   "/entries",
-  validateRequest(VaultQuerySchema, 'query'),
+  validateRequest(VaultQuerySchema, "query"),
   VaultController.getEntries,
 );
 
 // Get single vault entry
 router.get(
   "/entries/:id",
-  validateRequest(VaultEntryIdSchema, 'params'),
+  validateRequest(VaultEntryIdSchema, "params"),
   VaultController.getEntry,
 );
 
@@ -53,7 +53,7 @@ router.put(
 // Delete vault entry
 router.delete(
   "/entries/:id",
-  validateRequest(VaultEntryIdSchema, 'params'),
+  validateRequest(VaultEntryIdSchema, "params"),
   VaultController.deleteEntry,
 );
 

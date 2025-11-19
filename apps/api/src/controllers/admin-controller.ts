@@ -11,7 +11,7 @@ export class AdminController {
   static async unlockAccount(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -33,7 +33,7 @@ export class AdminController {
       await UserService.logActivity(
         req.user.userId,
         "ADMIN_UNLOCKED_ACCOUNT",
-        req.ip
+        req.ip,
       );
 
       res.json({
@@ -54,7 +54,7 @@ export class AdminController {
   static async getLockoutStatus(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -71,7 +71,8 @@ export class AdminController {
 
       const lockStatus = await AccountLockoutService.isLocked(userId);
       const attemptCount = await AccountLockoutService.getAttemptCount(userId);
-      const timeUntilUnlock = await AccountLockoutService.getTimeUntilUnlock(userId);
+      const timeUntilUnlock =
+        await AccountLockoutService.getTimeUntilUnlock(userId);
 
       res.json({
         userId: user.id,

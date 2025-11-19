@@ -1,5 +1,5 @@
-import { DEFAULT_SALT_LENGTH, DEFAULT_IV_LENGTH } from './types';
-import { ValidationError } from './errors';
+import { DEFAULT_SALT_LENGTH, DEFAULT_IV_LENGTH } from "./types";
+import { ValidationError } from "./errors";
 
 /**
  * Generates a cryptographically secure random salt
@@ -9,7 +9,7 @@ import { ValidationError } from './errors';
  */
 export function generateSalt(length: number = DEFAULT_SALT_LENGTH): Uint8Array {
   if (length < 16) {
-    throw new ValidationError('Salt length must be at least 16 bytes');
+    throw new ValidationError("Salt length must be at least 16 bytes");
   }
   return crypto.getRandomValues(new Uint8Array(length));
 }
@@ -22,7 +22,7 @@ export function generateSalt(length: number = DEFAULT_SALT_LENGTH): Uint8Array {
  */
 export function generateIV(length: number = DEFAULT_IV_LENGTH): Uint8Array {
   if (length < 12) {
-    throw new ValidationError('IV length must be at least 12 bytes for GCM');
+    throw new ValidationError("IV length must be at least 12 bytes for GCM");
   }
   return crypto.getRandomValues(new Uint8Array(length));
 }
@@ -35,7 +35,7 @@ export function generateIV(length: number = DEFAULT_IV_LENGTH): Uint8Array {
  */
 export function generateRandomBytes(length: number): Uint8Array {
   if (length <= 0) {
-    throw new ValidationError('Length must be positive');
+    throw new ValidationError("Length must be positive");
   }
   return crypto.getRandomValues(new Uint8Array(length));
 }
@@ -48,15 +48,18 @@ export function generateRandomBytes(length: number): Uint8Array {
  */
 export async function hash(data: string | Uint8Array): Promise<string> {
   if (data === null || data === undefined) {
-    throw new ValidationError('Data must be provided');
+    throw new ValidationError("Data must be provided");
   }
 
   const dataBuffer =
-    typeof data === 'string' ? new TextEncoder().encode(data) : data;
+    typeof data === "string" ? new TextEncoder().encode(data) : data;
 
-  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer as BufferSource);
+  const hashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    dataBuffer as BufferSource,
+  );
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -67,9 +70,9 @@ export async function hash(data: string | Uint8Array): Promise<string> {
  */
 export function toBase64(data: Uint8Array): string {
   if (!(data instanceof Uint8Array)) {
-    throw new ValidationError('Data must be a Uint8Array');
+    throw new ValidationError("Data must be a Uint8Array");
   }
-  return Buffer.from(data).toString('base64');
+  return Buffer.from(data).toString("base64");
 }
 
 /**
@@ -79,17 +82,17 @@ export function toBase64(data: Uint8Array): string {
  * @returns Uint8Array
  */
 export function fromBase64(base64: string): Uint8Array {
-  if (typeof base64 !== 'string') {
-    throw new ValidationError('Input must be a string');
+  if (typeof base64 !== "string") {
+    throw new ValidationError("Input must be a string");
   }
 
   // Validate base64 format
   const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
   if (!base64Regex.test(base64)) {
-    throw new ValidationError('Invalid base64 format');
+    throw new ValidationError("Invalid base64 format");
   }
 
-  return new Uint8Array(Buffer.from(base64, 'base64'));
+  return new Uint8Array(Buffer.from(base64, "base64"));
 }
 
 /**
@@ -101,7 +104,7 @@ export function fromBase64(base64: string): Uint8Array {
  */
 export function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (!(a instanceof Uint8Array) || !(b instanceof Uint8Array)) {
-    throw new ValidationError('Both inputs must be Uint8Arrays');
+    throw new ValidationError("Both inputs must be Uint8Arrays");
   }
 
   if (a.length !== b.length) {

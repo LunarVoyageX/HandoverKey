@@ -1,25 +1,25 @@
 /**
  * BullMQ job queue configuration
- * 
+ *
  * Provides reliable background job processing with Redis persistence
  */
 
-import { Queue, Worker, QueueEvents, ConnectionOptions } from 'bullmq';
-import { logger } from './logger';
+import { Queue, Worker, QueueEvents, ConnectionOptions } from "bullmq";
+import { logger } from "./logger";
 
 /**
  * Redis connection configuration
  */
 export const redisConnection: ConnectionOptions = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
+  host: process.env.REDIS_HOST || "localhost",
+  port: parseInt(process.env.REDIS_PORT || "6379"),
   password: process.env.REDIS_PASSWORD,
   maxRetriesPerRequest: null, // Required for BullMQ
   enableReadyCheck: false,
   retryStrategy: (times: number) => {
     // Exponential backoff: 1s, 2s, 4s, 8s, max 30s
     const delay = Math.min(Math.pow(2, times) * 1000, 30000);
-    logger.warn({ attempt: times, delay }, 'Retrying Redis connection');
+    logger.warn({ attempt: times, delay }, "Retrying Redis connection");
     return delay;
   },
 };
@@ -32,7 +32,7 @@ export const defaultQueueOptions = {
   defaultJobOptions: {
     attempts: 3,
     backoff: {
-      type: 'exponential' as const,
+      type: "exponential" as const,
       delay: 1000, // Start with 1 second
     },
     removeOnComplete: {
@@ -61,10 +61,10 @@ export function getQueue(name: string): Queue {
   if (!queueRegistry.has(name)) {
     const queue = new Queue(name, defaultQueueOptions);
     queueRegistry.set(name, queue);
-    
-    logger.info({ queueName: name }, 'Queue created');
+
+    logger.info({ queueName: name }, "Queue created");
   }
-  
+
   return queueRegistry.get(name)!;
 }
 
@@ -73,12 +73,12 @@ export function getQueue(name: string): Queue {
  */
 export function registerWorker(name: string, worker: Worker): void {
   if (workerRegistry.has(name)) {
-    logger.warn({ queueName: name }, 'Worker already registered, replacing');
+    logger.warn({ queueName: name }, "Worker already registered, replacing");
     workerRegistry.get(name)?.close();
   }
-  
+
   workerRegistry.set(name, worker);
-  logger.info({ queueName: name }, 'Worker registered');
+  logger.info({ queueName: name }, "Worker registered");
 }
 
 /**
@@ -86,12 +86,15 @@ export function registerWorker(name: string, worker: Worker): void {
  */
 export function registerQueueEvents(name: string, events: QueueEvents): void {
   if (eventsRegistry.has(name)) {
-    logger.warn({ queueName: name }, 'Queue events already registered, replacing');
+    logger.warn(
+      { queueName: name },
+      "Queue events already registered, replacing",
+    );
     eventsRegistry.get(name)?.close();
   }
-  
+
   eventsRegistry.set(name, events);
-  logger.info({ queueName: name }, 'Queue events registered');
+  logger.info({ queueName: name }, "Queue events registered");
 }
 
 /**
@@ -99,43 +102,49 @@ export function registerQueueEvents(name: string, events: QueueEvents): void {
  * Should be called on application shutdown
  */
 export async function closeAllQueues(): Promise<void> {
-  logger.info('Closing all queues, workers, and event listeners');
-  
+  logger.info("Closing all queues, workers, and event listeners");
+
   // Close all workers first
-  const workerPromises = Array.from(workerRegistry.values()).map(async (worker) => {
-    try {
-      await worker.close();
-    } catch (error) {
-      logger.error({ err: error }, 'Error closing worker');
-    }
-  });
-  
+  const workerPromises = Array.from(workerRegistry.values()).map(
+    async (worker) => {
+      try {
+        await worker.close();
+      } catch (error) {
+        logger.error({ err: error }, "Error closing worker");
+      }
+    },
+  );
+
   // Close all event listeners
-  const eventsPromises = Array.from(eventsRegistry.values()).map(async (events) => {
-    try {
-      await events.close();
-    } catch (error) {
-      logger.error({ err: error }, 'Error closing queue events');
-    }
-  });
-  
+  const eventsPromises = Array.from(eventsRegistry.values()).map(
+    async (events) => {
+      try {
+        await events.close();
+      } catch (error) {
+        logger.error({ err: error }, "Error closing queue events");
+      }
+    },
+  );
+
   // Close all queues
-  const queuePromises = Array.from(queueRegistry.values()).map(async (queue) => {
-    try {
-      await queue.close();
-    } catch (error) {
-      logger.error({ err: error }, 'Error closing queue');
-    }
-  });
-  
+  const queuePromises = Array.from(queueRegistry.values()).map(
+    async (queue) => {
+      try {
+        await queue.close();
+      } catch (error) {
+        logger.error({ err: error }, "Error closing queue");
+      }
+    },
+  );
+
   await Promise.all([...workerPromises, ...eventsPromises, ...queuePromises]);
-  
+
   // Clear registries
   workerRegistry.clear();
   eventsRegistry.clear();
   queueRegistry.clear();
-  
-  logger.info('All queues closed');
+
+  logger.info("All queues closed");
 }
 
 /**
@@ -151,7 +160,7 @@ export async function getQueueHealth(queueName: string): Promise<{
 }> {
   try {
     const queue = getQueue(queueName);
-    
+
     const [waiting, active, completed, failed, delayed] = await Promise.all([
       queue.getWaitingCount(),
       queue.getActiveCount(),
@@ -159,7 +168,7 @@ export async function getQueueHealth(queueName: string): Promise<{
       queue.getFailedCount(),
       queue.getDelayedCount(),
     ]);
-    
+
     return {
       healthy: true,
       waiting,
@@ -169,7 +178,7 @@ export async function getQueueHealth(queueName: string): Promise<{
       delayed,
     };
   } catch (error) {
-    logger.error({ err: error, queueName }, 'Failed to get queue health');
+    logger.error({ err: error, queueName }, "Failed to get queue health");
     return {
       healthy: false,
       waiting: 0,

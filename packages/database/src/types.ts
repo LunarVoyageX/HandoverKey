@@ -1,4 +1,10 @@
-import { ColumnType, Generated, Insertable, Selectable, Updateable } from 'kysely';
+import {
+  ColumnType,
+  Generated,
+  Insertable,
+  Selectable,
+  Updateable,
+} from "kysely";
 
 // User table types
 export interface UsersTable {
@@ -9,13 +15,25 @@ export interface UsersTable {
   email_verified: ColumnType<boolean, boolean | undefined, boolean>;
   two_factor_enabled: ColumnType<boolean, boolean | undefined, boolean>;
   two_factor_secret: string | null;
-  last_login: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  last_login: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
   failed_login_attempts: ColumnType<number, number | undefined, number>;
-  locked_until: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  locked_until: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
   inactivity_threshold_days: ColumnType<number, number | undefined, number>;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
-  deleted_at: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  deleted_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
 }
 
 export type User = Selectable<UsersTable>;
@@ -52,7 +70,11 @@ export interface VaultEntriesTable {
   size_bytes: number;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
-  deleted_at: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  deleted_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
 }
 
 export type VaultEntry = Selectable<VaultEntriesTable>;
@@ -96,8 +118,16 @@ export interface HandoverEventsTable {
   user_id: string;
   event_type: string;
   status: ColumnType<string, string | undefined, string>;
-  triggered_at: ColumnType<Date | null, Date | string | null, Date | string | null>;
-  completed_at: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  triggered_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
+  completed_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
   metadata: Record<string, unknown> | null;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
@@ -130,7 +160,11 @@ export interface InactivitySettingsTable {
   emergency_contacts: Record<string, unknown> | null;
   is_paused: ColumnType<boolean, boolean | undefined, boolean>;
   pause_reason: string | null;
-  paused_until: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  paused_until: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
@@ -146,8 +180,16 @@ export interface HandoverProcessesTable {
   status: ColumnType<string, string | undefined, string>;
   initiated_at: ColumnType<Date, Date | string | undefined, Date | string>;
   grace_period_ends: ColumnType<Date, Date | string, Date | string>;
-  completed_at: ColumnType<Date | null, Date | string | null, Date | string | null>;
-  cancelled_at: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  completed_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
+  cancelled_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
   cancellation_reason: string | null;
   metadata: Record<string, unknown> | null;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
@@ -183,7 +225,11 @@ export interface NotificationDeliveriesTable {
   method: string;
   recipient: string;
   status: ColumnType<string, string | undefined, string>;
-  delivered_at: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  delivered_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
   retry_count: ColumnType<number, number | undefined, number>;
   error_message: string | null;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
@@ -191,14 +237,23 @@ export interface NotificationDeliveriesTable {
 
 export type NotificationDelivery = Selectable<NotificationDeliveriesTable>;
 export type NewNotificationDelivery = Insertable<NotificationDeliveriesTable>;
-export type NotificationDeliveryUpdate = Updateable<NotificationDeliveriesTable>;
+export type NotificationDeliveryUpdate =
+  Updateable<NotificationDeliveriesTable>;
 
 // System status table types
 export interface SystemStatusTable {
   id: Generated<string>;
   status: ColumnType<string, string | undefined, string>;
-  downtime_start: ColumnType<Date | null, Date | string | null, Date | string | null>;
-  downtime_end: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  downtime_start: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
+  downtime_end: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
   reason: string | null;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
@@ -214,7 +269,11 @@ export interface SuccessorNotificationsTable {
   successor_id: string;
   notified_at: ColumnType<Date, Date | string | undefined, Date | string>;
   verification_status: ColumnType<string, string | undefined, string>;
-  verified_at: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  verified_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
   response_deadline: ColumnType<Date, Date | string, Date | string>;
   verification_token: string | null;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
@@ -222,7 +281,8 @@ export interface SuccessorNotificationsTable {
 
 export type SuccessorNotification = Selectable<SuccessorNotificationsTable>;
 export type NewSuccessorNotification = Insertable<SuccessorNotificationsTable>;
-export type SuccessorNotificationUpdate = Updateable<SuccessorNotificationsTable>;
+export type SuccessorNotificationUpdate =
+  Updateable<SuccessorNotificationsTable>;
 
 // Database schema
 export interface Database {

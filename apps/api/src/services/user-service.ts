@@ -1,4 +1,8 @@
-import { getDatabaseClient, UserRepository, ActivityRepository } from "@handoverkey/database";
+import {
+  getDatabaseClient,
+  UserRepository,
+  ActivityRepository,
+} from "@handoverkey/database";
 import { PasswordUtils } from "../auth/password";
 import { User, UserRegistration, UserLogin } from "@handoverkey/shared";
 import { ValidationError, ConflictError, AuthenticationError } from "../errors";
@@ -100,10 +104,10 @@ export class UserService {
     updates: Partial<User>,
   ): Promise<User> {
     const userRepo = this.getUserRepository();
-    
+
     // Map camelCase to snake_case for database
     const dbUpdates: Record<string, unknown> = {};
-    
+
     if (updates.twoFactorEnabled !== undefined) {
       dbUpdates.two_factor_enabled = updates.twoFactorEnabled;
     }

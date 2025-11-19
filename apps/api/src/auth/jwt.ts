@@ -28,7 +28,7 @@ export class JWTManager {
   static async generateAccessToken(
     userId: string,
     email: string,
-    options?: TokenGenerationOptions
+    options?: TokenGenerationOptions,
   ): Promise<{ token: string; sessionId: string }> {
     const payload: JWTPayload = {
       userId,

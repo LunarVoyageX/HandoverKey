@@ -5,6 +5,7 @@ This directory contains the Zod-based validation layer for the HandoverKey API.
 ## Overview
 
 The validation layer provides:
+
 - Runtime type validation using Zod schemas
 - Input sanitization to prevent XSS attacks
 - Consistent error formatting
@@ -33,42 +34,45 @@ validation/
 ### Basic Validation
 
 ```typescript
-import { validateRequest } from '../validation';
-import { CreateVaultEntrySchema } from '../validation/schemas';
+import { validateRequest } from "../validation";
+import { CreateVaultEntrySchema } from "../validation/schemas";
 
 router.post(
-  '/entries',
-  validateRequest(CreateVaultEntrySchema, 'body'),
-  VaultController.createEntry
+  "/entries",
+  validateRequest(CreateVaultEntrySchema, "body"),
+  VaultController.createEntry,
 );
 ```
 
 ### Multiple Target Validation
 
 ```typescript
-import { validateMultiple } from '../validation';
-import { VaultEntryIdSchema, UpdateVaultEntrySchema } from '../validation/schemas';
+import { validateMultiple } from "../validation";
+import {
+  VaultEntryIdSchema,
+  UpdateVaultEntrySchema,
+} from "../validation/schemas";
 
 router.put(
-  '/entries/:id',
+  "/entries/:id",
   validateMultiple({
     params: VaultEntryIdSchema,
     body: UpdateVaultEntrySchema,
   }),
-  VaultController.updateEntry
+  VaultController.updateEntry,
 );
 ```
 
 ### Query Parameter Validation
 
 ```typescript
-import { validateRequest } from '../validation';
-import { VaultQuerySchema } from '../validation/schemas';
+import { validateRequest } from "../validation";
+import { VaultQuerySchema } from "../validation/schemas";
 
 router.get(
-  '/entries',
-  validateRequest(VaultQuerySchema, 'query'),
-  VaultController.getEntries
+  "/entries",
+  validateRequest(VaultQuerySchema, "query"),
+  VaultController.getEntries,
 );
 ```
 
@@ -77,6 +81,7 @@ router.get(
 ### Input Sanitization
 
 All string inputs are automatically sanitized to prevent XSS attacks:
+
 - HTML tags are stripped
 - Script content is removed
 - Event handlers are removed
@@ -97,7 +102,7 @@ import {
   sanitizeUuid,
   sanitizePhoneNumber,
   sanitizeStringArray,
-} from '../validation';
+} from "../validation";
 
 // Sanitize and validate email
 const email = sanitizeEmail(userInput); // Returns null if invalid
@@ -117,12 +122,12 @@ const base64 = sanitizeBase64(userInput);
 Validate file uploads for security:
 
 ```typescript
-import { validateFileUpload } from '../validation';
+import { validateFileUpload } from "../validation";
 
 const result = validateFileUpload(file, {
   maxSize: 10 * 1024 * 1024, // 10MB
-  allowedMimeTypes: ['image/jpeg', 'image/png'],
-  allowedExtensions: ['jpg', 'jpeg', 'png'],
+  allowedMimeTypes: ["image/jpeg", "image/png"],
+  allowedExtensions: ["jpg", "jpeg", "png"],
 });
 
 if (!result.valid) {
@@ -160,6 +165,7 @@ const { email, password } = req.body; // TypeScript knows these types
 ## Available Schemas
 
 ### Authentication
+
 - `RegisterSchema` - User registration
 - `LoginSchema` - User login
 - `RefreshTokenSchema` - Token refresh
@@ -168,12 +174,14 @@ const { email, password } = req.body; // TypeScript knows these types
 - `PasswordChangeSchema` - Change password (authenticated user)
 
 ### Vault
+
 - `CreateVaultEntrySchema` - Create vault entry (with size limits and validation)
 - `UpdateVaultEntrySchema` - Update vault entry (partial updates)
 - `VaultQuerySchema` - Query parameters for listing entries (with sorting)
 - `VaultEntryIdSchema` - Vault entry ID parameter
 
 ### Inactivity & Handover
+
 - `UpdateInactivitySettingsSchema` - Update inactivity settings
 - `PauseSwitchSchema` - Pause dead man's switch
 - `ResumeSwitchSchema` - Resume dead man's switch
@@ -183,6 +191,7 @@ const { email, password } = req.body; // TypeScript knows these types
 - `SuccessorIdSchema` - Successor ID parameter
 
 ### Activity
+
 - `CheckInSchema` - Manual check-in
 
 ## Testing

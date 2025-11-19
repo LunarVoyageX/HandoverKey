@@ -11,6 +11,7 @@ This directory contains configuration for the observability stack: logging and m
 Structured JSON logging using Pino, an open-source, high-performance logging library.
 
 **Features**:
+
 - Structured JSON logs in production
 - Pretty-printed logs in development
 - Request/response serializers
@@ -20,25 +21,27 @@ Structured JSON logging using Pino, an open-source, high-performance logging lib
 - Log levels: fatal, error, warn, info, debug, trace
 
 **Configuration**:
+
 ```typescript
 // Set log level via environment variable
-LOG_LEVEL=debug  // Options: fatal, error, warn, info, debug, trace
+LOG_LEVEL = debug; // Options: fatal, error, warn, info, debug, trace
 ```
 
 **Usage**:
+
 ```typescript
-import { logger } from '../config/logger';
+import { logger } from "../config/logger";
 
 // Basic logging
-logger.info('User logged in');
-logger.error({ err: error }, 'Failed to process request');
+logger.info("User logged in");
+logger.error({ err: error }, "Failed to process request");
 
 // With context
-logger.info({ userId, action: 'login' }, 'User action');
+logger.info({ userId, action: "login" }, "User action");
 
 // Create child logger with persistent context
-const userLogger = logger.child({ userId: '123' });
-userLogger.info('User action'); // Automatically includes userId
+const userLogger = logger.child({ userId: "123" });
+userLogger.info("User action"); // Automatically includes userId
 ```
 
 ### Metrics (Prometheus)
@@ -75,6 +78,7 @@ Application metrics using prom-client, the official Prometheus client for Node.j
    - Node.js version info
 
 **Metrics Endpoint**:
+
 ```
 GET /metrics
 ```
@@ -82,14 +86,15 @@ GET /metrics
 Returns metrics in Prometheus format.
 
 **Usage**:
+
 ```typescript
-import { vaultOperations, dbQueryDuration } from '../config/metrics';
+import { vaultOperations, dbQueryDuration } from "../config/metrics";
 
 // Increment counter
-vaultOperations.inc({ operation: 'create' });
+vaultOperations.inc({ operation: "create" });
 
 // Observe histogram
-const end = dbQueryDuration.startTimer({ operation: 'select', table: 'users' });
+const end = dbQueryDuration.startTimer({ operation: "select", table: "users" });
 // ... perform query ...
 end(); // Records duration
 
@@ -104,6 +109,7 @@ activeUsers.set(150);
 **File**: `../middleware/request-id.ts`
 
 Generates or extracts a unique request ID for each request. The ID is:
+
 - Added to the request object as `req.id`
 - Included in response headers as `X-Request-ID`
 - Used for correlating logs and metrics
@@ -113,12 +119,14 @@ Generates or extracts a unique request ID for each request. The ID is:
 **File**: `../middleware/logging.ts`
 
 Automatically logs all HTTP requests and responses with:
+
 - Request method, URL, headers
 - Response status code, headers
 - Request duration
 - Request ID for correlation
 
 Also provides helper functions:
+
 - `logSecurityEvent()` - Log security-related events
 - `logBusinessEvent()` - Log business-related events
 
@@ -127,6 +135,7 @@ Also provides helper functions:
 **File**: `../middleware/metrics.ts`
 
 Automatically collects HTTP metrics for all requests:
+
 - Request duration
 - Request count by method, route, and status code
 - Error count by type
@@ -157,6 +166,7 @@ Logs are pretty-printed to stdout with colors.
 
 **Production**:
 Logs are output as JSON to stdout. Collect them using:
+
 - Docker logs
 - Kubernetes logs
 - Log aggregation tools (ELK stack, Loki, etc.)
@@ -164,6 +174,7 @@ Logs are output as JSON to stdout. Collect them using:
 ### Viewing Metrics
 
 **Local Development**:
+
 ```bash
 curl http://localhost:3001/metrics
 ```
@@ -174,21 +185,23 @@ Set up Prometheus to scrape the `/metrics` endpoint:
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'handoverkey-api'
+  - job_name: "handoverkey-api"
     static_configs:
-      - targets: ['api:3001']
-    metrics_path: '/metrics'
+      - targets: ["api:3001"]
+    metrics_path: "/metrics"
     scrape_interval: 15s
 ```
 
 ### Visualization
 
 Use Grafana to visualize Prometheus metrics:
+
 1. Add Prometheus as a data source
 2. Import or create dashboards
 3. Set up alerts based on metrics
 
 **Recommended Dashboards**:
+
 - HTTP request rate and latency
 - Error rate by endpoint
 - Active users over time
@@ -208,13 +221,15 @@ Use Grafana to visualize Prometheus metrics:
    - `trace` - Very detailed debugging information
 
 2. **Include context**:
+
    ```typescript
-   logger.info({ userId, action, resource }, 'User performed action');
+   logger.info({ userId, action, resource }, "User performed action");
    ```
 
 3. **Log errors with stack traces**:
+
    ```typescript
-   logger.error({ err: error }, 'Operation failed');
+   logger.error({ err: error }, "Operation failed");
    ```
 
 4. **Don't log sensitive data**:
@@ -255,6 +270,7 @@ Ensure request ID middleware is registered first, before any other middleware.
 ## Open Source Stack
 
 All components are 100% open source:
+
 - **Pino** - MIT License
 - **prom-client** - Apache 2.0 License
 - **Prometheus** - Apache 2.0 License

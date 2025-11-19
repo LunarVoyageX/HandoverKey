@@ -120,7 +120,8 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
         `Processing successor response for handover ${handoverId}, successor ${successorId}`,
       );
 
-      const notificationRepo = HandoverOrchestrator.getSuccessorNotificationRepository();
+      const notificationRepo =
+        HandoverOrchestrator.getSuccessorNotificationRepository();
       await notificationRepo.update(handoverId, successorId, {
         verification_status: "verified",
         verified_at: new Date(),
@@ -198,16 +199,22 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
   async getHandoversNeedingAttention(): Promise<HandoverProcess[]> {
     try {
       const handoverRepo = HandoverOrchestrator.getHandoverProcessRepository();
-      
+
       // Get processes in various active states
-      const gracePeriodProcesses = await handoverRepo.findByStatus(HandoverProcessStatus.GRACE_PERIOD);
-      const awaitingProcesses = await handoverRepo.findByStatus(HandoverProcessStatus.AWAITING_SUCCESSORS);
-      const verificationProcesses = await handoverRepo.findByStatus('verification_pending');
+      const gracePeriodProcesses = await handoverRepo.findByStatus(
+        HandoverProcessStatus.GRACE_PERIOD,
+      );
+      const awaitingProcesses = await handoverRepo.findByStatus(
+        HandoverProcessStatus.AWAITING_SUCCESSORS,
+      );
+      const verificationProcesses = await handoverRepo.findByStatus(
+        "verification_pending",
+      );
 
       // Filter grace period processes that have expired
       const now = new Date();
       const expiredGracePeriod = gracePeriodProcesses.filter(
-        p => new Date(p.grace_period_ends) <= now
+        (p) => new Date(p.grace_period_ends) <= now,
       );
 
       // Combine all processes that need attention
@@ -218,11 +225,12 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
       ];
 
       // Sort by creation date
-      allProcesses.sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      allProcesses.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
 
-      return allProcesses.map(p => this.mapDbToHandoverProcess(p));
+      return allProcesses.map((p) => this.mapDbToHandoverProcess(p));
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {

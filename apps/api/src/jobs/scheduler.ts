@@ -1,12 +1,12 @@
 /**
  * Job scheduler
- * 
+ *
  * Provides high-level API for scheduling and managing jobs
  */
 
-import { Job } from 'bullmq';
-import { getQueue } from '../config/queue';
-import { logger } from '../config/logger';
+import { Job } from "bullmq";
+import { getQueue } from "../config/queue";
+import { logger } from "../config/logger";
 import {
   JobType,
   JobData,
@@ -15,7 +15,7 @@ import {
   SendReminderJobData,
   ExecuteHandoverJobData,
   CleanupSessionsJobData,
-} from './types';
+} from "./types";
 
 /**
  * Job scheduler class
@@ -28,11 +28,11 @@ export class JobScheduler {
   static async scheduleJob<T extends JobData>(
     jobType: JobType,
     data: T,
-    options?: JobOptions
+    options?: JobOptions,
   ): Promise<Job<T>> {
     const queueName = this.getQueueName(jobType);
     const queue = getQueue(queueName);
-    
+
     const job = await queue.add(jobType, data, {
       priority: options?.priority,
       delay: options?.delay,
@@ -40,28 +40,28 @@ export class JobScheduler {
       backoff: options?.backoff,
       repeat: options?.repeat,
     });
-    
+
     logger.info(
-      { 
-        jobId: job.id, 
-        jobType, 
+      {
+        jobId: job.id,
+        jobType,
         queueName,
         data,
         options,
       },
-      'Job scheduled'
+      "Job scheduled",
     );
-    
+
     return job as Job<T>;
   }
-  
+
   /**
    * Schedule inactivity check job
    * Runs hourly by default
    */
   static async scheduleInactivityCheck(
     data: InactivityCheckJobData = {},
-    options?: JobOptions
+    options?: JobOptions,
   ): Promise<Job> {
     return this.scheduleJob(
       JobType.INACTIVITY_CHECK,
@@ -72,18 +72,18 @@ export class JobScheduler {
       {
         ...options,
         repeat: options?.repeat || {
-          pattern: '0 * * * *', // Every hour at minute 0
+          pattern: "0 * * * *", // Every hour at minute 0
         },
-      }
+      },
     );
   }
-  
+
   /**
    * Schedule reminder notification
    */
   static async scheduleReminder(
     data: SendReminderJobData,
-    options?: JobOptions
+    options?: JobOptions,
   ): Promise<Job> {
     return this.scheduleJob(
       JobType.SEND_REMINDER,
@@ -91,16 +91,16 @@ export class JobScheduler {
         ...data,
         createdAt: new Date().toISOString(),
       },
-      options
+      options,
     );
   }
-  
+
   /**
    * Schedule handover execution
    */
   static async scheduleHandover(
     data: ExecuteHandoverJobData,
-    options?: JobOptions
+    options?: JobOptions,
   ): Promise<Job> {
     return this.scheduleJob(
       JobType.EXECUTE_HANDOVER,
@@ -111,17 +111,17 @@ export class JobScheduler {
       {
         ...options,
         priority: 1, // High priority
-      }
+      },
     );
   }
-  
+
   /**
    * Schedule session cleanup job
    * Runs daily by default
    */
   static async scheduleSessionCleanup(
     data: CleanupSessionsJobData = {},
-    options?: JobOptions
+    options?: JobOptions,
   ): Promise<Job> {
     return this.scheduleJob(
       JobType.CLEANUP_SESSIONS,
@@ -132,26 +132,32 @@ export class JobScheduler {
       {
         ...options,
         repeat: options?.repeat || {
-          pattern: '0 2 * * *', // Every day at 2 AM
+          pattern: "0 2 * * *", // Every day at 2 AM
         },
-      }
+      },
     );
   }
-  
+
   /**
    * Get job by ID
    */
-  static async getJob(jobType: JobType, jobId: string): Promise<Job | undefined> {
+  static async getJob(
+    jobType: JobType,
+    jobId: string,
+  ): Promise<Job | undefined> {
     const queueName = this.getQueueName(jobType);
     const queue = getQueue(queueName);
-    
+
     return queue.getJob(jobId);
   }
-  
+
   /**
    * Get job status
    */
-  static async getJobStatus(jobType: JobType, jobId: string): Promise<{
+  static async getJobStatus(
+    jobType: JobType,
+    jobId: string,
+  ): Promise<{
     id: string;
     state: string;
     progress: number;
@@ -161,13 +167,13 @@ export class JobScheduler {
     processedOn?: number;
   } | null> {
     const job = await this.getJob(jobType, jobId);
-    
+
     if (!job) {
       return null;
     }
-    
+
     const state = await job.getState();
-    
+
     return {
       id: job.id!,
       state,
@@ -178,79 +184,81 @@ export class JobScheduler {
       processedOn: job.processedOn,
     };
   }
-  
+
   /**
    * Remove a job
    */
   static async removeJob(jobType: JobType, jobId: string): Promise<void> {
     const job = await this.getJob(jobType, jobId);
-    
+
     if (job) {
       await job.remove();
-      logger.info({ jobId, jobType }, 'Job removed');
+      logger.info({ jobId, jobType }, "Job removed");
     }
   }
-  
+
   /**
    * Remove all jobs from a queue
    */
   static async removeAllJobs(jobType: JobType): Promise<void> {
     const queueName = this.getQueueName(jobType);
     const queue = getQueue(queueName);
-    
+
     await queue.drain();
-    logger.info({ jobType, queueName }, 'All jobs removed from queue');
+    logger.info({ jobType, queueName }, "All jobs removed from queue");
   }
-  
+
   /**
    * Get queue name for a job type
    */
   private static getQueueName(jobType: JobType): string {
     // Group related jobs into the same queue
-    if (jobType.startsWith('inactivity:')) {
-      return 'inactivity';
+    if (jobType.startsWith("inactivity:")) {
+      return "inactivity";
     }
-    if (jobType.startsWith('notification:')) {
-      return 'notifications';
+    if (jobType.startsWith("notification:")) {
+      return "notifications";
     }
-    if (jobType.startsWith('handover:')) {
-      return 'handover';
+    if (jobType.startsWith("handover:")) {
+      return "handover";
     }
-    if (jobType.startsWith('maintenance:')) {
-      return 'maintenance';
+    if (jobType.startsWith("maintenance:")) {
+      return "maintenance";
     }
-    return 'default';
+    return "default";
   }
-  
+
   /**
    * Get all repeatable jobs
    */
-  static async getRepeatableJobs(jobType: JobType): Promise<Array<{
-    key: string;
-    name: string;
-    id?: string | null;
-    endDate?: number | null;
-    tz?: string | null;
-    pattern?: string | null;
-    every?: string | null;
-  }>> {
+  static async getRepeatableJobs(jobType: JobType): Promise<
+    Array<{
+      key: string;
+      name: string;
+      id?: string | null;
+      endDate?: number | null;
+      tz?: string | null;
+      pattern?: string | null;
+      every?: string | null;
+    }>
+  > {
     const queueName = this.getQueueName(jobType);
     const queue = getQueue(queueName);
-    
+
     return queue.getRepeatableJobs();
   }
-  
+
   /**
    * Remove a repeatable job
    */
   static async removeRepeatableJob(
     jobType: JobType,
-    repeatJobKey: string
+    repeatJobKey: string,
   ): Promise<void> {
     const queueName = this.getQueueName(jobType);
     const queue = getQueue(queueName);
-    
+
     await queue.removeRepeatableByKey(repeatJobKey);
-    logger.info({ jobType, repeatJobKey }, 'Repeatable job removed');
+    logger.info({ jobType, repeatJobKey }, "Repeatable job removed");
   }
 }

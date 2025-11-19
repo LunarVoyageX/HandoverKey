@@ -1,7 +1,7 @@
-import { Kysely, PostgresDialect, Transaction } from 'kysely';
-import { Pool, PoolConfig } from 'pg';
-import { Database } from './types';
-import { ConnectionError, QueryError, TransactionError } from './errors';
+import { Kysely, PostgresDialect, Transaction } from "kysely";
+import { Pool, PoolConfig } from "pg";
+import { Database } from "./types";
+import { ConnectionError, QueryError, TransactionError } from "./errors";
 
 export interface DatabaseConfig {
   host: string;
@@ -25,7 +25,7 @@ export class DatabaseClient {
    */
   async initialize(config: DatabaseConfig): Promise<void> {
     if (this.pool) {
-      throw new ConnectionError('Database already initialized');
+      throw new ConnectionError("Database already initialized");
     }
 
     this.config = config;
@@ -57,7 +57,7 @@ export class DatabaseClient {
       });
     } catch (error) {
       throw new ConnectionError(
-        `Failed to initialize database: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to initialize database: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -68,7 +68,7 @@ export class DatabaseClient {
    */
   getKysely(): Kysely<Database> {
     if (!this.kysely) {
-      throw new ConnectionError('Database not initialized');
+      throw new ConnectionError("Database not initialized");
     }
     return this.kysely;
   }
@@ -81,7 +81,7 @@ export class DatabaseClient {
     maxRetries: number = 3,
   ): Promise<T> {
     if (!this.kysely) {
-      throw new ConnectionError('Database not initialized');
+      throw new ConnectionError("Database not initialized");
     }
 
     let lastError: Error | null = null;
@@ -91,15 +91,12 @@ export class DatabaseClient {
       try {
         return await queryFn(this.kysely);
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error');
+        lastError = error instanceof Error ? error : new Error("Unknown error");
         attempt++;
 
         // Don't retry on certain errors
         if (this.isNonRetryableError(error)) {
-          throw new QueryError(
-            `Query failed: ${lastError.message}`,
-            lastError,
-          );
+          throw new QueryError(`Query failed: ${lastError.message}`, lastError);
         }
 
         // Exponential backoff
@@ -123,14 +120,14 @@ export class DatabaseClient {
     txFn: (trx: Transaction<Database>) => Promise<T>,
   ): Promise<T> {
     if (!this.kysely) {
-      throw new ConnectionError('Database not initialized');
+      throw new ConnectionError("Database not initialized");
     }
 
     try {
       return await this.kysely.transaction().execute(txFn);
     } catch (error) {
       throw new TransactionError(
-        `Transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Transaction failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -146,7 +143,7 @@ export class DatabaseClient {
 
     try {
       const client = await this.pool.connect();
-      await client.query('SELECT 1');
+      await client.query("SELECT 1");
       client.release();
       return true;
     } catch {
@@ -181,11 +178,11 @@ export class DatabaseClient {
 
     // Don't retry on syntax errors, constraint violations, etc.
     return (
-      message.includes('syntax error') ||
-      message.includes('constraint') ||
-      message.includes('duplicate key') ||
-      message.includes('foreign key') ||
-      message.includes('not null violation')
+      message.includes("syntax error") ||
+      message.includes("constraint") ||
+      message.includes("duplicate key") ||
+      message.includes("foreign key") ||
+      message.includes("not null violation")
     );
   }
 }

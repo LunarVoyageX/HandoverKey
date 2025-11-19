@@ -315,13 +315,15 @@ export class InactivityMonitorService implements InactivityMonitor {
   }
 
   private async getActiveUsers(): Promise<{ id: string }[]> {
-    const settingsRepo = InactivityMonitorService.getInactivitySettingsRepository();
+    const settingsRepo =
+      InactivityMonitorService.getInactivitySettingsRepository();
     const activeSettings = await settingsRepo.findAllActive();
-    return activeSettings.map(s => ({ id: s.user_id }));
+    return activeSettings.map((s) => ({ id: s.user_id }));
   }
 
   private async getInactivitySettings(userId: string) {
-    const settingsRepo = InactivityMonitorService.getInactivitySettingsRepository();
+    const settingsRepo =
+      InactivityMonitorService.getInactivitySettingsRepository();
     const settings = await settingsRepo.findByUserId(userId);
 
     if (!settings) {
@@ -350,7 +352,8 @@ export class InactivityMonitorService implements InactivityMonitor {
   }
 
   private async isUserTrackingPaused(userId: string): Promise<boolean> {
-    const settingsRepo = InactivityMonitorService.getInactivitySettingsRepository();
+    const settingsRepo =
+      InactivityMonitorService.getInactivitySettingsRepository();
     const settings = await settingsRepo.findByUserId(userId);
 
     if (!settings) {
@@ -458,8 +461,12 @@ export class InactivityMonitorService implements InactivityMonitor {
     userId: string,
     reminderType: ReminderType,
   ): Promise<Date | null> {
-    const deliveryRepo = InactivityMonitorService.getNotificationDeliveryRepository();
-    const lastDelivery = await deliveryRepo.findLastByType(userId, reminderType);
+    const deliveryRepo =
+      InactivityMonitorService.getNotificationDeliveryRepository();
+    const lastDelivery = await deliveryRepo.findLastByType(
+      userId,
+      reminderType,
+    );
 
     if (!lastDelivery) {
       return null;

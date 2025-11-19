@@ -110,10 +110,7 @@ async function seedDatabase(): Promise<void> {
 
     for (const entry of testEntries) {
       await dbClient.query(async (db) => {
-        return await db
-          .insertInto("vault_entries")
-          .values(entry)
-          .execute();
+        return await db.insertInto("vault_entries").values(entry).execute();
       });
     }
 

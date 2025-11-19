@@ -33,26 +33,29 @@ const app = express();
 
 // Initialize database connection
 const dbClient = getDatabaseClient();
-dbClient.initialize({
-  host: process.env.DB_HOST || "localhost",
-  port: parseInt(process.env.DB_PORT || "5432"),
-  database: process.env.DB_NAME || "handoverkey_dev",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "postgres",
-  min: 2,
-  max: 10,
-}).then(async () => {
-  // Initialize SessionService with database client
-  SessionService.initialize(dbClient);
-  logger.info("SessionService initialized");
+dbClient
+  .initialize({
+    host: process.env.DB_HOST || "localhost",
+    port: parseInt(process.env.DB_PORT || "5432"),
+    database: process.env.DB_NAME || "handoverkey_dev",
+    user: process.env.DB_USER || "postgres",
+    password: process.env.DB_PASSWORD || "postgres",
+    min: 2,
+    max: 10,
+  })
+  .then(async () => {
+    // Initialize SessionService with database client
+    SessionService.initialize(dbClient);
+    logger.info("SessionService initialized");
 
-  // Initialize Redis
-  await initializeRedis();
-  logger.info("Redis initialized");
-}).catch((error) => {
-  logger.fatal({ err: error }, "Failed to initialize database or Redis");
-  process.exit(1);
-});
+    // Initialize Redis
+    await initializeRedis();
+    logger.info("Redis initialized");
+  })
+  .catch((error) => {
+    logger.fatal({ err: error }, "Failed to initialize database or Redis");
+    process.exit(1);
+  });
 
 // Initialize job processors and schedule recurring jobs (only in non-test environment)
 if (process.env.NODE_ENV !== "test") {
@@ -61,7 +64,7 @@ if (process.env.NODE_ENV !== "test") {
       // Schedule recurring jobs
       await JobScheduler.scheduleInactivityCheck();
       await JobScheduler.scheduleSessionCleanup();
-      
+
       logger.info("Job processors initialized and recurring jobs scheduled");
     })
     .catch((error) => {
@@ -82,12 +85,17 @@ app.use(metricsMiddleware);
 // Security middleware
 app.use(securityHeaders);
 app.use(cors(corsOptions));
-app.use(rateLimiter);
+app.use(rateLimiter as unknown as express.RequestHandler);
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }) as express.RequestHandler);
-app.use(express.urlencoded({ extended: true, limit: "10mb" }) as express.RequestHandler);
-app.use(cookieParser());
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "10mb",
+  }) as express.RequestHandler,
+);
+app.use(cookieParser() as unknown as express.RequestHandler);
 
 // Validation and sanitization middleware
 app.use(validateContentType);
@@ -150,34 +158,34 @@ app.use(errorHandler);
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   logger.info("SIGTERM received, shutting down gracefully");
-  
+
   // Close job processors and queues
   await JobProcessor.close();
   await closeAllQueues();
-  
+
   // Close Redis
   await closeRedis();
-  
+
   // Close database
   await dbClient.close();
-  
+
   logger.info("Shutdown complete");
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
   logger.info("SIGINT received, shutting down gracefully");
-  
+
   // Close job processors and queues
   await JobProcessor.close();
   await closeAllQueues();
-  
+
   // Close Redis
   await closeRedis();
-  
+
   // Close database
   await dbClient.close();
-  
+
   logger.info("Shutdown complete");
   process.exit(0);
 });

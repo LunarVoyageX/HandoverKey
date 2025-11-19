@@ -8,7 +8,7 @@ import {
   toBase64,
   fromBase64,
   type EncryptedData,
-} from '@handoverkey/crypto';
+} from "@handoverkey/crypto";
 
 /**
  * Client-side encryption service using Web Crypto API
@@ -70,7 +70,7 @@ export async function decryptData(params: DecryptionParams): Promise<string> {
   const encrypted: EncryptedData = {
     data: dataBytes,
     iv: ivBytes,
-    algorithm: 'AES-256-GCM',
+    algorithm: "AES-256-GCM",
   };
 
   return await decrypt(encrypted, key);
@@ -112,7 +112,7 @@ export async function decryptVaultData<T>(
   const encrypted: EncryptedData = {
     data: dataBytes,
     iv: ivBytes,
-    algorithm: 'AES-256-GCM',
+    algorithm: "AES-256-GCM",
   };
 
   return await decryptObject<T>(encrypted, key);

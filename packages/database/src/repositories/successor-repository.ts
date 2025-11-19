@@ -1,6 +1,6 @@
-import { Kysely } from 'kysely';
-import { Database, Successor, NewSuccessor, SuccessorUpdate } from '../types';
-import { NotFoundError, QueryError } from '../errors';
+import { Kysely } from "kysely";
+import { Database, Successor, NewSuccessor, SuccessorUpdate } from "../types";
+import { NotFoundError, QueryError } from "../errors";
 
 export class SuccessorRepository {
   constructor(private db: Kysely<Database>) {}
@@ -8,15 +8,15 @@ export class SuccessorRepository {
   async findById(id: string): Promise<Successor | null> {
     try {
       const successor = await this.db
-        .selectFrom('successors')
+        .selectFrom("successors")
         .selectAll()
-        .where('id', '=', id)
+        .where("id", "=", id)
         .executeTakeFirst();
 
       return successor ?? null;
     } catch (error) {
       throw new QueryError(
-        `Failed to find successor: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to find successor: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -25,16 +25,16 @@ export class SuccessorRepository {
   async findByUserId(userId: string): Promise<Successor[]> {
     try {
       const successors = await this.db
-        .selectFrom('successors')
+        .selectFrom("successors")
         .selectAll()
-        .where('user_id', '=', userId)
-        .orderBy('created_at', 'desc')
+        .where("user_id", "=", userId)
+        .orderBy("created_at", "desc")
         .execute();
 
       return successors;
     } catch (error) {
       throw new QueryError(
-        `Failed to find successors: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to find successors: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -43,7 +43,7 @@ export class SuccessorRepository {
   async create(data: NewSuccessor): Promise<Successor> {
     try {
       const successor = await this.db
-        .insertInto('successors')
+        .insertInto("successors")
         .values(data)
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -51,7 +51,7 @@ export class SuccessorRepository {
       return successor;
     } catch (error) {
       throw new QueryError(
-        `Failed to create successor: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to create successor: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -60,14 +60,14 @@ export class SuccessorRepository {
   async update(id: string, data: SuccessorUpdate): Promise<Successor> {
     try {
       const successor = await this.db
-        .updateTable('successors')
+        .updateTable("successors")
         .set(data)
-        .where('id', '=', id)
+        .where("id", "=", id)
         .returningAll()
         .executeTakeFirst();
 
       if (!successor) {
-        throw new NotFoundError('Successor');
+        throw new NotFoundError("Successor");
       }
 
       return successor;
@@ -76,7 +76,7 @@ export class SuccessorRepository {
         throw error;
       }
       throw new QueryError(
-        `Failed to update successor: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to update successor: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -85,19 +85,19 @@ export class SuccessorRepository {
   async delete(id: string): Promise<void> {
     try {
       const result = await this.db
-        .deleteFrom('successors')
-        .where('id', '=', id)
+        .deleteFrom("successors")
+        .where("id", "=", id)
         .executeTakeFirst();
 
       if (result.numDeletedRows === 0n) {
-        throw new NotFoundError('Successor');
+        throw new NotFoundError("Successor");
       }
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       throw new QueryError(
-        `Failed to delete successor: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to delete successor: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }

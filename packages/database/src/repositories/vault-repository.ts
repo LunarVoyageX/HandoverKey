@@ -1,6 +1,11 @@
-import { Kysely } from 'kysely';
-import { Database, VaultEntry, NewVaultEntry, VaultEntryUpdate } from '../types';
-import { NotFoundError, QueryError } from '../errors';
+import { Kysely } from "kysely";
+import {
+  Database,
+  VaultEntry,
+  NewVaultEntry,
+  VaultEntryUpdate,
+} from "../types";
+import { NotFoundError, QueryError } from "../errors";
 
 export interface VaultFilters {
   category?: string;
@@ -13,17 +18,17 @@ export class VaultRepository {
   async findById(id: string, userId: string): Promise<VaultEntry | null> {
     try {
       const entry = await this.db
-        .selectFrom('vault_entries')
+        .selectFrom("vault_entries")
         .selectAll()
-        .where('id', '=', id)
-        .where('user_id', '=', userId)
-        .where('deleted_at', 'is', null)
+        .where("id", "=", id)
+        .where("user_id", "=", userId)
+        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       return entry ?? null;
     } catch (error) {
       throw new QueryError(
-        `Failed to find vault entry: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to find vault entry: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -35,27 +40,27 @@ export class VaultRepository {
   ): Promise<VaultEntry[]> {
     try {
       let query = this.db
-        .selectFrom('vault_entries')
+        .selectFrom("vault_entries")
         .selectAll()
-        .where('user_id', '=', userId)
-        .where('deleted_at', 'is', null);
+        .where("user_id", "=", userId)
+        .where("deleted_at", "is", null);
 
       if (filters.category) {
-        query = query.where('category', '=', filters.category);
+        query = query.where("category", "=", filters.category);
       }
 
       if (filters.tag) {
         query = query.where((eb) =>
-          eb(eb.val(filters.tag), '=', eb.fn.any('tags')),
+          eb(eb.val(filters.tag), "=", eb.fn.any("tags")),
         );
       }
 
-      const entries = await query.orderBy('created_at', 'desc').execute();
+      const entries = await query.orderBy("created_at", "desc").execute();
 
       return entries;
     } catch (error) {
       throw new QueryError(
-        `Failed to find vault entries: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to find vault entries: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -64,7 +69,7 @@ export class VaultRepository {
   async create(data: NewVaultEntry): Promise<VaultEntry> {
     try {
       const entry = await this.db
-        .insertInto('vault_entries')
+        .insertInto("vault_entries")
         .values(data)
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -72,7 +77,7 @@ export class VaultRepository {
       return entry;
     } catch (error) {
       throw new QueryError(
-        `Failed to create vault entry: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to create vault entry: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -85,19 +90,19 @@ export class VaultRepository {
   ): Promise<VaultEntry> {
     try {
       const entry = await this.db
-        .updateTable('vault_entries')
+        .updateTable("vault_entries")
         .set({
           ...data,
           updated_at: new Date(),
         })
-        .where('id', '=', id)
-        .where('user_id', '=', userId)
-        .where('deleted_at', 'is', null)
+        .where("id", "=", id)
+        .where("user_id", "=", userId)
+        .where("deleted_at", "is", null)
         .returningAll()
         .executeTakeFirst();
 
       if (!entry) {
-        throw new NotFoundError('Vault entry');
+        throw new NotFoundError("Vault entry");
       }
 
       return entry;
@@ -106,7 +111,7 @@ export class VaultRepository {
         throw error;
       }
       throw new QueryError(
-        `Failed to update vault entry: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to update vault entry: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -116,22 +121,22 @@ export class VaultRepository {
     try {
       // Soft delete
       const result = await this.db
-        .updateTable('vault_entries')
+        .updateTable("vault_entries")
         .set({ deleted_at: new Date() })
-        .where('id', '=', id)
-        .where('user_id', '=', userId)
-        .where('deleted_at', 'is', null)
+        .where("id", "=", id)
+        .where("user_id", "=", userId)
+        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       if (result.numUpdatedRows === 0n) {
-        throw new NotFoundError('Vault entry');
+        throw new NotFoundError("Vault entry");
       }
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       throw new QueryError(
-        `Failed to delete vault entry: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to delete vault entry: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -140,19 +145,21 @@ export class VaultRepository {
   async getCategories(userId: string): Promise<string[]> {
     try {
       const result = await this.db
-        .selectFrom('vault_entries')
-        .select('category')
+        .selectFrom("vault_entries")
+        .select("category")
         .distinct()
-        .where('user_id', '=', userId)
-        .where('category', 'is not', null)
-        .where('deleted_at', 'is', null)
-        .orderBy('category')
+        .where("user_id", "=", userId)
+        .where("category", "is not", null)
+        .where("deleted_at", "is", null)
+        .orderBy("category")
         .execute();
 
-      return result.map((r) => r.category).filter((c): c is string => c !== null);
+      return result
+        .map((r) => r.category)
+        .filter((c): c is string => c !== null);
     } catch (error) {
       throw new QueryError(
-        `Failed to get categories: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to get categories: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -161,11 +168,11 @@ export class VaultRepository {
   async getTags(userId: string): Promise<string[]> {
     try {
       const result = await this.db
-        .selectFrom('vault_entries')
-        .select('tags')
-        .where('user_id', '=', userId)
-        .where('tags', 'is not', null)
-        .where('deleted_at', 'is', null)
+        .selectFrom("vault_entries")
+        .select("tags")
+        .where("user_id", "=", userId)
+        .where("tags", "is not", null)
+        .where("deleted_at", "is", null)
         .execute();
 
       const allTags = new Set<string>();
@@ -178,7 +185,7 @@ export class VaultRepository {
       return Array.from(allTags).sort();
     } catch (error) {
       throw new QueryError(
-        `Failed to get tags: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to get tags: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -187,16 +194,16 @@ export class VaultRepository {
   async getCount(userId: string): Promise<number> {
     try {
       const result = await this.db
-        .selectFrom('vault_entries')
-        .select((eb) => eb.fn.count<number>('id').as('count'))
-        .where('user_id', '=', userId)
-        .where('deleted_at', 'is', null)
+        .selectFrom("vault_entries")
+        .select((eb) => eb.fn.count<number>("id").as("count"))
+        .where("user_id", "=", userId)
+        .where("deleted_at", "is", null)
         .executeTakeFirstOrThrow();
 
       return Number(result.count);
     } catch (error) {
       throw new QueryError(
-        `Failed to get vault entry count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to get vault entry count: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }

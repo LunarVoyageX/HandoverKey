@@ -31,12 +31,12 @@ import type {
   ActivityLog,
   HandoverEvent,
   InactivitySettings,
-} from '@handoverkey/shared';
+} from "@handoverkey/shared";
 
 // User type
 const user: User = {
-  id: 'user-id',
-  email: 'user@example.com',
+  id: "user-id",
+  email: "user@example.com",
   twoFactorEnabled: false,
   inactivityThresholdDays: 90,
   createdAt: new Date(),
@@ -45,14 +45,14 @@ const user: User = {
 
 // Vault entry type
 const entry: VaultEntry = {
-  id: 'entry-id',
-  userId: 'user-id',
-  encryptedData: 'base64-encrypted-data',
-  iv: 'base64-iv',
-  salt: 'base64-salt',
-  algorithm: 'AES-256-GCM',
-  category: 'passwords',
-  tags: ['important', 'work'],
+  id: "entry-id",
+  userId: "user-id",
+  encryptedData: "base64-encrypted-data",
+  iv: "base64-iv",
+  salt: "base64-salt",
+  algorithm: "AES-256-GCM",
+  category: "passwords",
+  tags: ["important", "work"],
   sizeBytes: 1024,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -62,15 +62,19 @@ const entry: VaultEntry = {
 ### Validation Utilities
 
 ```typescript
-import { validateEmail, isValidUUID, sanitizeString } from '@handoverkey/shared';
+import {
+  validateEmail,
+  isValidUUID,
+  sanitizeString,
+} from "@handoverkey/shared";
 
 // Email validation
-const isValid = validateEmail('user@example.com'); // true
-const isInvalid = validateEmail('invalid-email'); // false
+const isValid = validateEmail("user@example.com"); // true
+const isInvalid = validateEmail("invalid-email"); // false
 
 // UUID validation
-const isValidId = isValidUUID('123e4567-e89b-12d3-a456-426614174000'); // true
-const isInvalidId = isValidUUID('not-a-uuid'); // false
+const isValidId = isValidUUID("123e4567-e89b-12d3-a456-426614174000"); // true
+const isInvalidId = isValidUUID("not-a-uuid"); // false
 
 // String sanitization
 const clean = sanitizeString('<script>alert("xss")</script>'); // 'alert("xss")'
@@ -84,7 +88,7 @@ import {
   MAX_VAULT_ENTRY_SIZE_BYTES,
   SUPPORTED_ALGORITHMS,
   ActivityAction,
-} from '@handoverkey/shared';
+} from "@handoverkey/shared";
 
 // Constants
 console.log(DEFAULT_INACTIVITY_THRESHOLD_DAYS); // 90
@@ -165,17 +169,17 @@ interface InactivitySettings {
 
 ```typescript
 enum ActivityAction {
-  LOGIN = 'LOGIN',
-  LOGOUT = 'LOGOUT',
-  REGISTER = 'REGISTER',
-  VAULT_ACCESS = 'VAULT_ACCESS',
-  VAULT_CREATE = 'VAULT_CREATE',
-  VAULT_UPDATE = 'VAULT_UPDATE',
-  VAULT_DELETE = 'VAULT_DELETE',
-  SETTINGS_ACCESS = 'SETTINGS_ACCESS',
-  SETTINGS_UPDATE = 'SETTINGS_UPDATE',
-  PROFILE_ACCESS = 'PROFILE_ACCESS',
-  CHECK_IN = 'CHECK_IN',
+  LOGIN = "LOGIN",
+  LOGOUT = "LOGOUT",
+  REGISTER = "REGISTER",
+  VAULT_ACCESS = "VAULT_ACCESS",
+  VAULT_CREATE = "VAULT_CREATE",
+  VAULT_UPDATE = "VAULT_UPDATE",
+  VAULT_DELETE = "VAULT_DELETE",
+  SETTINGS_ACCESS = "SETTINGS_ACCESS",
+  SETTINGS_UPDATE = "SETTINGS_UPDATE",
+  PROFILE_ACCESS = "PROFILE_ACCESS",
+  CHECK_IN = "CHECK_IN",
 }
 ```
 
@@ -186,14 +190,16 @@ enum ActivityAction {
 Validates email format using RFC 5322 compliant regex.
 
 **Parameters:**
+
 - `email: string` - Email address to validate
 
 **Returns:** `boolean` - True if valid email format
 
 **Example:**
+
 ```typescript
-validateEmail('user@example.com'); // true
-validateEmail('invalid'); // false
+validateEmail("user@example.com"); // true
+validateEmail("invalid"); // false
 ```
 
 #### `isValidUUID(uuid: string): boolean`
@@ -201,14 +207,16 @@ validateEmail('invalid'); // false
 Validates UUID v4 format.
 
 **Parameters:**
+
 - `uuid: string` - UUID to validate
 
 **Returns:** `boolean` - True if valid UUID v4
 
 **Example:**
+
 ```typescript
-isValidUUID('123e4567-e89b-12d3-a456-426614174000'); // true
-isValidUUID('not-a-uuid'); // false
+isValidUUID("123e4567-e89b-12d3-a456-426614174000"); // true
+isValidUUID("not-a-uuid"); // false
 ```
 
 #### `sanitizeString(input: string): string`
@@ -216,14 +224,16 @@ isValidUUID('not-a-uuid'); // false
 Sanitizes string by removing HTML tags and dangerous characters.
 
 **Parameters:**
+
 - `input: string` - String to sanitize
 
 **Returns:** `string` - Sanitized string
 
 **Example:**
+
 ```typescript
 sanitizeString('<script>alert("xss")</script>'); // 'alert("xss")'
-sanitizeString('Hello <b>World</b>'); // 'Hello World'
+sanitizeString("Hello <b>World</b>"); // 'Hello World'
 ```
 
 ### Constants

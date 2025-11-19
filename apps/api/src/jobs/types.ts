@@ -1,6 +1,6 @@
 /**
  * Job type definitions
- * 
+ *
  * Defines all background job types and their data structures
  */
 
@@ -10,18 +10,18 @@
  */
 export enum JobType {
   // Inactivity monitoring
-  INACTIVITY_CHECK = 'inactivity:check',
-  
+  INACTIVITY_CHECK = "inactivity:check",
+
   // Notifications
-  SEND_REMINDER = 'notification:reminder',
-  SEND_WARNING = 'notification:warning',
-  
+  SEND_REMINDER = "notification:reminder",
+  SEND_WARNING = "notification:warning",
+
   // Handover
-  EXECUTE_HANDOVER = 'handover:execute',
-  
+  EXECUTE_HANDOVER = "handover:execute",
+
   // Maintenance
-  CLEANUP_SESSIONS = 'maintenance:cleanup-sessions',
-  ARCHIVE_LOGS = 'maintenance:archive-logs',
+  CLEANUP_SESSIONS = "maintenance:cleanup-sessions",
+  ARCHIVE_LOGS = "maintenance:archive-logs",
 }
 
 /**
@@ -45,7 +45,7 @@ export interface InactivityCheckJobData extends BaseJobData {
  */
 export interface SendReminderJobData extends BaseJobData {
   userId: string;
-  level: 'info' | 'warning' | 'critical';
+  level: "info" | "warning" | "critical";
   daysRemaining: number;
   thresholdDays: number;
 }
@@ -56,7 +56,7 @@ export interface SendReminderJobData extends BaseJobData {
 export interface SendWarningJobData extends BaseJobData {
   userId: string;
   email: string;
-  warningType: 'inactivity' | 'handover_pending';
+  warningType: "inactivity" | "handover_pending";
   details: Record<string, unknown>;
 }
 
@@ -65,7 +65,7 @@ export interface SendWarningJobData extends BaseJobData {
  */
 export interface ExecuteHandoverJobData extends BaseJobData {
   userId: string;
-  reason: 'inactivity' | 'manual';
+  reason: "inactivity" | "manual";
 }
 
 /**
@@ -80,7 +80,7 @@ export interface CleanupSessionsJobData extends BaseJobData {
  */
 export interface ArchiveLogsJobData extends BaseJobData {
   olderThanDays: number;
-  logType: 'activity' | 'audit' | 'all';
+  logType: "activity" | "audit" | "all";
 }
 
 /**
@@ -112,7 +112,7 @@ export interface JobOptions {
   delay?: number;
   attempts?: number;
   backoff?: {
-    type: 'fixed' | 'exponential';
+    type: "fixed" | "exponential";
     delay: number;
   };
   repeat?: {

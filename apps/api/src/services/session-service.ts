@@ -43,12 +43,15 @@ export class SessionService {
           userId: options.userId,
           expiresAt: options.expiresAt,
         },
-        "Session created"
+        "Session created",
       );
 
       return session.id;
     } catch (error) {
-      logger.error({ error, userId: options.userId }, "Failed to create session");
+      logger.error(
+        { error, userId: options.userId },
+        "Failed to create session",
+      );
       throw error;
     }
   }
@@ -90,7 +93,7 @@ export class SessionService {
       if (!session) {
         logger.warn(
           { sessionId: payload.sessionId, userId: payload.userId },
-          "Session not found or expired"
+          "Session not found or expired",
         );
         return false;
       }
@@ -103,7 +106,7 @@ export class SessionService {
             sessionUserId: session.user_id,
             payloadUserId: payload.userId,
           },
-          "Session user mismatch"
+          "Session user mismatch",
         );
         return false;
       }
@@ -119,8 +122,12 @@ export class SessionService {
       // Validate email matches (server-side check)
       if (user.email !== payload.email) {
         logger.warn(
-          { userId: payload.userId, sessionEmail: payload.email, userEmail: user.email },
-          "Email mismatch"
+          {
+            userId: payload.userId,
+            sessionEmail: payload.email,
+            userEmail: user.email,
+          },
+          "Email mismatch",
         );
         return false;
       }
@@ -130,7 +137,10 @@ export class SessionService {
 
       return true;
     } catch (error) {
-      logger.error({ error, userId: payload.userId }, "Session validation error");
+      logger.error(
+        { error, userId: payload.userId },
+        "Session validation error",
+      );
       return false;
     }
   }
