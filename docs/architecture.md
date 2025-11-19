@@ -500,10 +500,10 @@ const rateLimit = rateLimit({
 
 ### 10.1 Compliance Framework
 
-- **SOC 2 Type II**: Annual audit and certification
-- **GDPR**: Data protection and privacy compliance
-- **CCPA**: California privacy law compliance
-- **ISO 27001**: Information security management
+- **SOC 2 Type II**: Architecture designed to support SOC 2 controls (Audit Logging, Access Control)
+- **GDPR**: Data protection and privacy compliance features (Right to Erasure, Data Portability)
+- **CCPA**: California privacy law compliance support
+- **ISO 27001**: Aligned with information security management standards
 
 ### 10.2 Audit Trail
 
@@ -527,8 +527,8 @@ const createAuditLog = async (log: AuditLog): Promise<void> => {
   log.hash = await generateHash(log);
   await auditService.create(log);
 
-  // Also store in blockchain for immutability
-  await blockchainService.store(log);
+  // Future: Store in blockchain for immutability
+  // await blockchainService.store(log);
 };
 ```
 

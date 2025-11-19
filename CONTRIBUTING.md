@@ -117,8 +117,8 @@ If you're looking to make your first contribution, look for issues labeled `good
 
 6.  **Start all development services:**
     ```bash
-    chmod +x scripts/start-all.sh
-    ./scripts/start-all.sh
+    chmod +x scripts/dev.sh
+    ./scripts/dev.sh
     ```
     This script will typically start the API server, web application, etc.
 
@@ -189,7 +189,7 @@ handoverkey/
 
 ## 5. Security Policy
 
-If you discover a security vulnerability, please report it responsibly. Do NOT open a public issue. Instead, please email us at `security@handoverkey.com`. We will acknowledge your email within 24 hours and provide a more detailed response within 48 hours.
+Please see our [Security Policy](SECURITY.md) for details on how to report vulnerabilities.
 
 ## 6. License
 

@@ -60,8 +60,8 @@ This guide provides instructions for deploying the HandoverKey project. It cover
 6. **Start all application services:**
 
    ```bash
-   chmod +x scripts/start-all.sh
-   ./scripts/start-all.sh
+   chmod +x scripts/dev.sh
+   ./scripts/dev.sh
    ```
 
    This script will typically build and start the `api`, `web`, `mobile` (development server), and `cli` (if applicable) services.
@@ -74,8 +74,11 @@ This guide provides instructions for deploying the HandoverKey project. It cover
 To stop all running Docker containers and Node.js processes:
 
 ```bash
-chmod +x scripts/stop-all.sh
-./scripts/stop-all.sh
+```bash
+# If running with docker-compose
+docker-compose down
+
+# If running dev.sh, simply Ctrl+C in the terminal
 ```
 
 ## 3. Staging Environment Deployment
@@ -181,5 +184,5 @@ Production deployment requires robust infrastructure, security, and monitoring.
 
 ---
 
-**Last Updated**: Aug 24, 2025
+**Last Updated**: Nov 19, 2025
 **Version**: 1.0

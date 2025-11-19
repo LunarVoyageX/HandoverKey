@@ -4,10 +4,10 @@ Simple testing approach for HandoverKey MVP.
 
 ## Philosophy
 
-- **Test what matters**: Core functionality only
-- **Keep it simple**: Basic unit tests for critical paths
-- **No over-engineering**: Avoid complex mocking and edge cases
-- **Fast feedback**: Tests should run quickly
+- **Security First**: rigorous testing of encryption, authentication, and authorization
+- **Test what matters**: Core functionality and critical user paths
+- **Reliability**: Integration tests for database and queue interactions
+- **Fast feedback**: Unit tests should run quickly, integration tests should be reliable
 
 ## Running Tests
 
@@ -46,14 +46,14 @@ npm run lint
 
 ## What We Test
 
-### ✅ Essential Tests
+### Essential Tests
 
 - **Encryption/Decryption**: Core security functionality
 - **Validation**: Email, UUID, input validation
 - **Authentication**: Login/logout flows
 - **Critical Components**: Main user interfaces
 
-### ❌ What We Don't Test (Yet)
+### What We Don't Test (Yet)
 
 - Edge cases and error scenarios
 - Performance and load testing
@@ -116,11 +116,12 @@ describe("validateEmail", () => {
 Simple GitHub Actions workflow:
 
 1. Install dependencies
-2. Run linting
-3. Build all packages
-4. Run tests
+2. Start Services (PostgreSQL, Redis)
+3. Run linting
+4. Build all packages
+5. Run tests
 
-No complex test environments or databases in CI for MVP.
+We use GitHub Actions service containers to provide ephemeral database and cache instances for integration testing.
 
 ## Adding Tests
 

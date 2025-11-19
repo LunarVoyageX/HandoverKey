@@ -86,7 +86,7 @@ npm test -- --coverage
 - Input validation, rate limiting, security headers
 - Full audit logging
 
-See [Security Model](docs/security.md) for details.
+See [Security Policy](SECURITY.md) for reporting vulnerabilities and [Security Model](docs/security.md) for technical details.
 
 ## Observability
 
@@ -103,6 +103,8 @@ See [Security Model](docs/security.md) for details.
 - [Deployment Guide](docs/deployment.md) - Production deployment
 - [Testing Guide](docs/testing.md) - Testing strategy and guidelines
 - [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
+- [Code of Conduct](CODE_OF_CONDUCT.md) - Community standards
+- [Changelog](CHANGELOG.md) - Version history
 
 ## Development
 

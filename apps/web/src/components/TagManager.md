@@ -4,13 +4,13 @@ A reusable React component for managing tags with autocomplete, keyboard navigat
 
 ## Features
 
-- ✅ **Add/Remove Tags**: Click to add, click × to remove
-- ✅ **Duplicate Prevention**: Prevents adding duplicate tags
-- ✅ **Autocomplete**: Shows suggestions based on existing tags
-- ✅ **Keyboard Navigation**: Full keyboard support with arrow keys
-- ✅ **Max Tags Limit**: Optional limit on number of tags
-- ✅ **Accessibility**: WCAG 2.1 AA compliant with ARIA labels
-- ✅ **Responsive**: Works on mobile and desktop
+- **Add/Remove Tags**: Click to add, click × to remove
+- **Duplicate Prevention**: Prevents adding duplicate tags
+- **Autocomplete**: Shows suggestions based on existing tags
+- **Keyboard Navigation**: Full keyboard support with arrow keys
+- **Max Tags Limit**: Optional limit on number of tags
+- **Accessibility**: WCAG 2.1 AA compliant with ARIA labels
+- **Responsive**: Works on mobile and desktop
 
 ## Usage
 

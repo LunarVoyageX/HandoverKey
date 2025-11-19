@@ -4,6 +4,17 @@
   "description": "Backend API server for HandoverKey",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/handoverkey/handoverkey.git",
+    "directory": "apps/api"
+  },
+  "author": "HandoverKey Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/handoverkey/handoverkey/issues"
+  },
+  "homepage": "https://handoverkey.com",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",

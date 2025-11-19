@@ -3,6 +3,17 @@
   "version": "1.0.0",
   "description": "React web application for HandoverKey",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/handoverkey/handoverkey.git",
+    "directory": "apps/web"
+  },
+  "author": "HandoverKey Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/handoverkey/handoverkey/issues"
+  },
+  "homepage": "https://handoverkey.com",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -14,20 +25,20 @@
   "dependencies": {
     "@heroicons/react": "^2.1.5",
     "@tanstack/react-query": "^5.90.5",
-    "autoprefixer": "^10.4.20",
     "axios": "^1.12.2",
     "clsx": "^2.1.1",
     "@handoverkey/crypto": "*",
-    "postcss": "^8.4.47",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.65.0",
     "react-router-dom": "^6.26.2",
-    "tailwindcss": "^3.4.13",
     "zustand": "^5.0.8",
     "@handoverkey/shared": "*"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.5.2",

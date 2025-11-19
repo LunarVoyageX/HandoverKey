@@ -436,5 +436,5 @@ A GraphQL API will be provided for more flexible data querying.
 
 ---
 
-**Last Updated**: July 26, 2025
+**Last Updated**: Nov 19, 2025
 **Version**: 1.0

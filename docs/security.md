@@ -171,5 +171,5 @@ While HandoverKey employs state-of-the-art security measures, no system is entir
 
 ---
 
-**Last Updated**: July 26, 2025
+**Last Updated**: Nov 19, 2025
 **Version**: 1.0
