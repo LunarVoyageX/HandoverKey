@@ -3,7 +3,7 @@ import { JWTPayload } from "../auth/jwt";
 import { UserService } from "./user-service";
 import { SessionRepository } from "@handoverkey/database";
 import { DatabaseClient } from "@handoverkey/database";
-import { AuthenticationError } from "../errors";
+
 import { logger } from "../config/logger";
 
 export interface CreateSessionOptions {

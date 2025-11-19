@@ -37,7 +37,7 @@ export class AccountLockoutService {
   ): Promise<LockoutStatus> {
     const redis = getRedisClient();
     const attemptKey = this.getAttemptKey(userId);
-    const lockKey = this.getLockKey(userId);
+
 
     try {
       // Increment attempt counter
