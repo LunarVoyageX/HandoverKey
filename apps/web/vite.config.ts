@@ -11,6 +11,14 @@ export default defineConfig({
         __dirname,
         "../../packages/shared/src",
       ),
+      "@handoverkey/crypto": path.resolve(
+        __dirname,
+        "../../packages/crypto/src",
+      ),
+      "@handoverkey/database": path.resolve(
+        __dirname,
+        "../../packages/database/src",
+      ),
     },
   },
   server: {

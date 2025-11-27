@@ -1,5 +1,8 @@
 import { Response } from "express";
-import { InactivityService } from "../services/inactivity-service";
+import {
+  InactivityService,
+  InactivitySettings,
+} from "../services/inactivity-service";
 import { UserService } from "../services/user-service";
 import { AuthenticatedRequest } from "../middleware/auth";
 
@@ -40,8 +43,7 @@ export class InactivityController {
         return;
       }
 
-      // Data is already validated and sanitized by Zod middleware
-      const updates = req.body;
+      const updates = req.body as Partial<InactivitySettings>;
       const settings = await InactivityService.updateSettings(userId, updates);
 
       // Log the activity

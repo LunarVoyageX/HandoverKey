@@ -1,8 +1,69 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import InactivitySettingsModal from "../components/InactivitySettingsModal";
+import SessionManager from "../components/SessionManager";
+import SuccessorManagement from "../components/SuccessorManagement";
+import { inactivityApi, InactivitySettings } from "../services/inactivity";
+import { successorApi, Successor } from "../services/successor";
+import { vaultApi } from "../services/vault";
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showSuccessorModal, setShowSuccessorModal] = useState(false);
+  const [settings, setSettings] = useState<InactivitySettings | null>(null);
+  const [successors, setSuccessors] = useState<Successor[]>([]);
+  const [vaultCount, setVaultCount] = useState<number>(0);
+  const [checkingIn, setCheckingIn] = useState(false);
+
+  useEffect(() => {
+    fetchSettings();
+    fetchSuccessors();
+    fetchVaultCount();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const data = await inactivityApi.getSettings();
+      setSettings(data);
+    } catch (error) {
+      console.error("Failed to fetch settings:", error);
+    }
+  };
+
+  const fetchSuccessors = async () => {
+    try {
+      const data = await successorApi.getSuccessors();
+      setSuccessors(data);
+    } catch (error) {
+      console.error("Failed to fetch successors:", error);
+    }
+  };
+
+  const fetchVaultCount = async () => {
+    try {
+      const entries = await vaultApi.getEntries();
+      setVaultCount(entries.length);
+    } catch (error) {
+      console.error("Failed to fetch vault count:", error);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    try {
+      setCheckingIn(true);
+      await inactivityApi.checkIn();
+      await fetchSettings(); // Refresh settings to update last check-in
+      window.alert("Check-in successful!");
+    } catch (error) {
+      console.error("Check-in failed:", error);
+      window.alert("Check-in failed. Please try again.");
+    } finally {
+      setCheckingIn(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,15 +79,20 @@ const Dashboard: React.FC = () => {
           </h3>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-gray-600">Encrypted entries:</span>
-              <span className="font-medium">0</span>
+              <span className="text-gray-600">Total entries:</span>
+              <span className="font-medium">{vaultCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Total size:</span>
-              <span className="font-medium">0 MB</span>
+              <span className="text-gray-600">Encrypted:</span>
+              <span className="font-medium text-green-600">✓ Yes</span>
             </div>
           </div>
-          <button className="mt-4 btn-primary w-full">Add New Entry</button>
+          <button
+            onClick={() => navigate("/vault")}
+            className="mt-4 btn-primary w-full"
+          >
+            {vaultCount > 0 ? "Manage Vault" : "Add New Entry"}
+          </button>
         </div>
 
         <div className="card">
@@ -34,14 +100,21 @@ const Dashboard: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600">Trusted contacts:</span>
-              <span className="font-medium">0</span>
+              <span className="font-medium">{successors.length}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Verified:</span>
-              <span className="font-medium">0</span>
+              <span className="font-medium">
+                {successors.filter((s) => s.verified).length}
+              </span>
             </div>
           </div>
-          <button className="mt-4 btn-primary w-full">Manage Successors</button>
+          <button
+            onClick={() => setShowSuccessorModal(true)}
+            className="mt-4 btn-primary w-full"
+          >
+            Manage Successors
+          </button>
         </div>
 
         <div className="card">
@@ -51,20 +124,52 @@ const Dashboard: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600">Inactivity period:</span>
-              <span className="font-medium">90 days</span>
+              <span className="font-medium">
+                {settings ? `${settings.thresholdDays} days` : "Loading..."}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Status:</span>
-              <span className="font-medium text-green-600">Active</span>
+              <span
+                className={`font-medium ${
+                  settings?.isPaused ? "text-yellow-600" : "text-green-600"
+                }`}
+              >
+                {settings
+                  ? settings.isPaused
+                    ? "Paused"
+                    : "Active"
+                  : "Loading..."}
+              </span>
             </div>
+            {settings?.nextCheckInDeadline && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Next Deadline:</span>
+                <span className="font-medium text-sm">
+                  {new Date(settings.nextCheckInDeadline).toLocaleDateString()}
+                </span>
+              </div>
+            )}
           </div>
-          <button className="mt-4 btn-secondary w-full">
-            Configure Settings
-          </button>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="btn-secondary flex-1"
+            >
+              Configure
+            </button>
+            <button
+              onClick={handleCheckIn}
+              disabled={checkingIn}
+              className="btn-primary flex-1"
+            >
+              {checkingIn ? "..." : "Check In"}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Recent Activity
@@ -73,6 +178,10 @@ const Dashboard: React.FC = () => {
             <p>No recent activity</p>
             <p className="text-sm mt-2">Your vault activity will appear here</p>
           </div>
+        </div>
+
+        <div className="card">
+          <SessionManager />
         </div>
       </div>
 
@@ -108,6 +217,25 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showSettingsModal && (
+        <InactivitySettingsModal
+          onClose={() => setShowSettingsModal(false)}
+          onSave={() => {
+            setShowSettingsModal(false);
+            fetchSettings();
+          }}
+        />
+      )}
+
+      {showSuccessorModal && (
+        <SuccessorManagement
+          onClose={() => {
+            setShowSuccessorModal(false);
+            fetchSuccessors();
+          }}
+        />
+      )}
     </div>
   );
 };

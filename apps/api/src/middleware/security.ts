@@ -37,9 +37,19 @@ export const rateLimiter = rateLimit({
 
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  max: process.env.NODE_ENV === "development" ? 1000 : 5, // limit each IP to 5 requests per windowMs (1000 in dev)
   message: {
     error: "Too many authentication attempts, please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const registerRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: process.env.NODE_ENV === "development" ? 1000 : 20, // limit each IP to 20 requests per windowMs (1000 in dev)
+  message: {
+    error: "Too many accounts created from this IP, please try again later.",
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -319,14 +329,18 @@ export const sanitizeInput = (
       req.body = sanitizeObject(req.body);
     }
 
-    // Sanitize query parameters
-    if (req.query) {
-      req.query = sanitizeObject(req.query);
+    // Sanitize query parameters (these are read-only so we need to modify in place)
+    if (req.query && typeof req.query === "object") {
+      const sanitized = sanitizeObject(req.query);
+      Object.keys(req.query).forEach((key) => delete (req.query as any)[key]);
+      Object.assign(req.query, sanitized);
     }
 
-    // Sanitize URL parameters
-    if (req.params) {
-      req.params = sanitizeObject(req.params);
+    // Sanitize URL parameters (these are read-only so we need to modify in place)
+    if (req.params && typeof req.params === "object") {
+      const sanitized = sanitizeObject(req.params);
+      Object.keys(req.params).forEach((key) => delete (req.params as any)[key]);
+      Object.assign(req.params, sanitized);
     }
 
     next();

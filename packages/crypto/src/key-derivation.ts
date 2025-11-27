@@ -71,7 +71,8 @@ export async function deriveKey(
 
     // Import derived bits as AES-GCM key
     // Make extractable in test environment for verification
-    const extractable = process.env.NODE_ENV === "test";
+    const extractable =
+      typeof process !== "undefined" && process.env.NODE_ENV === "test";
     const key = await crypto.subtle.importKey(
       "raw",
       derivedBits,

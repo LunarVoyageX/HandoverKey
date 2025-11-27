@@ -138,6 +138,7 @@ export class NotificationService implements INotificationService {
   async sendHandoverAlert(
     userId: string,
     successors: string[],
+    handoverProcessId?: string,
   ): Promise<NotificationResult[]> {
     const results: NotificationResult[] = [];
 
@@ -170,6 +171,7 @@ export class NotificationService implements INotificationService {
           recipient: successor.email,
           status: result.status,
           errorMessage: result.errorMessage,
+          handoverProcessId,
         });
 
         results.push({
@@ -477,6 +479,7 @@ The HandoverKey Team
     recipient: string;
     status: DeliveryStatus;
     errorMessage?: string;
+    handoverProcessId?: string;
   }): Promise<void> {
     const deliveryRepo =
       NotificationService.getNotificationDeliveryRepository();
@@ -487,6 +490,7 @@ The HandoverKey Team
       recipient: delivery.recipient,
       status: delivery.status,
       error_message: delivery.errorMessage ?? null,
+      handover_process_id: delivery.handoverProcessId,
     });
   }
 }

@@ -70,8 +70,14 @@ const httpLogger = pinoHttp({
     res: (res) => ({
       statusCode: res.statusCode,
       headers: {
-        "content-type": res.getHeader("content-type"),
-        "content-length": res.getHeader("content-length"),
+        "content-type":
+          typeof res.getHeader === "function"
+            ? res.getHeader("content-type")
+            : undefined,
+        "content-length":
+          typeof res.getHeader === "function"
+            ? res.getHeader("content-length")
+            : undefined,
       },
     }),
   },

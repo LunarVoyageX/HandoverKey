@@ -1,7 +1,9 @@
 import {
   getDatabaseClient,
   HandoverProcessRepository,
+  SuccessorRepository,
 } from "@handoverkey/database";
+import { NotificationService } from "./notification-service";
 
 export interface HandoverProcess {
   id: string;
@@ -19,6 +21,11 @@ export class HandoverService {
   private static getHandoverProcessRepository(): HandoverProcessRepository {
     const dbClient = getDatabaseClient();
     return new HandoverProcessRepository(dbClient.getKysely());
+  }
+
+  private static getSuccessorRepository(): SuccessorRepository {
+    const dbClient = getDatabaseClient();
+    return new SuccessorRepository(dbClient.getKysely());
   }
 
   /**
@@ -44,6 +51,20 @@ export class HandoverService {
       initiated_at: now,
       grace_period_ends: gracePeriodEnds,
     });
+
+    // Notify successors
+    const successorRepo = this.getSuccessorRepository();
+    const successors = await successorRepo.findByUserId(userId);
+    const successorIds = successors.map((s) => s.id);
+
+    if (successorIds.length > 0) {
+      const notificationService = new NotificationService();
+      await notificationService.sendHandoverAlert(
+        userId,
+        successorIds,
+        dbProcess.id,
+      );
+    }
 
     return this.mapHandoverFromDb(dbProcess);
   }

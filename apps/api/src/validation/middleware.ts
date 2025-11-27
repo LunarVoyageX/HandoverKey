@@ -254,7 +254,17 @@ export function validateRequest<T extends ZodSchema>(
       const validatedData = await schema.parseAsync(sanitizedData);
 
       // Replace the request data with validated and sanitized data
-      req[target] = validatedData as (typeof req)[typeof target];
+      // Use Object.defineProperty for query params since req.query is read-only
+      if (target === "query") {
+        Object.defineProperty(req, "query", {
+          value: validatedData,
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
+      } else {
+        req[target] = validatedData as (typeof req)[typeof target];
+      }
 
       next();
     } catch (error) {
@@ -310,7 +320,18 @@ export function validateMultiple(
           const dataToValidate = req[target];
           const sanitizedData = sanitizeValue(dataToValidate);
           const validatedData = await schema.parseAsync(sanitizedData);
-          req[target] = validatedData as (typeof req)[typeof target];
+
+          // Use Object.defineProperty for query params since req.query is read-only
+          if (target === "query") {
+            Object.defineProperty(req, "query", {
+              value: validatedData,
+              writable: true,
+              enumerable: true,
+              configurable: true,
+            });
+          } else {
+            req[target] = validatedData as (typeof req)[typeof target];
+          }
         } catch (error) {
           if (error instanceof ZodError) {
             errors.push(...formatZodError(error));

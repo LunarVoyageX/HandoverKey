@@ -12,6 +12,7 @@ export const UpdateInactivitySettingsSchema = z
       .max(365, "Threshold must be at most 365 days")
       .optional(),
     requireMajority: z.boolean().optional(),
+    warningDays: z.number().int().optional(),
     isPaused: z.boolean().optional(),
     notificationPreferences: z
       .object({

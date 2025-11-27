@@ -18,7 +18,11 @@ export const CreateVaultEntrySchema = z.object({
     .string()
     .min(1, "IV is required")
     .regex(base64Regex, "IV must be valid base64")
-    .length(24, "IV must be 24 characters (16 bytes base64)"), // 16 bytes = 24 chars in base64
+    .length(16, "IV must be 16 characters (12 bytes base64)"), // 12 bytes = 16 chars in base64
+  salt: z
+    .string()
+    .min(1, "Salt is required")
+    .regex(base64Regex, "Salt must be valid base64"),
   algorithm: z
     .literal("AES-GCM")
     .or(z.literal("AES-256-GCM"))

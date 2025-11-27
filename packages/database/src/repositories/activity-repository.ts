@@ -1,22 +1,38 @@
 import { Kysely } from "kysely";
-import { Database, ActivityLog, NewActivityLog } from "../types";
+import { Database, ActivityRecord, NewActivityRecord } from "../types";
 import { QueryError } from "../errors";
 
 export class ActivityRepository {
   constructor(private db: Kysely<Database>) {}
 
-  async create(data: NewActivityLog): Promise<ActivityLog> {
+  async create(
+    data: Omit<NewActivityRecord, "signature" | "client_type"> & {
+      action?: string;
+      success?: boolean;
+    },
+  ): Promise<ActivityRecord> {
     try {
-      const log = await this.db
-        .insertInto("activity_logs")
-        .values(data)
+      // Map legacy fields if present
+      const activityType = data.activity_type || data.action || "UNKNOWN";
+
+      const record = await this.db
+        .insertInto("activity_records")
+        .values({
+          user_id: data.user_id,
+          activity_type: activityType,
+          ip_address: data.ip_address,
+          user_agent: data.user_agent,
+          metadata: data.metadata,
+          client_type: "web",
+          signature: "pending-implementation", // TODO: Implement HMAC signature
+        })
         .returningAll()
         .executeTakeFirstOrThrow();
 
-      return log;
+      return record;
     } catch (error) {
       throw new QueryError(
-        `Failed to create activity log: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Failed to create activity record: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -26,10 +42,10 @@ export class ActivityRepository {
     userId: string,
     limit: number = 100,
     offset: number = 0,
-  ): Promise<ActivityLog[]> {
+  ): Promise<ActivityRecord[]> {
     try {
       const logs = await this.db
-        .selectFrom("activity_logs")
+        .selectFrom("activity_records")
         .selectAll()
         .where("user_id", "=", userId)
         .orderBy("created_at", "desc")
@@ -40,7 +56,7 @@ export class ActivityRepository {
       return logs;
     } catch (error) {
       throw new QueryError(
-        `Failed to find activity logs: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Failed to find activity records: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
@@ -50,13 +66,13 @@ export class ActivityRepository {
     userId: string,
     action: string,
     limit: number = 100,
-  ): Promise<ActivityLog[]> {
+  ): Promise<ActivityRecord[]> {
     try {
       const logs = await this.db
-        .selectFrom("activity_logs")
+        .selectFrom("activity_records")
         .selectAll()
         .where("user_id", "=", userId)
-        .where("action", "=", action)
+        .where("activity_type", "=", action)
         .orderBy("created_at", "desc")
         .limit(limit)
         .execute();
@@ -64,20 +80,22 @@ export class ActivityRepository {
       return logs;
     } catch (error) {
       throw new QueryError(
-        `Failed to find activity logs by action: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Failed to find activity records by action: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }
   }
 
-  async findFailedLogins(userId: string, since: Date): Promise<ActivityLog[]> {
+  async findFailedLogins(
+    userId: string,
+    since: Date,
+  ): Promise<ActivityRecord[]> {
     try {
       const logs = await this.db
-        .selectFrom("activity_logs")
+        .selectFrom("activity_records")
         .selectAll()
         .where("user_id", "=", userId)
-        .where("action", "=", "login")
-        .where("success", "=", false)
+        .where("activity_type", "like", "LOGIN_FAILED%")
         .where("created_at", ">=", since)
         .orderBy("created_at", "desc")
         .execute();
@@ -94,14 +112,14 @@ export class ActivityRepository {
   async deleteOlderThan(date: Date): Promise<number> {
     try {
       const result = await this.db
-        .deleteFrom("activity_logs")
+        .deleteFrom("activity_records")
         .where("created_at", "<", date)
         .executeTakeFirst();
 
       return Number(result.numDeletedRows);
     } catch (error) {
       throw new QueryError(
-        `Failed to delete old activity logs: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Failed to delete old activity records: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }

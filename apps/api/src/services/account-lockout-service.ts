@@ -38,7 +38,6 @@ export class AccountLockoutService {
     const redis = getRedisClient();
     const attemptKey = this.getAttemptKey(userId);
 
-
     try {
       // Increment attempt counter
       const attempts = await redis.incr(attemptKey);

@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "@types/nodemailer": "^7.0.4",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
     "eslint": "^9.39.1",
@@ -51,5 +52,9 @@
   "bugs": {
     "url": "https://github.com/handoverkey/handoverkey/issues"
   },
-  "homepage": "https://handoverkey.com"
+  "homepage": "https://handoverkey.com",
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.10"
+  }
 }

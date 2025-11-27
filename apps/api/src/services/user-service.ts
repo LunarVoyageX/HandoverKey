@@ -133,16 +133,20 @@ export class UserService {
     activityType: string,
     ipAddress?: string,
   ): Promise<void> {
-    const activityRepo = this.getActivityRepository();
-    await activityRepo.create({
-      user_id: userId,
-      action: activityType,
-      ip_address: ipAddress,
-      success: true,
-    });
+    try {
+      const activityRepo = this.getActivityRepository();
+      await activityRepo.create({
+        user_id: userId,
+        activity_type: activityType,
+        ip_address: ipAddress,
+      });
 
-    // Also update user's last_activity
-    await this.updateLastActivity(userId);
+      // Also update user's last_activity
+      await this.updateLastActivity(userId);
+    } catch (error) {
+      // Log the error but don't throw - activity logging should not block critical operations
+      console.error("Failed to log activity:", error);
+    }
   }
 
   static async verifyEmail(userId: string): Promise<void> {

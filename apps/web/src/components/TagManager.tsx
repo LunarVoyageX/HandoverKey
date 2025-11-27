@@ -33,8 +33,6 @@ const TagManager: React.FC<TagManagerProps> = ({
     )
     .slice(0, 10); // Limit to 10 suggestions for performance
 
-
-
   const addTag = (tagToAdd: string) => {
     const trimmedTag = tagToAdd.trim();
 
@@ -191,10 +189,11 @@ const TagManager: React.FC<TagManagerProps> = ({
                   key={suggestion}
                   type="button"
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none ${index === selectedSuggestionIndex
-                    ? "bg-blue-50 text-blue-900"
-                    : ""
-                    }`}
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none ${
+                    index === selectedSuggestionIndex
+                      ? "bg-blue-50 text-blue-900"
+                      : ""
+                  }`}
                   role="option"
                   aria-selected={index === selectedSuggestionIndex}
                 >

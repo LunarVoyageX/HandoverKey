@@ -21,6 +21,7 @@ import vaultRoutes from "./routes/vault-routes";
 import activityRoutes from "./routes/activity-routes";
 import inactivityRoutes from "./routes/inactivity-routes";
 import sessionRoutes from "./routes/session-routes";
+import successorRoutes from "./routes/successor-routes";
 import adminRoutes from "./routes/admin-routes";
 import { JobProcessor, JobScheduler } from "./jobs";
 import { closeAllQueues } from "./config/queue";
@@ -147,6 +148,7 @@ app.use("/api/v1/vault", vaultRoutes);
 app.use("/api/v1/activity", activityRoutes);
 app.use("/api/v1/inactivity", inactivityRoutes);
 app.use("/api/v1/sessions", sessionRoutes);
+app.use("/api/v1/successors", successorRoutes);
 app.use("/api/v1/admin", adminRoutes);
 
 // 404 handler - must be after all routes

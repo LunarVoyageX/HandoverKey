@@ -30,6 +30,7 @@ export interface VaultEntry {
   id: string;
   userId: string;
   encryptedData: EncryptedData;
+  salt?: string;
   category?: string;
   tags?: string[];
   version: number;

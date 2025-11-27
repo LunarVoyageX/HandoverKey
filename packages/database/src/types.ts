@@ -62,12 +62,11 @@ export interface VaultEntriesTable {
   user_id: string;
   encrypted_data: Buffer;
   iv: Buffer;
-  salt: Buffer;
+  salt: Buffer | null;
   algorithm: ColumnType<string, string | undefined, string>;
   category: string | null;
   tags: string[] | null;
   version: ColumnType<number, number | undefined, number>;
-  size_bytes: number;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
   deleted_at: ColumnType<
@@ -156,6 +155,7 @@ export type NewActivityRecord = Insertable<ActivityRecordsTable>;
 export interface InactivitySettingsTable {
   user_id: string;
   threshold_days: ColumnType<number, number | undefined, number>;
+  require_majority: ColumnType<boolean, boolean | undefined, boolean>;
   notification_methods: string[];
   emergency_contacts: Record<string, unknown> | null;
   is_paused: ColumnType<boolean, boolean | undefined, boolean>;

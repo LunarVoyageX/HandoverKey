@@ -26,10 +26,15 @@ export {
   PauseSwitchSchema,
   ResumeSwitchSchema,
   ConfigureThresholdSchema,
+} from "./inactivity.schemas";
+
+// Successor schemas
+export {
   AddSuccessorSchema,
   UpdateSuccessorSchema,
+  VerifySuccessorSchema,
   SuccessorIdSchema,
-} from "./inactivity.schemas";
+} from "./successor.schemas";
 
 // Activity schemas
 export { CheckInSchema } from "./activity.schemas";

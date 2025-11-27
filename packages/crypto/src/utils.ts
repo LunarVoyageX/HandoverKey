@@ -72,7 +72,18 @@ export function toBase64(data: Uint8Array): string {
   if (!(data instanceof Uint8Array)) {
     throw new ValidationError("Data must be a Uint8Array");
   }
-  return Buffer.from(data).toString("base64");
+
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(data).toString("base64");
+  } else {
+    // Browser implementation
+    let binary = "";
+    const len = data.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(data[i]);
+    }
+    return btoa(binary);
+  }
 }
 
 /**
@@ -92,7 +103,18 @@ export function fromBase64(base64: string): Uint8Array {
     throw new ValidationError("Invalid base64 format");
   }
 
-  return new Uint8Array(Buffer.from(base64, "base64"));
+  if (typeof Buffer !== "undefined") {
+    return new Uint8Array(Buffer.from(base64, "base64"));
+  } else {
+    // Browser implementation
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  }
 }
 
 /**

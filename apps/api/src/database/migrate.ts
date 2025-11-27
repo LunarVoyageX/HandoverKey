@@ -6,7 +6,15 @@ const MIGRATION_FILES = [
   "users.sql",
   "successors.sql",
   "vault.sql",
+  "sessions.sql",
   "simplified_schema.sql",
+  "add_vault_salt.sql",
+  "add_missing_user_columns.sql",
+  "fix_schema_mismatch.sql",
+  "add_missing_dms_tables.sql",
+  "ensure_last_activity.sql",
+  "add_require_majority.sql",
+  "add_vault_deleted_at.sql",
 ];
 
 async function runMigrations(): Promise<void> {

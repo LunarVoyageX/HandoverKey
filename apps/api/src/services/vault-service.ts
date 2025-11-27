@@ -21,6 +21,7 @@ export class VaultService {
   static async createEntry(
     userId: string,
     encryptedData: EncryptedData,
+    salt: Buffer,
     category?: string,
     tags?: string[],
   ): Promise<VaultEntry> {
@@ -31,20 +32,15 @@ export class VaultService {
     const encryptedBuffer = Buffer.from(encryptedData.data);
     const ivBuffer = Buffer.from(encryptedData.iv);
 
-    // For salt, we need to handle it properly - if it's in the encryptedData, use it
-    // Otherwise generate a random salt
-    const saltBuffer = Buffer.from(encryptedData.iv); // Using IV as salt for now
-
     const dbEntry = await vaultRepo.create({
       id,
       user_id: userId,
       encrypted_data: encryptedBuffer,
       iv: ivBuffer,
-      salt: saltBuffer,
+      salt: salt,
       algorithm: encryptedData.algorithm,
       category: category ?? null,
       tags: tags ?? null,
-      size_bytes: encryptedBuffer.length,
     });
 
     return this.mapDbEntryToVaultEntry(dbEntry);
@@ -91,16 +87,13 @@ export class VaultService {
     // Convert encrypted data to Buffer
     const encryptedBuffer = Buffer.from(encryptedData.data);
     const ivBuffer = Buffer.from(encryptedData.iv);
-    const saltBuffer = Buffer.from(encryptedData.iv); // Using IV as salt for now
 
     const dbEntry = await vaultRepo.update(entryId, userId, {
       encrypted_data: encryptedBuffer,
       iv: ivBuffer,
-      salt: saltBuffer,
       algorithm: encryptedData.algorithm,
       category: category ?? null,
       tags: tags ?? null,
-      size_bytes: encryptedBuffer.length,
     });
 
     return this.mapDbEntryToVaultEntry(dbEntry);
@@ -159,6 +152,7 @@ export class VaultService {
         iv: dbEntry.iv.toString(),
         algorithm: dbEntry.algorithm,
       },
+      salt: dbEntry.salt?.toString(),
       category: dbEntry.category ?? undefined,
       tags: dbEntry.tags ?? undefined,
       version: dbEntry.version,

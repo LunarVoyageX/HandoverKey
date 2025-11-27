@@ -3,6 +3,7 @@
 
 -- Core user table (already exists, but ensure it has email_verified)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP;
 
 -- Handover settings per user (simplified from inactivity_settings)
 CREATE TABLE IF NOT EXISTS handover_settings (

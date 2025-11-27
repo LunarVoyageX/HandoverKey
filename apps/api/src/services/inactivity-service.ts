@@ -97,7 +97,7 @@ export class InactivityService {
     return {
       userId: dbSettings.user_id,
       thresholdDays: dbSettings.threshold_days,
-      requireMajority: false, // This field doesn't exist in inactivity_settings
+      requireMajority: dbSettings.require_majority,
       isPaused: dbSettings.is_paused,
       pausedUntil: dbSettings.paused_until ?? undefined,
     };
@@ -112,11 +112,14 @@ export class InactivityService {
   ): Promise<InactivitySettings> {
     const settingsRepo = this.getInactivitySettingsRepository();
 
-    // Map camelCase to snake_case for database
+    // Map camelCase to snake_case for database and filter out non-updatable fields
     const dbUpdates: Record<string, unknown> = {};
 
     if (updates.thresholdDays !== undefined) {
       dbUpdates.threshold_days = updates.thresholdDays;
+    }
+    if (updates.requireMajority !== undefined) {
+      dbUpdates.require_majority = updates.requireMajority;
     }
     if (updates.isPaused !== undefined) {
       dbUpdates.is_paused = updates.isPaused;
@@ -134,7 +137,7 @@ export class InactivityService {
     return {
       userId: dbSettings.user_id,
       thresholdDays: dbSettings.threshold_days,
-      requireMajority: false,
+      requireMajority: dbSettings.require_majority,
       isPaused: dbSettings.is_paused,
       pausedUntil: dbSettings.paused_until ?? undefined,
     };
@@ -176,7 +179,7 @@ export class InactivityService {
     return {
       userId: dbSettings.user_id,
       thresholdDays: dbSettings.threshold_days,
-      requireMajority: false,
+      requireMajority: dbSettings.require_majority,
       isPaused: dbSettings.is_paused,
       pausedUntil: dbSettings.paused_until ?? undefined,
     };

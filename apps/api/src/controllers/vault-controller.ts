@@ -15,7 +15,7 @@ export class VaultController {
       }
 
       // Data is already validated and sanitized by Zod middleware
-      const { encryptedData, iv, algorithm, category, tags } = req.body;
+      const { encryptedData, iv, salt, algorithm, category, tags } = req.body;
 
       const entry = await VaultService.createEntry(
         req.user.userId,
@@ -24,6 +24,7 @@ export class VaultController {
           iv: Buffer.from(iv, "base64"),
           algorithm,
         },
+        Buffer.from(salt, "base64"),
         category,
         tags,
       );

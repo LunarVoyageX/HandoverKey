@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth-controller";
 import { authenticateJWT, requireAuth } from "../middleware/auth";
-import { authRateLimiter } from "../middleware/security";
+import { authRateLimiter, registerRateLimiter } from "../middleware/security";
 import { SimpleActivityMiddleware } from "../middleware/simple-activity";
 import { validateRequest } from "../validation";
 import {
@@ -15,7 +15,7 @@ const router = Router();
 // Registration endpoint
 router.post(
   "/register",
-  authRateLimiter as unknown as import("express").RequestHandler,
+  registerRateLimiter as unknown as import("express").RequestHandler,
   validateRequest(RegisterSchema, "body"),
   AuthController.register,
 );
