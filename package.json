@@ -55,6 +55,6 @@
   "homepage": "https://handoverkey.com",
   "dependencies": {
     "node-fetch": "^3.3.2",
-    "nodemailer": "^7.0.10"
+    "nodemailer": "^7.0.11"
   }
 }
