@@ -131,7 +131,7 @@ describe("Error Handler Middleware", () => {
 
     it("should use request ID from request if available", () => {
       const error = new ValidationError("Invalid input");
-      (mockRequest as any).id = "test-request-id";
+      (mockRequest as Request & { id?: string }).id = "test-request-id";
 
       errorHandler(
         error,

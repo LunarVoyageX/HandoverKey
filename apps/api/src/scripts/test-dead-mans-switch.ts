@@ -4,7 +4,6 @@ import {
   SuccessorRepository,
   InactivitySettingsRepository,
   HandoverProcessRepository,
-  NotificationDeliveryRepository,
 } from "@handoverkey/database";
 import { InactivityService } from "../services/inactivity-service";
 import { PasswordUtils } from "../auth/password";
@@ -29,7 +28,6 @@ async function runTest() {
   const successorRepo = new SuccessorRepository(db);
   const settingsRepo = new InactivitySettingsRepository(db);
   const handoverRepo = new HandoverProcessRepository(db);
-  const notificationRepo = new NotificationDeliveryRepository(db);
 
   const testEmail = `test-dms-${Date.now()}@example.com`;
   let userId: string | undefined;

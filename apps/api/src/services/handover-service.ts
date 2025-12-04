@@ -146,11 +146,23 @@ export class HandoverService {
     }
   }
 
-  private static mapHandoverFromDb(row: any): HandoverProcess {
+  private static mapHandoverFromDb(row: {
+    id: string;
+    user_id: string;
+    status: string;
+    initiated_at: Date;
+    grace_period_ends: Date;
+    completed_at?: Date | null;
+    created_at: Date;
+  }): HandoverProcess {
     return {
       id: row.id,
       userId: row.user_id,
-      status: row.status,
+      status: row.status as
+        | "GRACE_PERIOD"
+        | "PENDING_CONFIRMATION"
+        | "COMPLETED"
+        | "CANCELLED",
       initiatedAt: row.initiated_at,
       gracePeriodEnds: row.grace_period_ends,
       completedAt: row.completed_at ?? undefined,

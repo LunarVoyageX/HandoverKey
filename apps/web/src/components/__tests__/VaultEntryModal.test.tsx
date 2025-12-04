@@ -19,7 +19,16 @@ jest.mock("../../services/encryption", () => ({
 
 // Mock TagManager component
 jest.mock("../TagManager", () => {
-  const MockTagManager = ({ tags, onChange, placeholder }: any) => (
+  interface MockTagManagerProps {
+    tags: string[];
+    onChange: (tags: string[]) => void;
+    placeholder?: string;
+  }
+  const MockTagManager = ({
+    tags,
+    onChange,
+    placeholder,
+  }: MockTagManagerProps) => (
     <div data-testid="tag-manager">
       <input
         data-testid="tag-input"
@@ -49,8 +58,8 @@ jest.mock("../TagManager", () => {
   return MockTagManager;
 });
 
-const mockVaultApi = vaultApi as any;
-const mockEncryptData = encryptionService.encryptData as any;
+const mockVaultApi = vaultApi as jest.Mocked<typeof vaultApi>;
+const mockEncryptData = encryptionService.encryptData as jest.Mock;
 
 describe("VaultEntryModal", () => {
   const defaultProps = {
@@ -380,7 +389,7 @@ describe("VaultEntryModal", () => {
 
     it("shows loading state during submission", async () => {
       const user = userEvent.setup();
-      let resolvePromise: (value: any) => void;
+      let resolvePromise: (value: unknown) => void;
       const promise = new Promise((resolve) => {
         resolvePromise = resolve;
       });

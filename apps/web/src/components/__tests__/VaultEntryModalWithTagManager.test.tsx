@@ -28,7 +28,7 @@ describe("VaultEntryModalWithTagManager", () => {
   const mockOnClose = jest.fn();
   const mockOnSave = jest.fn();
   const mockExistingTags = ["work", "personal", "urgent"];
-  const mockEncryptData = encryptionService.encryptData as any;
+  const mockEncryptData = encryptionService.encryptData as jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -93,7 +93,7 @@ describe("VaultEntryModalWithTagManager", () => {
 
   it("includes tags when creating entry with proper encryption", async () => {
     const user = userEvent.setup();
-    (vaultApi.createEntry as any).mockResolvedValue({});
+    (vaultApi.createEntry as jest.Mock).mockResolvedValue({});
 
     render(
       <VaultEntryModalWithTagManager

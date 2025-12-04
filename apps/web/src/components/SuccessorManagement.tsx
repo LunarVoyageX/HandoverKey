@@ -33,7 +33,7 @@ const SuccessorManagement: React.FC<SuccessorManagementProps> = ({
       setSuccessors(data);
     } catch (error) {
       console.error("Failed to fetch successors:", error);
-      alert("Failed to load successors");
+      window.alert("Failed to load successors");
     } finally {
       setLoading(false);
     }
@@ -56,19 +56,20 @@ const SuccessorManagement: React.FC<SuccessorManagementProps> = ({
       await fetchSuccessors();
     } catch (error) {
       console.error("Failed to save successor:", error);
-      alert("Failed to save successor");
+      window.alert("Failed to save successor");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this successor?")) return;
+    if (!window.confirm("Are you sure you want to delete this successor?"))
+      return;
 
     try {
       await successorApi.deleteSuccessor(id);
       await fetchSuccessors();
     } catch (error) {
       console.error("Failed to delete successor:", error);
-      alert("Failed to delete successor");
+      window.alert("Failed to delete successor");
     }
   };
 

@@ -154,7 +154,21 @@ export class UserService {
     await userRepo.update(userId, { email_verified: true });
   }
 
-  private static mapDbUserToUser(dbUser: any): User {
+  private static mapDbUserToUser(dbUser: {
+    id: string;
+    email: string;
+    password_hash: string;
+    salt: Buffer;
+    email_verified?: boolean | null;
+    two_factor_enabled?: boolean | null;
+    two_factor_secret?: string | null;
+    last_login?: Date | null;
+    failed_login_attempts?: number | null;
+    locked_until?: Date | null;
+    inactivity_threshold_days?: number | null;
+    created_at: Date;
+    updated_at: Date;
+  }): User {
     return {
       id: dbUser.id,
       email: dbUser.email,

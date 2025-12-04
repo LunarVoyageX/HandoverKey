@@ -47,7 +47,7 @@ export class InactivityService {
       await this.checkUserInactivity({
         id: user.id,
         email: user.email,
-        last_activity: user.last_login,
+        last_activity: user.last_login ?? user.created_at,
         created_at: user.created_at,
         threshold_days: settings.threshold_days,
         is_paused: settings.is_paused,
@@ -61,13 +61,24 @@ export class InactivityService {
   /**
    * Checks a specific user for inactivity
    */
-  static async checkUserInactivity(user: any): Promise<void> {
+  /**
+   * Checks a specific user for inactivity
+   */
+  static async checkUserInactivity(user: {
+    id: string;
+    email: string;
+    last_activity: Date | string;
+    created_at: Date | string;
+    threshold_days: number;
+    is_paused: boolean;
+    paused_until?: Date | null;
+  }): Promise<void> {
     const thresholdDays = user.threshold_days || 90;
     const lastActivity = user.last_activity || user.created_at;
     const thresholdDate = new Date();
     thresholdDate.setDate(thresholdDate.getDate() - thresholdDays);
 
-    if (new Date(lastActivity) < thresholdDate) {
+    if (lastActivity && new Date(lastActivity) < thresholdDate) {
       console.log(`User ${user.email} is inactive. Initiating handover...`);
 
       try {

@@ -32,13 +32,24 @@ const Register: React.FC = () => {
     try {
       await register(email, password, confirmPassword);
       navigate("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Registration error:", error);
+      interface ApiError {
+        response?: {
+          data?: {
+            error?: { message?: string } | string;
+            message?: string;
+          };
+        };
+        message?: string;
+      }
+      const err = error as ApiError;
       const errorMessage =
-        error.response?.data?.error?.message ||
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
+        (typeof err.response?.data?.error === "object"
+          ? err.response?.data?.error?.message
+          : err.response?.data?.error) ||
+        err.response?.data?.message ||
+        err.message ||
         "Registration failed. Please try again.";
       setError(errorMessage);
     } finally {

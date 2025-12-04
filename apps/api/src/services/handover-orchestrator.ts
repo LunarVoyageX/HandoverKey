@@ -256,7 +256,19 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
     return this.mapDbToHandoverProcess(dbProcess);
   }
 
-  private mapDbToHandoverProcess(dbRow: any): HandoverProcess {
+  private mapDbToHandoverProcess(dbRow: {
+    id: string;
+    user_id: string;
+    status: string;
+    initiated_at: Date;
+    grace_period_ends: Date;
+    completed_at?: Date | null;
+    cancelled_at?: Date | null;
+    cancellation_reason?: string | null;
+    metadata?: unknown;
+    created_at: Date;
+    updated_at: Date;
+  }): HandoverProcess {
     return {
       id: dbRow.id,
       userId: dbRow.user_id,
@@ -266,7 +278,7 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
       completedAt: dbRow.completed_at ?? undefined,
       cancelledAt: dbRow.cancelled_at ?? undefined,
       cancellationReason: dbRow.cancellation_reason ?? undefined,
-      metadata: dbRow.metadata || {},
+      metadata: (dbRow.metadata as Record<string, unknown>) || {},
       createdAt: dbRow.created_at,
       updatedAt: dbRow.updated_at,
     };

@@ -143,13 +143,25 @@ export class VaultService {
     return await vaultRepo.getCount(userId);
   }
 
-  private static mapDbEntryToVaultEntry(dbEntry: any): VaultEntry {
+  private static mapDbEntryToVaultEntry(dbEntry: {
+    id: string;
+    user_id: string;
+    encrypted_data: Buffer;
+    iv: Buffer;
+    salt?: Buffer | null;
+    algorithm: string;
+    category?: string | null;
+    tags?: string[] | null;
+    version: number;
+    created_at: Date;
+    updated_at: Date;
+  }): VaultEntry {
     return {
       id: dbEntry.id,
       userId: dbEntry.user_id,
       encryptedData: {
-        data: dbEntry.encrypted_data.toString(),
-        iv: dbEntry.iv.toString(),
+        data: dbEntry.encrypted_data,
+        iv: dbEntry.iv,
         algorithm: dbEntry.algorithm,
       },
       salt: dbEntry.salt?.toString(),

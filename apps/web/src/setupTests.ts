@@ -16,7 +16,7 @@ Object.defineProperty(global, "crypto", {
 // Make CryptoKey available globally
 // Make CryptoKey available globally
 Object.defineProperty(global, "CryptoKey", {
-  value: (webcrypto as any).CryptoKey,
+  value: (webcrypto as unknown as { CryptoKey: unknown }).CryptoKey,
   writable: true,
   configurable: true,
 });

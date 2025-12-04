@@ -17,6 +17,14 @@ const MIGRATION_FILES = [
   "add_vault_deleted_at.sql",
 ];
 
+import { Generated } from "kysely";
+
+interface Migration {
+  id: Generated<number>;
+  name: string;
+  executed_at: Date;
+}
+
 async function runMigrations(): Promise<void> {
   const dbClient = getDatabaseClient();
 
@@ -60,10 +68,12 @@ async function runMigrations(): Promise<void> {
       }
 
       const existingMigration = await dbClient.query(async (db) => {
+        // We need to cast db to include the migrations table since it's not in the main schema
         return await db
-          .selectFrom("migrations" as any)
+          .withTables<{ migrations: Migration }>()
+          .selectFrom("migrations")
           .selectAll()
-          .where("name" as any, "=", migrationFile)
+          .where("name", "=", migrationFile)
           .executeTakeFirst();
       });
 
@@ -82,8 +92,9 @@ async function runMigrations(): Promise<void> {
         const { sql } = await import("kysely");
         await sql.raw(migrationSQL).execute(db);
         await db
-          .insertInto("migrations" as any)
-          .values({ name: migrationFile } as any)
+          .withTables<{ migrations: Migration }>()
+          .insertInto("migrations")
+          .values({ name: migrationFile, executed_at: new Date() })
           .execute();
       });
 

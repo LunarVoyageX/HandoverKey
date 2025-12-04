@@ -13,6 +13,15 @@ export interface UpdateSuccessorData {
   handoverDelayDays?: number;
 }
 
+export interface Successor {
+  id: string;
+  email: string;
+  name: string | null;
+  verified: boolean;
+  handoverDelayDays: number;
+  createdAt: Date;
+}
+
 export class SuccessorService {
   private static getSuccessorRepository(): SuccessorRepository {
     const dbClient = getDatabaseClient();
@@ -22,7 +31,7 @@ export class SuccessorService {
   static async addSuccessor(
     userId: string,
     data: AddSuccessorData,
-  ): Promise<any> {
+  ): Promise<Successor> {
     const id = uuidv4();
     const successorRepo = this.getSuccessorRepository();
 
@@ -61,7 +70,7 @@ export class SuccessorService {
     };
   }
 
-  static async getSuccessors(userId: string): Promise<any[]> {
+  static async getSuccessors(userId: string): Promise<Successor[]> {
     const successorRepo = this.getSuccessorRepository();
     const successors = await successorRepo.findByUserId(userId);
 
@@ -78,7 +87,7 @@ export class SuccessorService {
   static async getSuccessor(
     userId: string,
     successorId: string,
-  ): Promise<any | null> {
+  ): Promise<Successor | null> {
     const successorRepo = this.getSuccessorRepository();
     const successor = await successorRepo.findById(successorId);
 
@@ -100,7 +109,7 @@ export class SuccessorService {
     userId: string,
     successorId: string,
     data: UpdateSuccessorData,
-  ): Promise<any | null> {
+  ): Promise<Successor | null> {
     const successorRepo = this.getSuccessorRepository();
 
     // Verify ownership
@@ -109,7 +118,7 @@ export class SuccessorService {
       return null;
     }
 
-    const updateData: any = {};
+    const updateData: { name?: string; handover_delay_days?: number } = {};
     if (data.name !== undefined) {
       updateData.name = data.name;
     }

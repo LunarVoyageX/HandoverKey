@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "../errors";
+import { AppError, ValidationError, RateLimitError } from "../errors";
 import { ZodError } from "zod";
 import { logger } from "../config/logger";
 
@@ -14,7 +14,7 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   // Generate request ID if not present
-  const requestId = (req as any).id || "unknown";
+  const requestId = (req as Request & { id?: string }).id || "unknown";
 
   // Handle known application errors
   if (error instanceof AppError) {
@@ -54,8 +54,18 @@ export function errorHandler(
       }
     }
 
+    interface ErrorResponse {
+      error: {
+        code: string;
+        message: string;
+        requestId: string;
+        details?: unknown;
+        retryAfter?: number;
+      };
+    }
+
     // Send error response
-    const response: any = {
+    const response: ErrorResponse = {
       error: {
         code: error.code,
         message: error.message,
@@ -64,10 +74,10 @@ export function errorHandler(
     };
 
     // Add additional details for specific error types
-    if ("details" in error && error.details) {
+    if (error instanceof ValidationError && error.details) {
       response.error.details = error.details;
     }
-    if ("retryAfter" in error && error.retryAfter) {
+    if (error instanceof RateLimitError && error.retryAfter) {
       response.error.retryAfter = error.retryAfter;
       res.setHeader("Retry-After", error.retryAfter.toString());
     }
@@ -149,7 +159,7 @@ export function notFoundHandler(
   res: Response,
   _next: NextFunction,
 ): void {
-  const requestId = (req as any).id || "unknown";
+  const requestId = (req as Request & { id?: string }).id || "unknown";
 
   logger.warn(
     {

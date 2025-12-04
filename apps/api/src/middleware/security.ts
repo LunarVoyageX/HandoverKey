@@ -82,7 +82,7 @@ export const validateContentType = (
 };
 
 // Enhanced input sanitization function
-const sanitizeString = (input: any): string => {
+const sanitizeString = (input: unknown): string => {
   // Handle null, undefined, and non-string inputs first
   if (input === null || input === undefined || typeof input !== "string") {
     return "";
@@ -162,7 +162,7 @@ const sanitizeString = (input: any): string => {
   return result;
 };
 
-const sanitizeObject = (obj: any, depth: number = 0): any => {
+const sanitizeObject = (obj: unknown, depth: number = 0): unknown => {
   // Prevent deep recursion attacks
   if (depth > 10) {
     return {};
@@ -186,8 +186,8 @@ const sanitizeObject = (obj: any, depth: number = 0): any => {
   }
 
   if (typeof obj === "object") {
-    const sanitized: any = {};
-    const keys = Object.keys(obj);
+    const sanitized: Record<string, unknown> = {};
+    const keys = Object.keys(obj as object);
 
     // Limit number of keys to prevent DoS
     const limitedKeys = keys.slice(0, 100);
@@ -208,7 +208,10 @@ const sanitizeObject = (obj: any, depth: number = 0): any => {
         continue;
       }
 
-      sanitized[sanitizedKey] = sanitizeObject(obj[key], depth + 1);
+      sanitized[sanitizedKey] = sanitizeObject(
+        (obj as Record<string, unknown>)[key],
+        depth + 1,
+      );
     }
 
     return sanitized;
@@ -225,7 +228,7 @@ export const sanitizeInput = (
   try {
     // Check for suspicious patterns BEFORE sanitization
     // Use a safe stringify to avoid circular reference issues
-    const safeStringify = (obj: any): string => {
+    const safeStringify = (obj: unknown): string => {
       try {
         return JSON.stringify(obj, (key, value) => {
           if (typeof value === "object" && value !== null) {
@@ -274,30 +277,34 @@ export const sanitizeInput = (
 
     // Also check for prototype pollution directly
     if (!foundPattern) {
-      const checkPrototypePollution = (obj: any): string | null => {
+      const checkPrototypePollution = (obj: unknown): string | null => {
         if (!obj || typeof obj !== "object") return null;
 
         // Check for __proto__ property directly (it's not enumerable)
-        if (obj.__proto__ !== Object.prototype && obj.__proto__ !== null) {
+        if (
+          Object.getPrototypeOf(obj) !== Object.prototype &&
+          Object.getPrototypeOf(obj) !== null
+        ) {
           // If __proto__ has been modified, it's suspicious
           return "__proto__";
         }
 
         // Check for __proto__ as a string key
-        if (obj["__proto__"] !== undefined) {
+        if ((obj as Record<string, unknown>)["__proto__"] !== undefined) {
           return "__proto__";
         }
 
         // Check for constructor pollution
         if (
-          obj["constructor"] !== undefined &&
-          obj["constructor"] !== obj.constructor
+          (obj as Record<string, unknown>)["constructor"] !== undefined &&
+          (obj as Record<string, unknown>)["constructor"] !==
+            Object.prototype.constructor
         ) {
           return "constructor";
         }
 
         // Check for prototype pollution
-        if (obj["prototype"] !== undefined) {
+        if ((obj as Record<string, unknown>)["prototype"] !== undefined) {
           return "prototype";
         }
 
@@ -331,15 +338,19 @@ export const sanitizeInput = (
 
     // Sanitize query parameters (these are read-only so we need to modify in place)
     if (req.query && typeof req.query === "object") {
-      const sanitized = sanitizeObject(req.query);
-      Object.keys(req.query).forEach((key) => delete (req.query as any)[key]);
+      const sanitized = sanitizeObject(req.query) as Record<string, unknown>;
+      Object.keys(req.query).forEach(
+        (key) => delete (req.query as Record<string, unknown>)[key],
+      );
       Object.assign(req.query, sanitized);
     }
 
     // Sanitize URL parameters (these are read-only so we need to modify in place)
     if (req.params && typeof req.params === "object") {
-      const sanitized = sanitizeObject(req.params);
-      Object.keys(req.params).forEach((key) => delete (req.params as any)[key]);
+      const sanitized = sanitizeObject(req.params) as Record<string, unknown>;
+      Object.keys(req.params).forEach(
+        (key) => delete (req.params as Record<string, unknown>)[key],
+      );
       Object.assign(req.params, sanitized);
     }
 

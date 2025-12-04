@@ -7,7 +7,7 @@ const createMockRequest = (
   data: unknown,
   target: "body" | "query" | "params" = "body",
 ): Partial<Request> => {
-  const req: any = {
+  const req: Partial<Request> & { id?: string } = {
     [target]: data,
     id: "test-request-id",
   };

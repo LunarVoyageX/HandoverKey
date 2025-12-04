@@ -18,13 +18,24 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       navigate("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
+      interface ApiError {
+        response?: {
+          data?: {
+            error?: { message?: string } | string;
+            message?: string;
+          };
+        };
+        message?: string;
+      }
+      const err = error as ApiError;
       const errorMessage =
-        error.response?.data?.error?.message ||
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
+        (typeof err.response?.data?.error === "object"
+          ? err.response?.data?.error?.message
+          : err.response?.data?.error) ||
+        err.response?.data?.message ||
+        err.message ||
         "Login failed. Please check your credentials and try again.";
       setError(errorMessage);
     } finally {

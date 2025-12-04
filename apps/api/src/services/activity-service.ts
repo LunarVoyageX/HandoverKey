@@ -382,15 +382,25 @@ export class ActivityService implements ActivityTracker {
     return Math.max(0, thresholdMs - elapsed);
   }
 
-  private mapDbRecordToActivityRecord(dbRecord: any): ActivityRecord {
+  private mapDbRecordToActivityRecord(dbRecord: {
+    id: string;
+    user_id: string;
+    activity_type: string;
+    client_type: string;
+    ip_address?: string | null;
+    user_agent?: string | null;
+    metadata?: unknown;
+    signature: string;
+    created_at: Date;
+  }): ActivityRecord {
     return {
       id: dbRecord.id,
       userId: dbRecord.user_id,
       activityType: dbRecord.activity_type as ActivityType,
       clientType: dbRecord.client_type as ClientType,
-      ipAddress: dbRecord.ip_address,
-      userAgent: dbRecord.user_agent,
-      metadata: dbRecord.metadata || {},
+      ipAddress: dbRecord.ip_address || undefined,
+      userAgent: dbRecord.user_agent || undefined,
+      metadata: (dbRecord.metadata as Record<string, unknown>) || {},
       signature: dbRecord.signature,
       createdAt: dbRecord.created_at,
     };

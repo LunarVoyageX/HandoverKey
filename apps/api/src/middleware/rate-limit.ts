@@ -114,7 +114,10 @@ class RateLimitManager {
     };
   }
 
-  recordValidationFailure(req: Request, validationErrors: any[]): void {
+  recordValidationFailure(
+    req: Request,
+    validationErrors: { param?: string }[],
+  ): void {
     const errorTypes = validationErrors
       .map((err) => err.param || "unknown")
       .join(", ");
@@ -180,6 +183,12 @@ export function createRateLimit(options: {
   };
 }
 
+interface JsonBody {
+  error?: string;
+  details?: { param?: string }[];
+  [key: string]: unknown;
+}
+
 // Validation failure logging middleware
 export function logValidationFailures(
   req: Request,
@@ -192,13 +201,14 @@ export function logValidationFailures(
   const originalJson = res.json;
 
   // Override json method to intercept validation errors
-  res.json = function (body: any) {
+  res.json = function (body: unknown) {
+    const jsonBody = body as JsonBody;
     if (
       res.statusCode === 400 &&
-      body.error === "Validation failed" &&
-      body.details
+      jsonBody.error === "Validation failed" &&
+      jsonBody.details
     ) {
-      rateLimitManager.recordValidationFailure(req, body.details);
+      rateLimitManager.recordValidationFailure(req, jsonBody.details);
     }
 
     // Call original json method

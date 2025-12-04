@@ -111,7 +111,7 @@ export async function encryptionErrorHandling() {
   const errorCases = [
     {
       name: "Invalid data (null)",
-      test: () => encryptData(null as any, validPassword),
+      test: () => encryptData(null as unknown as string, validPassword),
     },
     {
       name: "Invalid password (too short)",

@@ -162,10 +162,8 @@ export class DatabaseClient {
 
     if (this.pool) {
       try {
-        if (!(this.pool as any).ending && !(this.pool as any).ended) {
-          await this.pool.end();
-        }
-      } catch (e) {
+        await this.pool.end();
+      } catch {
         // Ignore error if pool is already closed
       }
       this.pool = null;
