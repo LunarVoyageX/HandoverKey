@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { Encryption } from "@handoverkey/shared";
+import { generateRandomBytes, hash } from "@handoverkey/shared";
 
 export class PasswordUtils {
   private static readonly SALT_ROUNDS = parseInt(
@@ -78,11 +78,11 @@ export class PasswordUtils {
   }
 
   static async generateVerificationToken(): Promise<string> {
-    const randomBytes = Encryption.generateRandomBytes(32);
+    const randomBytes = generateRandomBytes(32);
     return Buffer.from(randomBytes).toString("base64url");
   }
 
   static async hashVerificationToken(token: string): Promise<string> {
-    return Encryption.hash(token);
+    return hash(token);
   }
 }

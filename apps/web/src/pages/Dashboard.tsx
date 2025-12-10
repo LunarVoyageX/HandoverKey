@@ -1,241 +1,197 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import InactivitySettingsModal from "../components/InactivitySettingsModal";
-import SessionManager from "../components/SessionManager";
-import SuccessorManagement from "../components/SuccessorManagement";
-import { inactivityApi, InactivitySettings } from "../services/inactivity";
-import { successorApi, Successor } from "../services/successor";
-import { vaultApi } from "../services/vault";
+import {
+  ShieldCheckIcon,
+  UserGroupIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
+import api from "../services/api";
+import { Link } from "react-router-dom";
+
+interface ActivityLog {
+  id: string;
+  activity_type: string;
+  created_at: string;
+  ip_address?: string;
+}
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showSuccessorModal, setShowSuccessorModal] = useState(false);
-  const [settings, setSettings] = useState<InactivitySettings | null>(null);
-  const [successors, setSuccessors] = useState<Successor[]>([]);
-  const [vaultCount, setVaultCount] = useState<number>(0);
-  const [checkingIn, setCheckingIn] = useState(false);
+  const [stats, setStats] = useState([
+    {
+      name: "Total Secrets",
+      stat: "...",
+      icon: ShieldCheckIcon,
+      color: "bg-blue-500",
+    },
+    {
+      name: "Successors",
+      stat: "...",
+      icon: UserGroupIcon,
+      color: "bg-green-500",
+    },
+    {
+      name: "Days Active",
+      stat: "...",
+      icon: ClockIcon,
+      color: "bg-purple-500",
+    },
+  ]);
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSettings();
-    fetchSuccessors();
-    fetchVaultCount();
-  }, []);
+    const fetchData = async () => {
+      try {
+        const [vaultRes, successorsRes, activityRes] = await Promise.all([
+          api.get("/vault/entries"),
+          api.get("/successors"),
+          api.get("/activity?limit=5"),
+        ]);
 
-  const fetchSettings = async () => {
-    try {
-      const data = await inactivityApi.getSettings();
-      setSettings(data);
-    } catch (error) {
-      console.error("Failed to fetch settings:", error);
+        // Vault returns array directly
+        const vaultCount = Array.isArray(vaultRes.data)
+          ? vaultRes.data.length
+          : 0;
+        // Successors returns { successors: [...] }
+        const successorCount = successorsRes.data.successors?.length || 0;
+
+        // Calculate days active from user account creation date
+        const daysActive = user?.createdAt
+          ? Math.floor(
+              (new Date().getTime() - new Date(user.createdAt).getTime()) /
+                (1000 * 3600 * 24),
+            )
+          : 0;
+
+        setStats([
+          {
+            name: "Total Secrets",
+            stat: vaultCount.toString(),
+            icon: ShieldCheckIcon,
+            color: "bg-blue-500",
+          },
+          {
+            name: "Successors",
+            stat: successorCount.toString(),
+            icon: UserGroupIcon,
+            color: "bg-green-500",
+          },
+          {
+            name: "Days Active",
+            stat: daysActive.toString(),
+            icon: ClockIcon,
+            color: "bg-purple-500",
+          },
+        ]);
+
+        // Activity returns { data: [...], pagination: {...} }
+        setActivities(activityRes.data.data || []);
+      } catch {
+        // Ignore error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchData();
     }
+  }, [user]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return "Just now";
+    if (diffInSeconds < 3600)
+      return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400)
+      return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    return date.toLocaleDateString();
   };
 
-  const fetchSuccessors = async () => {
-    try {
-      const data = await successorApi.getSuccessors();
-      setSuccessors(data);
-    } catch (error) {
-      console.error("Failed to fetch successors:", error);
-    }
-  };
-
-  const fetchVaultCount = async () => {
-    try {
-      const entries = await vaultApi.getEntries();
-      setVaultCount(entries.length);
-    } catch (error) {
-      console.error("Failed to fetch vault count:", error);
-    }
-  };
-
-  const handleCheckIn = async () => {
-    try {
-      setCheckingIn(true);
-      await inactivityApi.checkIn();
-      await fetchSettings(); // Refresh settings to update last check-in
-      window.alert("Check-in successful!");
-    } catch (error) {
-      console.error("Check-in failed:", error);
-      window.alert("Check-in failed. Please try again.");
-    } finally {
-      setCheckingIn(false);
-    }
+  const formatActivityType = (type: string) => {
+    return type
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="py-6">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-2 text-gray-600">Welcome back, {user?.email}</p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Vault Status
-          </h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total entries:</span>
-              <span className="font-medium">{vaultCount}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Encrypted:</span>
-              <span className="font-medium text-green-600">✓ Yes</span>
-            </div>
-          </div>
-          <button
-            onClick={() => navigate("/vault")}
-            className="mt-4 btn-primary w-full"
-          >
-            {vaultCount > 0 ? "Manage Vault" : "Add New Entry"}
-          </button>
+    <div>
+      <div className="md:flex md:items-center md:justify-between">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+            Welcome back, {user?.name || user?.email?.split("@")[0] || "User"}
+          </h2>
         </div>
-
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Successors</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Trusted contacts:</span>
-              <span className="font-medium">{successors.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Verified:</span>
-              <span className="font-medium">
-                {successors.filter((s) => s.verified).length}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowSuccessorModal(true)}
-            className="mt-4 btn-primary w-full"
-          >
-            Manage Successors
-          </button>
-        </div>
-
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Handover Settings
-          </h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Inactivity period:</span>
-              <span className="font-medium">
-                {settings ? `${settings.thresholdDays} days` : "Loading..."}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Status:</span>
-              <span
-                className={`font-medium ${
-                  settings?.isPaused ? "text-yellow-600" : "text-green-600"
-                }`}
-              >
-                {settings
-                  ? settings.isPaused
-                    ? "Paused"
-                    : "Active"
-                  : "Loading..."}
-              </span>
-            </div>
-            {settings?.nextCheckInDeadline && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Next Deadline:</span>
-                <span className="font-medium text-sm">
-                  {new Date(settings.nextCheckInDeadline).toLocaleDateString()}
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="btn-secondary flex-1"
-            >
-              Configure
-            </button>
-            <button
-              onClick={handleCheckIn}
-              disabled={checkingIn}
-              className="btn-primary flex-1"
-            >
-              {checkingIn ? "..." : "Check In"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Recent Activity
-          </h3>
-          <div className="text-center py-8 text-gray-500">
-            <p>No recent activity</p>
-            <p className="text-sm mt-2">Your vault activity will appear here</p>
-          </div>
-        </div>
-
-        <div className="card">
-          <SessionManager />
+        <div className="mt-4 flex md:ml-4 md:mt-0">
+          <Link to="/vault" className="btn btn-primary">
+            Add Secret
+          </Link>
         </div>
       </div>
 
       <div className="mt-8">
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Security Status
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">
-                  Two-Factor Authentication
-                </p>
-                <p className="text-sm text-gray-600">
-                  Add an extra layer of security
-                </p>
+        <h3 className="text-base font-semibold leading-6 text-gray-900">
+          Overview
+        </h3>
+        <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {stats.map((item) => (
+            <div
+              key={item.name}
+              className="card px-4 py-5 sm:p-6 flex items-center"
+            >
+              <div className={`flex-shrink-0 rounded-md p-3 ${item.color}`}>
+                <item.icon className="h-6 w-6 text-white" aria-hidden="true" />
               </div>
-              <button className="btn-secondary">
-                {user?.twoFactorEnabled ? "Configure" : "Enable"}
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">Last Login</p>
-                <p className="text-sm text-gray-600">
-                  {user?.lastActivity
-                    ? new Date(user.lastActivity).toLocaleString()
-                    : "Never"}
-                </p>
+              <div className="ml-5 w-0 flex-1">
+                <dt className="truncate text-sm font-medium text-gray-500">
+                  {item.name}
+                </dt>
+                <dd>
+                  <div className="text-lg font-medium text-gray-900">
+                    {loading ? "..." : item.stat}
+                  </div>
+                </dd>
               </div>
             </div>
-          </div>
-        </div>
+          ))}
+        </dl>
       </div>
 
-      {showSettingsModal && (
-        <InactivitySettingsModal
-          onClose={() => setShowSettingsModal(false)}
-          onSave={() => {
-            setShowSettingsModal(false);
-            fetchSettings();
-          }}
-        />
-      )}
-
-      {showSuccessorModal && (
-        <SuccessorManagement
-          onClose={() => {
-            setShowSuccessorModal(false);
-            fetchSuccessors();
-          }}
-        />
-      )}
+      <div className="mt-8">
+        <h3 className="text-base font-semibold leading-6 text-gray-900">
+          Recent Activity
+        </h3>
+        <div className="mt-4 card">
+          {activities.length > 0 ? (
+            <ul role="list" className="divide-y divide-gray-100">
+              {activities.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex gap-x-4 py-5 px-6 hover:bg-gray-50"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold leading-6 text-gray-900">
+                      {formatActivityType(item.activity_type)}
+                    </p>
+                    <p className="mt-1 truncate text-xs leading-5 text-gray-500">
+                      {formatDate(item.created_at)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="p-6 text-center text-gray-500 text-sm">
+              No recent activity found.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

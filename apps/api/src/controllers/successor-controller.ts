@@ -1,4 +1,4 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { SuccessorService } from "../services/successor-service";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { AuthenticationError, NotFoundError } from "../errors";
@@ -158,6 +158,67 @@ export class SuccessorController {
       }
 
       res.json({ message: "Successor verified successfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async resendVerification(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        throw new AuthenticationError("User not authenticated");
+      }
+
+      const { id } = req.params;
+
+      await SuccessorService.resendVerification(userId, id);
+
+      res.json({ message: "Verification email sent successfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async verifySuccessorByToken(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== "string") {
+        res.status(400).json({
+          error: "Verification token is required",
+        });
+        return;
+      }
+
+      const result = await SuccessorService.verifySuccessorByToken(token);
+
+      if (!result.success) {
+        res.status(400).json({
+          error: "Invalid or expired verification token",
+        });
+        return;
+      }
+
+      if (result.alreadyVerified) {
+        res.json({
+          message:
+            "Your successor status was already verified! You can now close this window.",
+        });
+      } else {
+        res.json({
+          message:
+            "Successor verified successfully! You can now close this window.",
+        });
+      }
     } catch (error) {
       next(error);
     }

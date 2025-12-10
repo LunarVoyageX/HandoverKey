@@ -22,7 +22,7 @@ import { Generated } from "kysely";
 interface Migration {
   id: Generated<number>;
   name: string;
-  executed_at: Date;
+  applied_at: Date;
 }
 
 async function runMigrations(): Promise<void> {
@@ -94,7 +94,7 @@ async function runMigrations(): Promise<void> {
         await db
           .withTables<{ migrations: Migration }>()
           .insertInto("migrations")
-          .values({ name: migrationFile, executed_at: new Date() })
+          .values({ name: migrationFile, applied_at: new Date() })
           .execute();
       });
 

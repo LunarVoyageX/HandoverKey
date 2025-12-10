@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+dotenv.config();
 import { getDatabaseClient } from "@handoverkey/database";
 import {
   securityHeaders,
@@ -21,56 +22,48 @@ import vaultRoutes from "./routes/vault-routes";
 import activityRoutes from "./routes/activity-routes";
 import inactivityRoutes from "./routes/inactivity-routes";
 import sessionRoutes from "./routes/session-routes";
-import successorRoutes from "./routes/successor-routes";
+import successorRoutes, { verifyRouter } from "./routes/successor-routes";
 import adminRoutes from "./routes/admin-routes";
 import { JobProcessor, JobScheduler } from "./jobs";
 import { closeAllQueues } from "./config/queue";
 import { SessionService } from "./services/session-service";
 import { initializeRedis, closeRedis, checkRedisHealth } from "./config/redis";
 
-dotenv.config();
-
 const app = express();
 
 // Initialize database connection
 const dbClient = getDatabaseClient();
-dbClient
-  .initialize({
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || "5432"),
-    database: process.env.DB_NAME || "handoverkey_dev",
-    user: process.env.DB_USER || "postgres",
-    password: process.env.DB_PASSWORD || "postgres",
-    min: 2,
-    max: 10,
-  })
-  .then(async () => {
-    // Initialize SessionService with database client
-    SessionService.initialize(dbClient);
-    logger.info("SessionService initialized");
+export let appInit: Promise<void> = Promise.resolve();
 
-    // Initialize Redis
-    await initializeRedis();
-    logger.info("Redis initialized");
-  })
-  .catch((error) => {
-    logger.fatal({ err: error }, "Failed to initialize database or Redis");
-    process.exit(1);
-  });
-
-// Initialize job processors and schedule recurring jobs (only in non-test environment)
 if (process.env.NODE_ENV !== "test") {
-  JobProcessor.initialize()
+  appInit = dbClient
+    .initialize({
+      host: process.env.DB_HOST || "localhost",
+      port: parseInt(process.env.DB_PORT || "5432"),
+      database: process.env.DB_NAME || "handoverkey_dev",
+      user: process.env.DB_USER || "postgres",
+      password: process.env.DB_PASSWORD || "postgres",
+      min: 2,
+      max: 10,
+    })
     .then(async () => {
-      // Schedule recurring jobs
+      // Initialize SessionService with database client
+      SessionService.initialize(dbClient);
+      logger.info("SessionService initialized");
+
+      // Initialize Redis
+      await initializeRedis();
+      logger.info("Redis initialized");
+
+      // Initialize job processors and schedule recurring jobs
+      await JobProcessor.initialize();
       await JobScheduler.scheduleInactivityCheck();
       await JobScheduler.scheduleSessionCleanup();
-
       logger.info("Job processors initialized and recurring jobs scheduled");
     })
     .catch((error) => {
-      logger.error({ err: error }, "Failed to initialize job processors");
-      // Don't exit - the app can still function without background jobs
+      logger.fatal({ err: error }, "Failed to initialize application");
+      process.exit(1);
     });
 }
 
@@ -148,7 +141,8 @@ app.use("/api/v1/vault", vaultRoutes);
 app.use("/api/v1/activity", activityRoutes);
 app.use("/api/v1/inactivity", inactivityRoutes);
 app.use("/api/v1/sessions", sessionRoutes);
-app.use("/api/v1/successors", successorRoutes);
+app.use("/api/v1/successors", verifyRouter); // Public verify route (no auth)
+app.use("/api/v1/successors", successorRoutes); // Protected routes
 app.use("/api/v1/admin", adminRoutes);
 
 // 404 handler - must be after all routes

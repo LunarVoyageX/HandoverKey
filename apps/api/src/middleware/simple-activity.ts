@@ -23,20 +23,24 @@ export class SimpleActivityMiddleware {
           return next();
         }
 
-        // Record activity asynchronously to avoid blocking the request
-        process.nextTick(async () => {
-          try {
-            await UserService.logActivity(
-              req.user!.userId,
-              activityType,
-              req.ip,
-            );
-          } catch (error) {
-            if (process.env.NODE_ENV !== "test") {
+        // Record activity
+        // In test environment, await to ensure DB connection is still open
+        if (process.env.NODE_ENV === "test") {
+          await UserService.logActivity(req.user!.userId, activityType, req.ip);
+        } else {
+          // In production, record asynchronously to avoid blocking the request
+          process.nextTick(async () => {
+            try {
+              await UserService.logActivity(
+                req.user!.userId,
+                activityType,
+                req.ip,
+              );
+            } catch (error) {
               console.error("Failed to record activity:", error);
             }
-          }
-        });
+          });
+        }
 
         next();
       } catch (error) {

@@ -55,6 +55,7 @@ export class AuthController {
           email: user.email,
           twoFactorEnabled: user.twoFactorEnabled,
           createdAt: user.createdAt,
+          salt: Buffer.from(user.salt).toString("base64"),
         },
         tokens: {
           accessToken,
@@ -106,9 +107,8 @@ export class AuthController {
 
       if (existingUser) {
         // Check if account is locked
-        const { AccountLockoutService } = await import(
-          "../services/account-lockout-service"
-        );
+        const { AccountLockoutService } =
+          await import("../services/account-lockout-service");
         const lockStatus = await AccountLockoutService.isLocked(
           existingUser.id,
         );
@@ -145,9 +145,8 @@ export class AuthController {
       }
 
       // Clear failed login attempts on successful login
-      const { AccountLockoutService } = await import(
-        "../services/account-lockout-service"
-      );
+      const { AccountLockoutService } =
+        await import("../services/account-lockout-service");
       await AccountLockoutService.clearAttempts(user.id);
 
       // Log successful login
@@ -181,6 +180,7 @@ export class AuthController {
           email: user.email,
           twoFactorEnabled: user.twoFactorEnabled,
           lastActivity: user.lastActivity,
+          salt: Buffer.from(user.salt).toString("base64"),
         },
         tokens: {
           accessToken,
@@ -196,9 +196,8 @@ export class AuthController {
           );
           if (existingUser) {
             // Record failed attempt
-            const { AccountLockoutService } = await import(
-              "../services/account-lockout-service"
-            );
+            const { AccountLockoutService } =
+              await import("../services/account-lockout-service");
             const lockStatus = await AccountLockoutService.recordFailedAttempt(
               existingUser.id,
               req.ip,
@@ -348,7 +347,44 @@ export class AuthController {
           twoFactorEnabled: user.twoFactorEnabled,
           lastActivity: user.lastActivity,
           createdAt: user.createdAt,
+          salt: Buffer.from(user.salt).toString("base64"),
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async forgotPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { email } = req.body;
+      await UserService.requestPasswordReset(email);
+
+      // Always return success to prevent email enumeration
+      res.json({
+        message:
+          "If an account exists with this email, a password reset link has been sent.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async resetPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { token, password } = req.body;
+      await UserService.resetPassword(token, password);
+
+      res.json({
+        message: "Password has been reset successfully. You can now login.",
       });
     } catch (error) {
       next(error);

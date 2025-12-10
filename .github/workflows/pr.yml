@@ -1,6 +1,7 @@
 name: PR Pipeline
 permissions:
-  contents: write
+  contents: read
+  pull-requests: write
 
 on:
   pull_request:
@@ -34,6 +35,21 @@ jobs:
         ports:
           - 6379:6379
     
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: handoverkey_test
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/handoverkey_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: test-jwt-secret-for-ci-pipeline-do-not-use-in-production
+      JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-pipeline
+      FRONTEND_URL: http://localhost:5173
+      ENCRYPTION_KEY_SALT: test-encryption-salt-for-ci-only
+
     steps:
       - uses: actions/checkout@v6
       
@@ -53,7 +69,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+      - name: Run DB Migrations
+        run: npm run migrate -w @handoverkey/api
       - run: npm run test
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/handoverkey_test
-          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test

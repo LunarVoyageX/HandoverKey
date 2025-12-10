@@ -6,6 +6,9 @@ import {
 import { PasswordUtils } from "../auth/password";
 import { User, UserRegistration, UserLogin } from "@handoverkey/shared";
 import { ValidationError, ConflictError, AuthenticationError } from "../errors";
+import { getRedisClient } from "../config/redis";
+import { emailService } from "./email-service";
+import crypto from "crypto";
 
 export class UserService {
   private static getUserRepository(): UserRepository {
@@ -152,6 +155,61 @@ export class UserService {
   static async verifyEmail(userId: string): Promise<void> {
     const userRepo = this.getUserRepository();
     await userRepo.update(userId, { email_verified: true });
+  }
+
+  static async requestPasswordReset(email: string): Promise<void> {
+    const user = await this.findUserByEmail(email);
+    if (!user) {
+      // Don't reveal if user exists
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const redis = getRedisClient();
+
+    // Store token in Redis for 1 hour
+    await redis.set(`RESET_TOKEN:${token}`, user.id, {
+      EX: 3600,
+    });
+
+    await emailService.sendPasswordResetEmail(email, token);
+  }
+
+  static async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<void> {
+    const redis = getRedisClient();
+    const userId = await redis.get(`RESET_TOKEN:${token}`);
+
+    if (!userId) {
+      throw new ValidationError("Invalid or expired password reset token");
+    }
+
+    // Validate new password
+    const passwordValidation =
+      PasswordUtils.validatePasswordStrength(newPassword);
+    if (!passwordValidation.isValid) {
+      throw new ValidationError(
+        `Password validation failed: ${passwordValidation.errors.join(", ")}`,
+      );
+    }
+
+    // Hash new password
+    const passwordHash = await PasswordUtils.hashPassword(newPassword);
+
+    // Update user password
+    const userRepo = this.getUserRepository();
+    await userRepo.update(userId, {
+      password_hash: passwordHash,
+      updated_at: new Date(),
+    });
+
+    // Delete token
+    await redis.del(`RESET_TOKEN:${token}`);
+
+    // Log activity
+    await this.logActivity(userId, "PASSWORD_RESET", "system");
   }
 
   private static mapDbUserToUser(dbUser: {

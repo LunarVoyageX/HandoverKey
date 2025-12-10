@@ -65,6 +65,16 @@ router.delete(
 );
 
 /**
+ * Resend verification email to successor
+ * POST /api/v1/successors/:id/resend-verification
+ */
+router.post(
+  "/:id/resend-verification",
+  validateRequest(SuccessorIdSchema, "params"),
+  SuccessorController.resendVerification,
+);
+
+/**
  * Verify a successor with verification token
  * POST /api/v1/successors/:id/verify
  */
@@ -77,4 +87,13 @@ router.post(
   SuccessorController.verifySuccessor,
 );
 
+/**
+ * Verify a successor by token (public route for email verification)
+ * GET /api/v1/successors/verify?token=...
+ */
+const verifyRouter = Router();
+verifyRouter.get("/verify", SuccessorController.verifySuccessorByToken);
+
+// Mount the public verify route before authentication middleware
+export { verifyRouter };
 export default router;

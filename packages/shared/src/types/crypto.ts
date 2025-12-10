@@ -1,10 +1,4 @@
-export interface EncryptedData {
-  data: Uint8Array;
-  iv: Uint8Array;
-  algorithm: string;
-  salt?: Uint8Array;
-  iterations?: number;
-}
+import { EncryptedData } from "@handoverkey/crypto";
 
 export interface KeyDerivationParams {
   salt: Uint8Array;

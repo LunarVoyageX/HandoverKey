@@ -3,13 +3,27 @@ import {
   VaultRepository,
   VaultFilters as DbVaultFilters,
 } from "@handoverkey/database";
-import { VaultEntry, EncryptedData } from "@handoverkey/shared";
+import { EncryptedData } from "@handoverkey/shared";
 import { v4 as uuidv4 } from "uuid";
 
 export interface VaultFilters {
   category?: string;
   tag?: string;
   search?: string;
+}
+
+export interface VaultEntryResponse {
+  id: string;
+  userId: string;
+  encryptedData: string;
+  iv: string;
+  salt?: string;
+  algorithm: string;
+  category?: string;
+  tags?: string[];
+  version: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class VaultService {
@@ -24,7 +38,7 @@ export class VaultService {
     salt: Buffer,
     category?: string,
     tags?: string[],
-  ): Promise<VaultEntry> {
+  ): Promise<VaultEntryResponse> {
     const id = uuidv4();
     const vaultRepo = this.getVaultRepository();
 
@@ -49,7 +63,7 @@ export class VaultService {
   static async getUserEntries(
     userId: string,
     filters: VaultFilters = {},
-  ): Promise<VaultEntry[]> {
+  ): Promise<VaultEntryResponse[]> {
     const vaultRepo = this.getVaultRepository();
 
     const dbFilters: DbVaultFilters = {
@@ -64,7 +78,7 @@ export class VaultService {
   static async getEntry(
     userId: string,
     entryId: string,
-  ): Promise<VaultEntry | null> {
+  ): Promise<VaultEntryResponse | null> {
     const vaultRepo = this.getVaultRepository();
     const dbEntry = await vaultRepo.findById(entryId, userId);
 
@@ -81,7 +95,7 @@ export class VaultService {
     encryptedData: EncryptedData,
     category?: string,
     tags?: string[],
-  ): Promise<VaultEntry | null> {
+  ): Promise<VaultEntryResponse | null> {
     const vaultRepo = this.getVaultRepository();
 
     // Convert encrypted data to Buffer
@@ -113,7 +127,7 @@ export class VaultService {
   static async getEntriesByCategory(
     userId: string,
     category: string,
-  ): Promise<VaultEntry[]> {
+  ): Promise<VaultEntryResponse[]> {
     const vaultRepo = this.getVaultRepository();
     const dbEntries = await vaultRepo.findByUserId(userId, { category });
     return dbEntries.map(this.mapDbEntryToVaultEntry);
@@ -122,7 +136,7 @@ export class VaultService {
   static async getEntriesByTag(
     userId: string,
     tag: string,
-  ): Promise<VaultEntry[]> {
+  ): Promise<VaultEntryResponse[]> {
     const vaultRepo = this.getVaultRepository();
     const dbEntries = await vaultRepo.findByUserId(userId, { tag });
     return dbEntries.map(this.mapDbEntryToVaultEntry);
@@ -155,16 +169,14 @@ export class VaultService {
     version: number;
     created_at: Date;
     updated_at: Date;
-  }): VaultEntry {
+  }): VaultEntryResponse {
     return {
       id: dbEntry.id,
       userId: dbEntry.user_id,
-      encryptedData: {
-        data: dbEntry.encrypted_data,
-        iv: dbEntry.iv,
-        algorithm: dbEntry.algorithm,
-      },
-      salt: dbEntry.salt?.toString(),
+      encryptedData: dbEntry.encrypted_data.toString("base64"),
+      iv: dbEntry.iv.toString("base64"),
+      salt: dbEntry.salt?.toString("base64"),
+      algorithm: dbEntry.algorithm,
       category: dbEntry.category ?? undefined,
       tags: dbEntry.tags ?? undefined,
       version: dbEntry.version,

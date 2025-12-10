@@ -6,7 +6,5 @@ export * from "./utils/validation";
 export * from "./utils/constants";
 
 // Crypto modules (moved from @handoverkey/core)
-export * from "./crypto/key-derivation";
-export * from "./crypto/encryption";
-export * from "./crypto/shamir";
+export * from "@handoverkey/crypto";
 export * from "./crypto/vault";

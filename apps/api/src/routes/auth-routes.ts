@@ -8,6 +8,8 @@ import {
   RegisterSchema,
   LoginSchema,
   RefreshTokenSchema,
+  PasswordResetRequestSchema,
+  PasswordResetConfirmSchema,
 } from "../validation/schemas";
 
 const router = Router();
@@ -27,6 +29,23 @@ router.post(
   validateRequest(LoginSchema, "body"),
   AuthController.login,
   SimpleActivityMiddleware.trackActivity("LOGIN"),
+);
+
+// Forgot password endpoint
+router.post(
+  "/forgot-password",
+  authRateLimiter as unknown as import("express").RequestHandler,
+  validateRequest(PasswordResetRequestSchema, "body"),
+  AuthController.forgotPassword,
+);
+
+// Reset password endpoint
+router.post(
+  "/reset-password",
+  authRateLimiter as unknown as import("express").RequestHandler,
+  validateRequest(PasswordResetConfirmSchema, "body"),
+  AuthController.resetPassword,
+  SimpleActivityMiddleware.trackActivity("PASSWORD_RESET"),
 );
 
 // Logout endpoint (requires authentication)

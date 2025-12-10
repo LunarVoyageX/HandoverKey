@@ -4,9 +4,18 @@ module.exports = {
   roots: ["<rootDir>/src"],
   testMatch: ["**/*.test.ts"],
   transform: {
-    "^.+\\.ts$": "ts-jest",
+    "^.+\\.[tj]sx?$": [
+      "ts-jest",
+      {
+        isolatedModules: true,
+        tsconfig: "tsconfig.json",
+      },
+    ],
   },
+  transformIgnorePatterns: ["node_modules/(?!(uuid|@handoverkey)/)"],
   moduleNameMapper: {
-    "^@handoverkey/shared$": "<rootDir>/../shared/src",
+    "^@handoverkey/shared$": "<rootDir>/../../packages/shared/src",
+    "^@handoverkey/database$": "<rootDir>/../../packages/database/src",
+    "^@handoverkey/crypto$": "<rootDir>/../../packages/crypto/src",
   },
 };

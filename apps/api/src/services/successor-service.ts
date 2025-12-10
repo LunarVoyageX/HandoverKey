@@ -180,4 +180,72 @@ export class SuccessorService {
 
     return true;
   }
+
+  static async verifySuccessorByToken(
+    verificationToken: string,
+  ): Promise<{ success: boolean; alreadyVerified: boolean }> {
+    const successorRepo = this.getSuccessorRepository();
+    const db = successorRepo["db"]; // Access the kysely instance
+
+    // First check if successor exists with this token and is already verified
+    const existingSuccessor = await db
+      .selectFrom("successors")
+      .selectAll()
+      .where("verification_token", "=", verificationToken)
+      .where("verified", "=", true)
+      .executeTakeFirst();
+
+    if (existingSuccessor) {
+      return { success: true, alreadyVerified: true };
+    }
+
+    // Find unverified successor by verification token
+    const successor = await db
+      .selectFrom("successors")
+      .selectAll()
+      .where("verification_token", "=", verificationToken)
+      .where("verified", "=", false)
+      .executeTakeFirst();
+
+    if (!successor) {
+      return { success: false, alreadyVerified: false };
+    }
+
+    // Update to verified
+    await successorRepo.update(successor.id, {
+      verified: true,
+      verification_token: null,
+    });
+
+    return { success: true, alreadyVerified: false };
+  }
+
+  static async resendVerification(
+    userId: string,
+    successorId: string,
+  ): Promise<void> {
+    const successorRepo = this.getSuccessorRepository();
+    const successor = await successorRepo.findById(successorId);
+
+    if (!successor || successor.user_id !== userId) {
+      throw new Error("Successor not found");
+    }
+
+    if (successor.verified) {
+      throw new Error("Successor already verified");
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    await successorRepo.update(successorId, {
+      verification_token: verificationToken,
+    });
+
+    // Send verification email
+    const { emailService } = await import("./email-service");
+    await emailService.sendSuccessorVerificationEmail(
+      successor.email,
+      verificationToken,
+    );
+  }
 }

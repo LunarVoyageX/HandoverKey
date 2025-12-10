@@ -1,6 +1,7 @@
 import { getRedisClient } from "../config/redis";
 import { logger } from "../config/logger";
 import { UserService } from "./user-service";
+import { UserRepository, getDatabaseClient } from "@handoverkey/database";
 
 export interface LockoutStatus {
   isLocked: boolean;
@@ -108,8 +109,6 @@ export class AccountLockoutService {
       const lockedUntil = new Date(Date.now() + this.LOCKOUT_DURATION * 1000);
 
       // Directly update using repository to avoid UserService mapping
-      const { UserRepository } = await import("@handoverkey/database");
-      const { getDatabaseClient } = await import("@handoverkey/database");
       const dbClient = getDatabaseClient();
       const userRepo = new UserRepository(dbClient.getKysely());
 
@@ -185,8 +184,6 @@ export class AccountLockoutService {
       await redis.del(attemptKey);
 
       // Clear database fields
-      const { UserRepository } = await import("@handoverkey/database");
-      const { getDatabaseClient } = await import("@handoverkey/database");
       const dbClient = getDatabaseClient();
       const userRepo = new UserRepository(dbClient.getKysely());
 
@@ -216,8 +213,6 @@ export class AccountLockoutService {
       await redis.del(attemptKey);
 
       // Clear database fields
-      const { UserRepository } = await import("@handoverkey/database");
-      const { getDatabaseClient } = await import("@handoverkey/database");
       const dbClient = getDatabaseClient();
       const userRepo = new UserRepository(dbClient.getKysely());
 

@@ -59,9 +59,9 @@ export class VaultController {
       // Convert binary data to base64 for JSON response
       const responseEntries = entries.map((entry) => ({
         id: entry.id,
-        encryptedData: Buffer.from(entry.encryptedData.data).toString("base64"),
-        iv: Buffer.from(entry.encryptedData.iv).toString("base64"),
-        algorithm: entry.encryptedData.algorithm,
+        encryptedData: entry.encryptedData,
+        iv: entry.iv,
+        algorithm: entry.algorithm,
         category: entry.category,
         tags: entry.tags,
         version: entry.version,
@@ -94,9 +94,9 @@ export class VaultController {
 
       res.json({
         id: entry.id,
-        encryptedData: Buffer.from(entry.encryptedData.data).toString("base64"),
-        iv: Buffer.from(entry.encryptedData.iv).toString("base64"),
-        algorithm: entry.encryptedData.algorithm,
+        encryptedData: entry.encryptedData,
+        iv: entry.iv,
+        algorithm: entry.algorithm,
         category: entry.category,
         tags: entry.tags,
         version: entry.version,

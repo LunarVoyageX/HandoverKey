@@ -1,5 +1,5 @@
 import { VaultEntry } from "../types/crypto";
-import { Encryption } from "./encryption";
+import { encrypt, decrypt, decryptFile } from "@handoverkey/crypto";
 import { v4 as uuidv4 } from "uuid";
 
 export class VaultManager {
@@ -10,7 +10,7 @@ export class VaultManager {
     category?: string,
     tags?: string[],
   ): Promise<VaultEntry> {
-    const encryptedData = await Encryption.encrypt(data, key);
+    const encryptedData = await encrypt(data, key);
 
     const entry: VaultEntry = {
       id: uuidv4(),
@@ -33,7 +33,7 @@ export class VaultManager {
     category?: string,
     tags?: string[],
   ): Promise<VaultEntry> {
-    const encryptedData = await Encryption.encrypt(newData, key);
+    const encryptedData = await encrypt(newData, key);
 
     return {
       ...entry,
@@ -49,14 +49,14 @@ export class VaultManager {
     entry: VaultEntry,
     key: CryptoKey,
   ): Promise<string> {
-    return Encryption.decrypt(entry.encryptedData, key);
+    return decrypt(entry.encryptedData, key);
   }
 
   static async decryptFileEntry(
     entry: VaultEntry,
     key: CryptoKey,
   ): Promise<Uint8Array> {
-    return Encryption.decryptFile(entry.encryptedData, key);
+    return decryptFile(entry.encryptedData, key);
   }
 
   static async searchEntries(
