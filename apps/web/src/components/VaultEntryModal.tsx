@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
@@ -12,16 +12,34 @@ interface VaultEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: VaultEntryData) => void;
+  onDelete?: () => void;
+  initialData?: VaultEntryData | null;
 }
 
 const VaultEntryModal: React.FC<VaultEntryModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onDelete,
+  initialData,
 }) => {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Login");
   const [secret, setSecret] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setName(initialData.name);
+        setCategory(initialData.category);
+        setSecret(initialData.secret);
+      } else {
+        setName("");
+        setCategory("Login");
+        setSecret("");
+      }
+    }
+  }, [isOpen, initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +92,7 @@ const VaultEntryModal: React.FC<VaultEntryModalProps> = ({
                       as="h3"
                       className="text-base font-semibold leading-6 text-gray-900"
                     >
-                      Add New Secret
+                      {initialData ? "Secret Details" : "Add New Secret"}
                     </Dialog.Title>
                     <div className="mt-2">
                       <form onSubmit={handleSubmit} className="space-y-4">
@@ -139,13 +157,15 @@ const VaultEntryModal: React.FC<VaultEntryModalProps> = ({
                           >
                             Save
                           </button>
-                          <button
-                            type="button"
-                            className="btn btn-secondary mt-3 w-full sm:mt-0 sm:w-auto"
-                            onClick={onClose}
-                          >
-                            Cancel
-                          </button>
+                          {initialData && onDelete && (
+                            <button
+                              type="button"
+                              className="btn bg-red-600 text-white hover:bg-red-700 mt-3 w-full sm:mt-0 sm:w-auto sm:mr-auto"
+                              onClick={onDelete}
+                            >
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </form>
                     </div>

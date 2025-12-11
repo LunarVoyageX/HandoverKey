@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { AxiosError } from "axios";
 import { PlusIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import api from "../services/api";
+import { useToast } from "../contexts/ToastContext";
+import ConfirmationModal from "../components/ConfirmationModal";
 
 interface Successor {
   id: string;
@@ -12,14 +15,20 @@ interface Successor {
 }
 
 const Successors: React.FC = () => {
+  const { success, error: showError } = useToast();
   const [successors, setSuccessors] = useState<Successor[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [successorToDelete, setSuccessorToDelete] = useState<string | null>(
+    null,
+  );
 
   // Form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [delay, setDelay] = useState(30);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSuccessors();
@@ -40,6 +49,7 @@ const Successors: React.FC = () => {
 
   const handleAddSuccessor = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     try {
       await api.post("/successors", {
         name,
@@ -51,35 +61,64 @@ const Successors: React.FC = () => {
       setEmail("");
       setDelay(30);
       fetchSuccessors();
-    } catch (error) {
-      console.error("Failed to add successor", error);
+      success("Successor added successfully!");
+    } catch (err) {
+      const error = err as AxiosError<{
+        error?: { message: string };
+        message?: string;
+      }>;
+      setError(
+        error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          "Failed to add successor",
+      );
     }
   };
 
-  const handleDeleteSuccessor = async (successorId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to remove this successor? This action cannot be undone.",
-      )
-    ) {
-      return;
-    }
+  const handleDeleteSuccessor = (successorId: string) => {
+    setSuccessorToDelete(successorId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteSuccessor = async () => {
+    if (!successorToDelete) return;
 
     try {
-      await api.delete(`/successors/${successorId}`);
+      await api.delete(`/successors/${successorToDelete}`);
       fetchSuccessors();
+      success("Successor removed successfully!");
     } catch (error) {
       console.error("Failed to delete successor", error);
+      showError("Failed to remove successor");
+    } finally {
+      setSuccessorToDelete(null);
+      setIsDeleteModalOpen(false);
     }
   };
 
   const handleResendVerification = async (successorId: string) => {
     try {
-      await api.post(`/successors/${successorId}/resend-verification`);
-      alert("Verification email has been resent successfully!");
-    } catch (error) {
+      await api.post(`/successors/${successorId}/resend-verification`, {});
+      success("Verification email has been resent successfully!");
+    } catch (err) {
+      const error = err as {
+        response?: {
+          data?: {
+            error?: { message?: string; details?: Array<{ message?: string }> };
+            message?: string;
+          };
+        };
+      };
       console.error("Failed to resend verification", error);
-      alert("Failed to resend verification email. Please try again.");
+
+      const message =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        "Failed to resend verification email";
+
+      const details = error.response?.data?.error?.details?.[0]?.message;
+
+      showError(details ? `${message}: ${details}` : message);
     }
   };
 
@@ -192,6 +231,11 @@ const Successors: React.FC = () => {
                     Add New Successor
                   </h3>
                   <div className="mt-2">
+                    {error && (
+                      <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                        {error}
+                      </div>
+                    )}
                     <form onSubmit={handleAddSuccessor} className="space-y-4">
                       <div>
                         <label
@@ -265,6 +309,16 @@ const Successors: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteSuccessor}
+        title="Remove Successor"
+        message="Are you sure you want to remove this successor? This action cannot be undone."
+        confirmText="Remove"
+        type="danger"
+      />
     </div>
   );
 };

@@ -256,20 +256,28 @@ export const sanitizeInput = (
     });
 
     // Check for common attack patterns using safe string methods
-    const suspiciousPatterns = [
+    const suspiciousPatterns: (string | RegExp)[] = [
       "javascript:",
       "vbscript:",
-      "__proto__",
-      "constructor",
+      // "__proto__", // Removed as it triggers false positives in stringified JSON
+      // "constructor", // Removed as it triggers false positives in stringified JSON
       "eval(",
       "function(",
-      "script",
+      // Match <script followed by whitespace or > to avoid false positives
+      /<script(\s|>)/i,
     ];
 
     // Check patterns in stringified content
     let foundPattern = null;
     for (const pattern of suspiciousPatterns) {
-      if (originalRequestString.toLowerCase().includes(pattern.toLowerCase())) {
+      if (pattern instanceof RegExp) {
+        if (pattern.test(originalRequestString)) {
+          foundPattern = pattern.toString();
+          break;
+        }
+      } else if (
+        originalRequestString.toLowerCase().includes(pattern.toLowerCase())
+      ) {
         foundPattern = pattern;
         break;
       }

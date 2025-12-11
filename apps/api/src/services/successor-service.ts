@@ -1,6 +1,7 @@
 import { getDatabaseClient, SuccessorRepository } from "@handoverkey/database";
 import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
+import { ConflictError, NotFoundError } from "../errors";
 
 export interface AddSuccessorData {
   email: string;
@@ -38,15 +39,25 @@ export class SuccessorService {
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
-    const successor = await successorRepo.create({
-      id,
-      user_id: userId,
-      email: data.email.toLowerCase().trim(),
-      name: data.name ?? null,
-      verification_token: verificationToken,
-      verified: false,
-      handover_delay_days: data.handoverDelayDays ?? 90,
-    });
+    let successor;
+    try {
+      successor = await successorRepo.create({
+        id,
+        user_id: userId,
+        email: data.email.toLowerCase().trim(),
+        name: data.name ?? null,
+        verification_token: verificationToken,
+        verified: false,
+        handover_delay_days: data.handoverDelayDays ?? 90,
+      });
+    } catch (error: unknown) {
+      // Check for unique constraint violation (Postgres code 23505)
+      const dbError = error as { originalError?: { code?: string } };
+      if (dbError.originalError?.code === "23505") {
+        throw new ConflictError("Successor with this email already exists");
+      }
+      throw error;
+    }
 
     // Send verification email
     try {
@@ -175,7 +186,6 @@ export class SuccessorService {
 
     await successorRepo.update(successorId, {
       verified: true,
-      verification_token: null,
     });
 
     return true;
@@ -183,7 +193,7 @@ export class SuccessorService {
 
   static async verifySuccessorByToken(
     verificationToken: string,
-  ): Promise<{ success: boolean; alreadyVerified: boolean }> {
+  ): Promise<{ success: boolean; alreadyVerified: boolean; userId?: string }> {
     const successorRepo = this.getSuccessorRepository();
     const db = successorRepo["db"]; // Access the kysely instance
 
@@ -196,7 +206,11 @@ export class SuccessorService {
       .executeTakeFirst();
 
     if (existingSuccessor) {
-      return { success: true, alreadyVerified: true };
+      return {
+        success: true,
+        alreadyVerified: true,
+        userId: existingSuccessor.user_id,
+      };
     }
 
     // Find unverified successor by verification token
@@ -214,10 +228,9 @@ export class SuccessorService {
     // Update to verified
     await successorRepo.update(successor.id, {
       verified: true,
-      verification_token: null,
     });
 
-    return { success: true, alreadyVerified: false };
+    return { success: true, alreadyVerified: false, userId: successor.user_id };
   }
 
   static async resendVerification(
@@ -228,11 +241,11 @@ export class SuccessorService {
     const successor = await successorRepo.findById(successorId);
 
     if (!successor || successor.user_id !== userId) {
-      throw new Error("Successor not found");
+      throw new NotFoundError("Successor");
     }
 
     if (successor.verified) {
-      throw new Error("Successor already verified");
+      throw new ConflictError("Successor already verified");
     }
 
     // Generate new verification token
@@ -242,10 +255,17 @@ export class SuccessorService {
     });
 
     // Send verification email
-    const { emailService } = await import("./email-service");
-    await emailService.sendSuccessorVerificationEmail(
-      successor.email,
-      verificationToken,
-    );
+    try {
+      const { emailService } = await import("./email-service");
+      await emailService.sendSuccessorVerificationEmail(
+        successor.email,
+        verificationToken,
+      );
+    } catch (error) {
+      console.error("Failed to send verification email:", error);
+      // If email fails, we should probably let the user know, but for now we'll just log it
+      // and allow them to retry via the resend endpoint
+      throw new Error("Failed to send verification email");
+    }
   }
 }
