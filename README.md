@@ -129,7 +129,7 @@ graph TD
     npm run dev
     ```
 
-    *   Web App: `http://localhost:3000`
+    *   Web App: `http://localhost:5173`
     *   API: `http://localhost:3001`
 
 ---
