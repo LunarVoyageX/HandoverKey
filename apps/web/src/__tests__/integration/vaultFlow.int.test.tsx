@@ -14,6 +14,7 @@ import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import Vault from "../../pages/Vault";
 import { AuthProvider } from "../../contexts/AuthContext";
+import { ToastProvider } from "../../contexts/ToastContext";
 
 // Polyfill ResizeObserver for HeadlessUI
 global.ResizeObserver = class ResizeObserver {
@@ -23,15 +24,34 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Mock Heroicons
-vi.mock("@heroicons/react/24/outline", () => ({
-  PlusIcon: () => <div data-testid="plus-icon" />,
-  MagnifyingGlassIcon: () => <div data-testid="search-icon" />,
-  XMarkIcon: () => <div data-testid="close-icon" />,
-  EyeIcon: () => <div data-testid="eye-icon" />,
-  EyeSlashIcon: () => <div data-testid="eye-slash-icon" />,
-}));
-
-// Mock Encryption Service
+vi.mock("@heroicons/react/24/outline", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PlusIcon: (props: any) => <svg {...props} data-testid="plus-icon" />,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    MagnifyingGlassIcon: (props: any) => (
+      <svg {...props} data-testid="search-icon" />
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ExclamationTriangleIcon: (props: any) => (
+      <svg {...props} data-testid="exclamation-triangle-icon" />
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    CheckCircleIcon: (props: any) => (
+      <svg {...props} data-testid="check-circle-icon" />
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    XCircleIcon: (props: any) => <svg {...props} data-testid="x-circle-icon" />,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    InformationCircleIcon: (props: any) => (
+      <svg {...props} data-testid="information-circle-icon" />
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    XMarkIcon: (props: any) => <svg {...props} data-testid="x-mark-icon" />,
+  };
+});// Mock Encryption Service
 vi.mock("../../services/encryption", () => ({
   decryptData: vi.fn().mockImplementation(async () => {
     return {
@@ -47,6 +67,19 @@ vi.mock("../../services/encryption", () => ({
       algorithm: "AES-GCM",
     };
   }),
+}));
+
+// Mock framer-motion
+vi.mock("framer-motion", () => ({
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  motion: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    li: ({ children, ...props }: any) => <li {...props}>{children}</li>,
+  },
 }));
 
 const server = setupServer(
@@ -87,7 +120,9 @@ describe("Vault Integration", () => {
     render(
       <MemoryRouter>
         <AuthProvider>
-          <Vault />
+          <ToastProvider>
+            <Vault />
+          </ToastProvider>
         </AuthProvider>
       </MemoryRouter>,
     );
@@ -103,7 +138,9 @@ describe("Vault Integration", () => {
     render(
       <MemoryRouter>
         <AuthProvider>
-          <Vault />
+          <ToastProvider>
+            <Vault />
+          </ToastProvider>
         </AuthProvider>
       </MemoryRouter>,
     );

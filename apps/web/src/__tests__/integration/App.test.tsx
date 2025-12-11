@@ -10,6 +10,19 @@ vi.mock("../services/api", () => ({
   },
 }));
 
+// Mock framer-motion
+vi.mock("framer-motion", () => ({
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  motion: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    li: ({ children, ...props }: any) => <li {...props}>{children}</li>,
+  },
+}));
+
 describe("App Integration", () => {
   it("renders login page by default", () => {
     render(<App />);

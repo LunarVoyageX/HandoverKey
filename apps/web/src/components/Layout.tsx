@@ -120,16 +120,33 @@ const Layout: React.FC = () => {
                           </ul>
                         </li>
                         <li className="mt-auto">
-                          <button
-                            onClick={logout}
-                            className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-gray-50 hover:text-blue-600 w-full"
-                          >
-                            <ArrowRightOnRectangleIcon
-                              className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-blue-600"
-                              aria-hidden="true"
-                            />
-                            Log out
-                          </button>
+                          <div className="-mx-2 flex flex-col gap-y-2 border-t border-gray-200 pt-4 mt-4">
+                            <div className="flex items-center gap-x-3 px-2 py-2 rounded-md hover:bg-gray-50 transition-colors">
+                              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shrink-0">
+                                {user?.name?.[0]?.toUpperCase() ||
+                                  user?.email?.[0]?.toUpperCase() ||
+                                  "U"}
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-semibold text-gray-900 truncate">
+                                  {user?.name || "User"}
+                                </span>
+                                <span className="text-xs text-gray-500 truncate">
+                                  {user?.email}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={logout}
+                              className="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-red-50 hover:text-red-600 w-full transition-colors"
+                            >
+                              <ArrowRightOnRectangleIcon
+                                className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-red-600 transition-colors"
+                                aria-hidden="true"
+                              />
+                              Log out
+                            </button>
+                          </div>
                         </li>
                       </ul>
                     </nav>
@@ -179,23 +196,33 @@ const Layout: React.FC = () => {
                   </ul>
                 </li>
                 <li className="mt-auto">
-                  <div className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900">
-                    <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center text-blue-600 font-bold border border-gray-200">
-                      {user?.name?.[0] || user?.email?.[0] || "U"}
+                  <div className="-mx-2 flex flex-col gap-y-2 border-t border-gray-200 pt-4 mt-4">
+                    <div className="flex items-center gap-x-3 px-2 py-2 rounded-md hover:bg-gray-50 transition-colors">
+                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shrink-0">
+                        {user?.name?.[0]?.toUpperCase() ||
+                          user?.email?.[0]?.toUpperCase() ||
+                          "U"}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-gray-900 truncate">
+                          {user?.name || "User"}
+                        </span>
+                        <span className="text-xs text-gray-500 truncate">
+                          {user?.email}
+                        </span>
+                      </div>
                     </div>
-                    <span className="sr-only">Your profile</span>
-                    <span aria-hidden="true">{user?.name || user?.email}</span>
+                    <button
+                      onClick={logout}
+                      className="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-red-50 hover:text-red-600 w-full transition-colors"
+                    >
+                      <ArrowRightOnRectangleIcon
+                        className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-red-600 transition-colors"
+                        aria-hidden="true"
+                      />
+                      Log out
+                    </button>
                   </div>
-                  <button
-                    onClick={logout}
-                    className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-gray-50 hover:text-blue-600 w-full"
-                  >
-                    <ArrowRightOnRectangleIcon
-                      className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-blue-600"
-                      aria-hidden="true"
-                    />
-                    Log out
-                  </button>
                 </li>
               </ul>
             </nav>
@@ -216,7 +243,12 @@ const Layout: React.FC = () => {
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
               <div className="flex flex-1" />
               <div className="flex items-center gap-x-4 lg:gap-x-6">
-                <div className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900">
+                <div className="flex items-center gap-x-3 px-4 py-3 text-sm font-semibold leading-6 text-gray-900">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shrink-0">
+                    {user?.name?.[0]?.toUpperCase() ||
+                      user?.email?.[0]?.toUpperCase() ||
+                      "U"}
+                  </div>
                   <span aria-hidden="true">{user?.name || user?.email}</span>
                 </div>
               </div>

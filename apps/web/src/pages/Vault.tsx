@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { PlusIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import api from "../services/api";
 import VaultEntryModal, { VaultEntryData } from "../components/VaultEntryModal";
+import ConfirmationModal from "../components/ConfirmationModal";
 import { encryptData, decryptData } from "../services/encryption";
+import { useToast } from "../contexts/ToastContext";
 
 interface VaultEntry {
   id: string;
@@ -14,10 +16,13 @@ interface VaultEntry {
 }
 
 const Vault: React.FC = () => {
+  const { success, error: showError } = useToast();
   const [entries, setEntries] = useState<VaultEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<VaultEntry | null>(null);
 
   useEffect(() => {
     fetchEntries();
@@ -26,7 +31,8 @@ const Vault: React.FC = () => {
   const fetchEntries = async () => {
     console.log("Fetching entries...");
     try {
-      const response = await api.get("/vault/entries");
+      // Add timestamp to prevent caching
+      const response = await api.get(`/vault/entries?t=${Date.now()}`);
       console.log("API Response:", response.data);
       const rawEntries = response.data.data || response.data; // Handle pagination wrapper if present
 
@@ -82,20 +88,56 @@ const Vault: React.FC = () => {
     try {
       const encrypted = await encryptData(data);
 
-      await api.post("/vault/entries", {
+      const payload = {
         encryptedData: encrypted.encryptedData,
         iv: encrypted.iv,
         salt: encrypted.salt,
         algorithm: encrypted.algorithm,
         category: data.category,
         tags: [],
-      });
+      };
+
+      if (selectedEntry) {
+        await api.put(`/vault/entries/${selectedEntry.id}`, payload);
+        success("Secret updated successfully!");
+      } else {
+        await api.post("/vault/entries", payload);
+        success("Secret created successfully!");
+      }
 
       // Refresh list
       fetchEntries();
     } catch (error) {
       console.error("Failed to save entry", error);
+      showError("Failed to save secret");
     }
+  };
+
+  const handleDeleteEntry = async () => {
+    if (!selectedEntry) {
+      console.error("No entry selected for deletion");
+      return;
+    }
+
+    console.log("Deleting entry:", selectedEntry.id);
+
+    try {
+      await api.delete(`/vault/entries/${selectedEntry.id}`);
+      console.log("Delete successful");
+      success("Secret deleted successfully!");
+      setIsModalOpen(false);
+      setIsDeleteModalOpen(false);
+      setSelectedEntry(null);
+      fetchEntries();
+    } catch (error) {
+      console.error("Failed to delete entry", error);
+      showError("Failed to delete secret");
+    }
+  };
+
+  const handleEntryClick = (entry: VaultEntry) => {
+    setSelectedEntry(entry);
+    setIsModalOpen(true);
   };
 
   const filteredEntries = entries.filter(
@@ -155,6 +197,7 @@ const Vault: React.FC = () => {
               <div
                 key={entry.id}
                 className="card p-6 hover:shadow-apple-lg transition-shadow cursor-pointer group"
+                onClick={() => handleEntryClick(entry)}
               >
                 <div className="flex items-center justify-between mb-4">
                   <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
@@ -178,8 +221,39 @@ const Vault: React.FC = () => {
 
       <VaultEntryModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedEntry(null);
+        }}
         onSave={handleSaveEntry}
+        onDelete={
+          selectedEntry
+            ? () => {
+                console.log("Delete button clicked in modal");
+                setIsModalOpen(false);
+                setTimeout(() => setIsDeleteModalOpen(true), 100);
+              }
+            : undefined
+        }
+        initialData={
+          selectedEntry
+            ? {
+                name: selectedEntry.name,
+                category: selectedEntry.category,
+                secret: selectedEntry.secret || "",
+              }
+            : null
+        }
+      />
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteEntry}
+        title="Delete Secret"
+        message="Are you sure you want to delete this secret? This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
       />
     </div>
   );

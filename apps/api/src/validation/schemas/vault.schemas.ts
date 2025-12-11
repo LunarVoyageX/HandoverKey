@@ -69,7 +69,7 @@ export const UpdateVaultEntrySchema = z
       .string()
       .min(1, "IV is required")
       .regex(base64Regex, "IV must be valid base64")
-      .length(24, "IV must be 24 characters (16 bytes base64)")
+      .length(16, "IV must be 16 characters (12 bytes base64)")
       .optional(),
     algorithm: z
       .literal("AES-GCM")

@@ -1,5 +1,6 @@
 import { Response, NextFunction } from "express";
 import { VaultService } from "../services/vault-service";
+import { UserService } from "../services/user-service";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { AuthenticationError, NotFoundError } from "../errors";
 
@@ -29,6 +30,8 @@ export class VaultController {
         tags,
       );
 
+      await UserService.logActivity(req.user.userId, "SECRET_CREATED", req.ip);
+
       res.status(201).json({
         id: entry.id,
         message: "Vault entry created successfully",
@@ -55,6 +58,15 @@ export class VaultController {
         tag: tag as string,
         search: search as string,
       });
+
+      // Prevent caching of sensitive vault data
+      res.set(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate",
+      );
+      res.set("Pragma", "no-cache");
+      res.set("Expires", "0");
+      res.set("Surrogate-Control", "no-store");
 
       // Convert binary data to base64 for JSON response
       const responseEntries = entries.map((entry) => ({
@@ -138,6 +150,8 @@ export class VaultController {
         throw new NotFoundError("Vault entry");
       }
 
+      await UserService.logActivity(req.user.userId, "SECRET_UPDATED", req.ip);
+
       res.json({ message: "Vault entry updated successfully" });
     } catch (error) {
       next(error);
@@ -155,14 +169,25 @@ export class VaultController {
       }
 
       const { id } = req.params;
+      console.log(
+        `[VaultController] Deleting entry ${id} for user ${req.user.userId}`,
+      );
+
       const deleted = await VaultService.deleteEntry(req.user.userId, id);
 
       if (!deleted) {
+        console.log(
+          `[VaultController] Entry ${id} not found or could not be deleted`,
+        );
         throw new NotFoundError("Vault entry");
       }
 
+      await UserService.logActivity(req.user.userId, "SECRET_DELETED", req.ip);
+
+      console.log(`[VaultController] Entry ${id} deleted successfully`);
       res.json({ message: "Vault entry deleted successfully" });
     } catch (error) {
+      console.error(`[VaultController] Error deleting entry:`, error);
       next(error);
     }
   }

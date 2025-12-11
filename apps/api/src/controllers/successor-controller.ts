@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { SuccessorService } from "../services/successor-service";
+import { UserService } from "../services/user-service";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { AuthenticationError, NotFoundError } from "../errors";
 
@@ -21,6 +22,8 @@ export class SuccessorController {
         name,
         handoverDelayDays,
       });
+
+      await UserService.logActivity(req.user.userId, "SUCCESSOR_ADDED", req.ip);
 
       res.status(201).json({
         message: "Successor added successfully",
@@ -101,6 +104,12 @@ export class SuccessorController {
         throw new NotFoundError("Successor");
       }
 
+      await UserService.logActivity(
+        req.user.userId,
+        "SUCCESSOR_UPDATED",
+        req.ip,
+      );
+
       res.json({
         message: "Successor updated successfully",
         successor,
@@ -130,6 +139,12 @@ export class SuccessorController {
         throw new NotFoundError("Successor");
       }
 
+      await UserService.logActivity(
+        req.user.userId,
+        "SUCCESSOR_REMOVED",
+        req.ip,
+      );
+
       res.json({ message: "Successor deleted successfully" });
     } catch (error) {
       next(error);
@@ -142,6 +157,10 @@ export class SuccessorController {
     next: NextFunction,
   ): Promise<void> {
     try {
+      if (!req.user) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
       const { id } = req.params;
       const { verificationToken } = req.body;
 
@@ -156,6 +175,12 @@ export class SuccessorController {
         });
         return;
       }
+
+      await UserService.logActivity(
+        req.user.userId,
+        "SUCCESSOR_VERIFIED",
+        req.ip,
+      );
 
       res.json({ message: "Successor verified successfully" });
     } catch (error) {
@@ -177,6 +202,8 @@ export class SuccessorController {
       const { id } = req.params;
 
       await SuccessorService.resendVerification(userId, id);
+
+      await UserService.logActivity(userId, "VERIFICATION_RESENT", req.ip);
 
       res.json({ message: "Verification email sent successfully" });
     } catch (error) {
@@ -208,17 +235,18 @@ export class SuccessorController {
         return;
       }
 
-      if (result.alreadyVerified) {
-        res.json({
-          message:
-            "Your successor status was already verified! You can now close this window.",
-        });
-      } else {
-        res.json({
-          message:
-            "Successor verified successfully! You can now close this window.",
-        });
+      if (result.userId) {
+        await UserService.logActivity(
+          result.userId,
+          "SUCCESSOR_VERIFIED",
+          req.ip,
+        );
       }
+
+      res.json({
+        message:
+          "Successor verified successfully! You can now close this window.",
+      });
     } catch (error) {
       next(error);
     }

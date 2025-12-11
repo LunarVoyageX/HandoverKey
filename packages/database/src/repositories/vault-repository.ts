@@ -128,8 +128,25 @@ export class VaultRepository {
         .where("deleted_at", "is", null)
         .executeTakeFirst();
 
+      // If no rows updated, it might be already deleted or not found
+      // But for idempotency, we can consider it success if it's already deleted
+      // However, the service expects an error if not found to return false
+      // Let's check if it exists but is already deleted
       if (result.numUpdatedRows === 0n) {
-        throw new NotFoundError("Vault entry");
+        // Check if it exists at all (even if deleted)
+        const exists = await this.db
+          .selectFrom("vault_entries")
+          .select("id")
+          .where("id", "=", id)
+          .where("user_id", "=", userId)
+          .executeTakeFirst();
+
+        if (!exists) {
+          throw new NotFoundError("Vault entry");
+        }
+        // If it exists, it must be already deleted (since deleted_at is null check failed)
+        // So we can consider it a success (idempotent)
+        return;
       }
     } catch (error) {
       if (error instanceof NotFoundError) {
