@@ -61,15 +61,19 @@ graph TD
 
 ### Project Structure
 
-| Path | Description |
-| :--- | :--- |
-| **`apps/`** | Application entry points |
-| ├── `web` | React 19 frontend (Vite, Tailwind, TanStack Query) |
-| ├── `api` | Node.js 22 Express backend (REST API, BullMQ) |
-| **`packages/`** | Shared libraries |
-| ├── `crypto` | Core cryptographic primitives (AES-GCM, Shamir, PBKDF2) |
-| ├── `database` | Kysely database client and repositories |
-| ├── `shared` | Shared types, utilities, and constants |
+```mermaid
+graph TD
+    subgraph Apps [Applications]
+        Web["<b>apps/web</b><br/>React 19 Frontend<br/><i>Vite, Tailwind</i>"]
+        API["<b>apps/api</b><br/>Node.js Backend<br/><i>Express, BullMQ</i>"]
+    end
+
+    subgraph Packages [Shared Libraries]
+        Crypto["<b>packages/crypto</b><br/>Cryptography<br/><i>AES-GCM, Shamir</i>"]
+        DB["<b>packages/database</b><br/>Database<br/><i>Kysely, Repos</i>"]
+        Shared["<b>packages/shared</b><br/>Shared Utils<br/><i>Types, Constants</i>"]
+    end
+```
 
 ---
 
