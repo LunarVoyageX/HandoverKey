@@ -52,10 +52,10 @@ HandoverKey is built as a monorepo using [Turbo](https://turbo.build/).
 
 ```mermaid
 graph TD
-    Client[Web Client (React)] -->|HTTPS/REST| API[API Server (Express)]
-    API -->|SQL| DB[(PostgreSQL)]
-    API -->|Cache/Queues| Redis[(Redis)]
-    Worker[Background Worker] -->|Process Jobs| Redis
+    Client["Web Client (React)"] -->|HTTPS/REST| API["API Server (Express)"]
+    API -->|SQL| DB[("PostgreSQL")]
+    API -->|Cache/Queues| Redis[("Redis")]
+    Worker["Background Worker"] -->|Process Jobs| Redis
     Worker -->|Update Status| DB
 ```
 
