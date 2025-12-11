@@ -1,146 +1,195 @@
-# Project HandoverKey
+# HandoverKey
 
-**A stupidly secure, open-source digital legacy platform with dead man's switch functionality.**
+<div align="center">
+
+**Zero-Knowledge Digital Legacy Platform & Dead Man's Switch**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/handoverkey/handoverkey/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/handoverkey/handoverkey/ci.yml?branch=main)](https://github.com/handoverkey/handoverkey/actions)
 [![Tests](https://img.shields.io/badge/Tests-227%20Passing-brightgreen.svg)](https://github.com/handoverkey/handoverkey/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
-## What is HandoverKey?
+[Features](#key-features) • [Architecture](#architecture) • [Getting Started](#getting-started) • [Documentation](#documentation) • [Contributing](#contributing)
 
-HandoverKey is a zero-knowledge, end-to-end encrypted digital legacy platform that ensures your digital assets are securely passed to your trusted contacts if something happens to you. Think of it as a "dead man's switch" for your digital life.
+</div>
 
-### Key Features
+---
 
-- **Zero-Knowledge Encryption**: Your data is encrypted client-side using Web Crypto API (AES-256-GCM) before it ever reaches our servers
-- **Dead Man's Switch**: Automatic handover after configurable inactivity period (default: 90 days)
-- **Multi-Party Handover**: Require multiple trusted contacts to confirm before release using Shamir's Secret Sharing
-- **Secure Vault Management**: Full-featured web interface for managing encrypted digital assets
-- **Production-Ready**: Comprehensive observability with structured logging (Pino), metrics (Prometheus), and monitoring
-- **Reliable Background Jobs**: BullMQ-powered job queue with Redis for inactivity monitoring and notifications
-- **Type-Safe**: Full TypeScript implementation with runtime validation using Zod
-- **Audit Trail**: Complete transparency of all access attempts and system events
-- **Open Source**: 100% open source stack - no proprietary dependencies
+## About
 
-## Tech Stack
+**HandoverKey** is a secure, open-source digital legacy platform designed to ensure your critical digital assets (passwords, crypto keys, documents) are securely passed to your trusted contacts if something happens to you.
 
-- **Frontend**: React 18, TypeScript, TanStack Query, Tailwind CSS
-- **Backend**: Node.js 22, Express, Kysely, Zod, BullMQ
-- **Observability**: Pino (logging), Prometheus (metrics)
-- **Database**: PostgreSQL 14+, Redis 6+
-- **Encryption**: Web Crypto API (AES-256-GCM, PBKDF2)
+It operates as a **"Dead Man's Switch"**:
+1.  You store encrypted secrets in your vault.
+2.  You designate trusted successors.
+3.  If you fail to check in for a configurable period (e.g., 90 days), the system initiates a handover protocol.
+4.  Secrets are securely reconstructed and released to your verified successors.
 
-## Quick Start
+### Why HandoverKey?
+
+*   **🛡️ Zero-Knowledge Architecture**: We cannot see your data. Encryption happens client-side (AES-256-GCM) before it ever leaves your device.
+*   **🔑 Shamir's Secret Sharing**: Split your encryption keys among multiple trusted contacts so no single person can access your data prematurely.
+*   **⚡ Production Ready**: Built with a modern stack, comprehensive observability, and rigorous testing.
+
+---
+
+## Key Features
+
+- **Client-Side Encryption**: Web Crypto API implementation ensures data is opaque to the server.
+- **Configurable Dead Man's Switch**: Set your check-in frequency and grace periods.
+- **Multi-Party Handover**: Require $M$ of $N$ successors to collaborate to unlock your vault.
+- **Secure Vault**: Manage passwords, notes, and files with a familiar interface.
+- **Audit Logging**: Immutable logs of all access attempts and system events.
+- **Background Processing**: Reliable job queues for inactivity monitoring and email notifications.
+
+---
+
+## Architecture
+
+HandoverKey is built as a monorepo using [Turbo](https://turbo.build/).
+
+```mermaid
+graph TD
+    Client[Web Client (React)] -->|HTTPS/REST| API[API Server (Express)]
+    API -->|SQL| DB[(PostgreSQL)]
+    API -->|Cache/Queues| Redis[(Redis)]
+    Worker[Background Worker] -->|Process Jobs| Redis
+    Worker -->|Update Status| DB
+```
+
+### Project Structure
+
+| Path | Description |
+| :--- | :--- |
+| **`apps/`** | Application entry points |
+| ├── `web` | React 19 frontend (Vite, Tailwind, TanStack Query) |
+| ├── `api` | Node.js 22 Express backend (REST API, BullMQ) |
+| **`packages/`** | Shared libraries |
+| ├── `crypto` | Core cryptographic primitives (AES-GCM, Shamir, PBKDF2) |
+| ├── `database` | Kysely database client and repositories |
+| ├── `shared` | Shared types, utilities, and constants |
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 22+
-- Docker & Docker Compose
-- PostgreSQL 14+
-- Redis 6+
+*   **Node.js**: v22.0.0 or higher
+*   **Docker**: For running local infrastructure (PostgreSQL, Redis)
+*   **npm**: v9.0.0 or higher
 
-### Local Development
+### Installation
+
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/handoverkey/handoverkey.git
+    cd handoverkey
+    ```
+
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
+
+3.  **Environment Setup**
+    Copy the example environment file and configure your secrets.
+    ```bash
+    cp env.example .env
+    # Edit .env with your local configuration
+    ```
+
+4.  **Start Infrastructure**
+    Spin up PostgreSQL and Redis using Docker Compose.
+    ```bash
+    npm run docker:up
+    ```
+
+5.  **Database Migration**
+    Initialize the database schema.
+    ```bash
+    npm run db:migrate
+    ```
+
+6.  **Build Packages**
+    Compile all shared packages and applications.
+    ```bash
+    npm run build
+    ```
+
+7.  **Start Development Servers**
+    Launch the API and Web client in development mode.
+    ```bash
+    npm run dev
+    ```
+
+    *   Web App: `http://localhost:3000`
+    *   API: `http://localhost:3001`
+
+---
+
+## Testing
+
+We use **Vitest** for unit and integration testing.
 
 ```bash
-# Clone the repository
-git clone https://github.com/handoverkey/handoverkey.git
-cd handoverkey
-
-# Install dependencies
-npm install
-
-# Start infrastructure (PostgreSQL + Redis)
-docker-compose up -d
-
-# Run database migrations
-npm run db:migrate
-
-# Build all packages
-npm run build
-
-# Start development servers
-npm run dev
-```
-
-Visit `http://localhost:3000` to access the web application.
-
-### Running Tests
-
-```bash
-# Run all tests
+# Run all tests across the monorepo
 npm test
 
-# Run tests for specific package
+# Run tests for a specific workspace
 npm test --workspace=@handoverkey/api
 
-# Run tests with coverage
+# Run tests with coverage report
 npm test -- --coverage
 ```
 
+---
+
 ## Security
 
-- Client-side AES-256-GCM encryption (zero-knowledge)
-- PBKDF2 key derivation (100k+ iterations)
-- Shamir's Secret Sharing for multi-party handover
-- Input validation, rate limiting, security headers
-- Full audit logging
+Security is the core of HandoverKey.
 
-See [Security Policy](SECURITY.md) for reporting vulnerabilities and [Security Model](docs/security.md) for technical details.
+*   **Encryption**: AES-256-GCM for data, PBKDF2 (100k+ iterations) for key derivation.
+*   **Zero-Knowledge**: The server never sees the raw user password or the data encryption key (DEK).
+*   **Dependencies**: We minimize external dependencies to reduce supply chain attack surface.
 
-## Observability
+For a deep dive into our security model, please read [docs/security.md](docs/security.md).
 
-- **Logging**: Pino structured JSON logs with request tracing
-- **Metrics**: Prometheus metrics at `/metrics`
-- **Health**: Health check at `/health`
-- **Jobs**: BullMQ for reliable background processing
+### Reporting Vulnerabilities
+
+**Do not open GitHub issues for security vulnerabilities.**  
+Please email security@handoverkey.com (placeholder) or refer to our [Security Policy](SECURITY.md).
+
+---
 
 ## Documentation
 
-- [Architecture Guide](docs/architecture.md) - System design and components
-- [Security Model](docs/security.md) - Encryption and security implementation
-- [API Reference](docs/api.md) - REST API documentation
-- [Deployment Guide](docs/deployment.md) - Production deployment
-- [Testing Guide](docs/testing.md) - Testing strategy and guidelines
-- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
-- [Code of Conduct](CODE_OF_CONDUCT.md) - Community standards
-- [Changelog](CHANGELOG.md) - Version history
+*   [**Architecture Guide**](docs/architecture.md): System design, component interaction, and data flow.
+*   [**API Reference**](docs/api.md): Endpoints, request/response schemas, and authentication.
+*   [**Deployment**](docs/deployment.md): Docker, Kubernetes, and cloud deployment strategies.
+*   [**Contributing**](CONTRIBUTING.md): Guidelines for code style, PRs, and development workflow.
 
-## Development
-
-```bash
-npm run dev              # Start dev servers
-npm run build            # Build all packages
-npm test                 # Run tests (227 passing)
-npm run lint             # Lint code
-npm run db:migrate       # Run migrations
-```
+---
 
 ## Contributing
 
-We welcome contributions! HandoverKey is built by the community, for the community.
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-### How to Contribute
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`npm test`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-See [Contributing Guidelines](CONTRIBUTING.md) for detailed guidelines.
+---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the MIT License. See `LICENSE` for more information.
 
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/handoverkey/handoverkey/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/handoverkey/handoverkey/discussions)
-- **Documentation**: [docs/](docs/)
+---
 
 ## Roadmap
 
@@ -149,13 +198,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Hardware key support (YubiKey, FIDO2)
 - [ ] Encrypted file attachments
 - [ ] Multi-language support
-- [ ] Self-hosted deployment guides
-- [ ] Kubernetes deployment manifests
-
-## Disclaimer
-
-HandoverKey is designed for digital legacy planning and should not be used as a replacement for legal estate planning. Always consult with legal professionals for proper estate planning.
 
 ---
 
-**Made with ❤️ by the HandoverKey community**
+<div align="center">
+  <sub>Built with ❤️ by the HandoverKey Community</sub>
+</div>
