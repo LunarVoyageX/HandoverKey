@@ -17,9 +17,6 @@ import {
 import { createHash, randomBytes } from "crypto";
 
 export class NotificationService implements INotificationService {
-  private static readonly CHECK_IN_SECRET =
-    process.env.CHECK_IN_SECRET ||
-    "default-checkin-secret-change-in-production";
 
   private static getUserRepository(): UserRepository {
     const dbClient = getDatabaseClient();
@@ -228,7 +225,7 @@ export class NotificationService implements INotificationService {
     });
 
     // Return the check-in URL (token is not hashed in URL)
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    const baseUrl = process.env.BASE_URL || "http://localhost:5173";
     return `${baseUrl}/checkin?token=${token}`;
   }
 
