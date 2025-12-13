@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   email: string;
+  name?: string;
   passwordHash: string;
   salt: Uint8Array;
   emailVerified: boolean;
@@ -15,6 +16,7 @@ export interface User {
 }
 
 export interface UserRegistration {
+  name?: string;
   email: string;
   password: string;
   confirmPassword: string;

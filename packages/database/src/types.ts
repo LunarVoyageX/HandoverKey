@@ -10,6 +10,7 @@ import {
 export interface UsersTable {
   id: Generated<string>;
   email: string;
+  name: string | null;
   password_hash: string;
   salt: Buffer;
   email_verified: ColumnType<boolean, boolean | undefined, boolean>;

@@ -82,11 +82,11 @@ app.use(cors(corsOptions));
 app.use(rateLimiter as unknown as express.RequestHandler);
 
 // Body parsing middleware
-app.use(express.json({ limit: "10mb" }) as express.RequestHandler);
+app.use(express.json({ limit: "50mb" }) as express.RequestHandler);
 app.use(
   express.urlencoded({
     extended: true,
-    limit: "10mb",
+    limit: "50mb",
   }) as express.RequestHandler,
 );
 app.use(cookieParser() as unknown as express.RequestHandler);

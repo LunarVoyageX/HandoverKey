@@ -12,7 +12,7 @@ export const CreateVaultEntrySchema = z.object({
   encryptedData: z
     .string()
     .min(1, "Encrypted data is required")
-    .max(10485760, "Encrypted data cannot exceed 10MB") // 10MB limit
+    .max(52428800, "Encrypted data cannot exceed 50MB") // 50MB limit
     .regex(base64Regex, "Encrypted data must be valid base64"),
   iv: z
     .string()

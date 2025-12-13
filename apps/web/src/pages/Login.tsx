@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import { setMasterKey, deriveAuthKey } from "../services/encryption";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -17,9 +18,22 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.post("/auth/login", { email, password });
-      // Check response structure in AuthController.login
-      // res.json({ message: "...", user: {...}, tokens: { accessToken, ... } })
+      // 1. Derive Auth Key (Client-side Hashing)
+      // We use the email as salt for the Auth Key
+      const authKey = await deriveAuthKey(password, email);
+
+      // 2. Send Login Request with Auth Key
+      const response = await api.post("/auth/login", {
+        email,
+        password: authKey,
+      });
+
+      // 3. Set Master Key using the Salt returned by the server
+      // The server returns the encryption salt (which we sent during registration)
+      if (response.data.user.salt) {
+        await setMasterKey(password, response.data.user.salt);
+      }
+
       login(response.data.tokens.accessToken, response.data.user);
       navigate("/dashboard");
     } catch (err) {

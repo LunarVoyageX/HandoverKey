@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
+import { deriveAuthKey, generateEncryptionSalt } from "../services/encryption";
 
 const ResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -9,6 +10,7 @@ const ResetPassword: React.FC = () => {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState(""); // We need email to derive Auth Key
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,13 +30,28 @@ const ResetPassword: React.FC = () => {
       return;
     }
 
+    if (!email) {
+      setError("Please confirm your email address");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // 1. Generate New Encryption Salt
+      // When resetting password, we MUST rotate the salt because the old Master Key is lost
+      // (since we don't know the old password).
+      // This means ALL OLD DATA IS LOST. This is by design for Zero-Knowledge.
+      const encryptionSalt = generateEncryptionSalt();
+
+      // 2. Derive Auth Key
+      const authKey = await deriveAuthKey(password, email);
+
       await api.post("/auth/reset-password", {
         token,
-        password,
-        confirmPassword,
+        password: authKey,
+        confirmPassword: authKey,
+        salt: encryptionSalt,
       });
       setMessage(
         "Password has been reset successfully. Redirecting to login...",
@@ -85,6 +102,21 @@ const ResetPassword: React.FC = () => {
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4 rounded-md shadow-sm">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Confirm Email Address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                placeholder="Confirm Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
             <div>
               <label htmlFor="password" className="sr-only">
                 New Password

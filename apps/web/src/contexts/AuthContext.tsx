@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "../services/api";
+import { clearMasterKey } from "../services/encryption";
 
 interface User {
   id: string;
@@ -33,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           // If not, we might need to decode the token or rely on stored user data
           // For now, let's try to fetch user profile
           const response = await api.get("/auth/profile");
-          setUser(response.data);
+          setUser(response.data.user);
         } catch (error) {
           console.error("Auth check failed", error);
           localStorage.removeItem("token");
@@ -53,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
+    clearMasterKey();
   };
 
   return (

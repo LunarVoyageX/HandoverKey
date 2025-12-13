@@ -76,7 +76,20 @@ User Device                    Server                    Successor Device
 
 ### 3.2 Encryption Flow
 
-#### 3.2.1 Key Derivation
+#### 3.2.1 Key Derivation & Client-Side Hashing
+
+To ensure Zero-Knowledge, we separate the **Authentication Key** (used to log in) from the **Master Key** (used to encrypt data).
+
+1.  **Authentication Key (Auth Key):**
+    - Derived from `Password` + `Email` (as salt).
+    - Sent to the server as the "password" for login.
+    - Server hashes this again (standard storage).
+    - _Result:_ Server never sees the real password.
+
+2.  **Master Key:**
+    - Derived from `Password` + `Encryption Salt` (random salt stored on server).
+    - Used to encrypt/decrypt data locally.
+    - _Result:_ Server cannot derive this because it doesn't have the password.
 
 ```typescript
 // Client-side key derivation

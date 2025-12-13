@@ -14,44 +14,132 @@ export interface EncryptedPayload {
 const ALGORITHM = "AES-GCM";
 const SALT_LENGTH = 16;
 const IV_LENGTH = 12;
+const PBKDF2_ITERATIONS = 100000;
+const AUTH_KEY_ITERATIONS = 10000; // Lower iterations for auth key (server will hash it again)
 
-// Generate a random key for the session (DEMO ONLY)
-// In production, derive this from user password using PBKDF2
 let cachedKey: CryptoKey | null = null;
+
+/**
+ * Derives the Authentication Key from the password and email.
+ * This key is sent to the server for login/registration.
+ * The server NEVER sees the raw password.
+ */
+export async function deriveAuthKey(
+  password: string,
+  email: string,
+): Promise<string> {
+  const encoder = new TextEncoder();
+  const passwordBuffer = encoder.encode(password);
+  const saltBuffer = encoder.encode(email.toLowerCase().trim()); // Use email as salt for Auth Key
+
+  const baseKey = await window.crypto.subtle.importKey(
+    "raw",
+    passwordBuffer,
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+
+  const derivedBits = await window.crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: saltBuffer,
+      iterations: AUTH_KEY_ITERATIONS,
+      hash: "SHA-256",
+    },
+    baseKey,
+    256,
+  );
+
+  // Convert to hex string
+  return Array.from(new Uint8Array(derivedBits))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Generates a random salt for encryption key derivation.
+ * This is generated on registration and stored on the server.
+ */
+export function generateEncryptionSalt(): string {
+  const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+  return arrayBufferToBase64(salt.buffer);
+}
+
+export async function setMasterKey(
+  password: string,
+  saltBase64: string,
+): Promise<void> {
+  try {
+    const salt = Uint8Array.from(atob(saltBase64), (c) => c.charCodeAt(0));
+    cachedKey = await deriveKey(password, salt);
+  } catch (error) {
+    console.error("Failed to derive master key", error);
+    throw error;
+  }
+}
+
+export function clearMasterKey() {
+  cachedKey = null;
+}
+
+export function isMasterKeySet(): boolean {
+  return cachedKey !== null;
+}
 
 async function getMasterKey(): Promise<CryptoKey> {
   if (cachedKey) return cachedKey;
+  throw new Error(
+    "Master key not set. Please login again to unlock your vault.",
+  );
+}
 
-  // Try to get from storage
-  const storedKey = localStorage.getItem("demo_master_key");
-  if (storedKey) {
-    const keyData = Uint8Array.from(atob(storedKey), (c) => c.charCodeAt(0));
-    cachedKey = await window.crypto.subtle.importKey(
-      "raw",
-      keyData,
-      ALGORITHM,
-      true,
-      ["encrypt", "decrypt"],
-    );
-    return cachedKey;
-  }
+async function deriveKey(
+  password: string,
+  salt: Uint8Array,
+): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const passwordBuffer = encoder.encode(password);
 
-  // Generate new key
-  cachedKey = await window.crypto.subtle.generateKey(
-    {
-      name: ALGORITHM,
-      length: 256,
-    },
-    true,
-    ["encrypt", "decrypt"],
+  const baseKey = await window.crypto.subtle.importKey(
+    "raw",
+    passwordBuffer,
+    "PBKDF2",
+    false,
+    ["deriveBits"],
   );
 
-  // Export and save (DEMO ONLY - INSECURE)
-  const exported = await window.crypto.subtle.exportKey("raw", cachedKey);
-  const exportedStr = btoa(String.fromCharCode(...new Uint8Array(exported)));
-  localStorage.setItem("demo_master_key", exportedStr);
+  const derivedBits = await window.crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: salt as BufferSource,
+      iterations: PBKDF2_ITERATIONS,
+      hash: "SHA-256",
+    },
+    baseKey,
+    256,
+  );
 
-  return cachedKey;
+  return window.crypto.subtle.importKey(
+    "raw",
+    derivedBits,
+    { name: ALGORITHM },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+
+export function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  let binary = "";
+  const len = bytes.byteLength;
+  const chunkSize = 32768; // 32KB to avoid stack overflow
+
+  for (let i = 0; i < len; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, len));
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  return btoa(binary);
 }
 
 export async function encryptData(data: unknown): Promise<EncryptedPayload> {
@@ -71,11 +159,9 @@ export async function encryptData(data: unknown): Promise<EncryptedPayload> {
   );
 
   return {
-    encryptedData: btoa(
-      String.fromCharCode(...new Uint8Array(encryptedContent)),
-    ),
-    iv: btoa(String.fromCharCode(...new Uint8Array(iv))),
-    salt: btoa(String.fromCharCode(...new Uint8Array(salt))),
+    encryptedData: arrayBufferToBase64(encryptedContent),
+    iv: arrayBufferToBase64(iv),
+    salt: arrayBufferToBase64(salt),
     algorithm: ALGORITHM,
   };
 }

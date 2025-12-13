@@ -82,7 +82,7 @@ export const validateContentType = (
 };
 
 // Enhanced input sanitization function
-const sanitizeString = (input: unknown): string => {
+const sanitizeString = (input: unknown, maxLength: number = 10000): string => {
   // Handle null, undefined, and non-string inputs first
   if (input === null || input === undefined || typeof input !== "string") {
     return "";
@@ -97,8 +97,8 @@ const sanitizeString = (input: unknown): string => {
   }
 
   // Limit length to prevent DoS attacks
-  if (result.length > 10000) {
-    result = result.substring(0, 10000);
+  if (result.length > maxLength) {
+    result = result.substring(0, maxLength);
   }
 
   // Decode HTML entities first
@@ -162,7 +162,11 @@ const sanitizeString = (input: unknown): string => {
   return result;
 };
 
-const sanitizeObject = (obj: unknown, depth: number = 0): unknown => {
+const sanitizeObject = (
+  obj: unknown,
+  depth: number = 0,
+  keyName: string = "",
+): unknown => {
   // Prevent deep recursion attacks
   if (depth > 10) {
     return {};
@@ -173,7 +177,11 @@ const sanitizeObject = (obj: unknown, depth: number = 0): unknown => {
   }
 
   if (typeof obj === "string") {
-    return sanitizeString(obj);
+    // Allow larger limits for encrypted data fields
+    const isEncryptedField =
+      keyName === "encryptedData" || keyName === "iv" || keyName === "salt";
+    const limit = isEncryptedField ? 50 * 1024 * 1024 : 10000; // 50MB for encrypted data
+    return sanitizeString(obj, limit);
   }
 
   if (typeof obj === "number" || typeof obj === "boolean") {
@@ -211,6 +219,7 @@ const sanitizeObject = (obj: unknown, depth: number = 0): unknown => {
       sanitized[sanitizedKey] = sanitizeObject(
         (obj as Record<string, unknown>)[key],
         depth + 1,
+        key,
       );
     }
 
@@ -288,15 +297,6 @@ export const sanitizeInput = (
       const checkPrototypePollution = (obj: unknown): string | null => {
         if (!obj || typeof obj !== "object") return null;
 
-        // Check for __proto__ property directly (it's not enumerable)
-        if (
-          Object.getPrototypeOf(obj) !== Object.prototype &&
-          Object.getPrototypeOf(obj) !== null
-        ) {
-          // If __proto__ has been modified, it's suspicious
-          return "__proto__";
-        }
-
         // Check for __proto__ as a string key
         if ((obj as Record<string, unknown>)["__proto__"] !== undefined) {
           return "__proto__";
@@ -368,6 +368,11 @@ export const sanitizeInput = (
     if (process.env.NODE_ENV !== "test") {
       console.error("Input sanitization error:", error);
     }
-    res.status(400).json({ error: "Invalid input format" });
+    res.status(400).json({
+      error: {
+        message: "Invalid input format",
+        code: "INVALID_INPUT",
+      },
+    });
   }
 };

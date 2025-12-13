@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import ConfirmationModal from "../components/ConfirmationModal";
 
 interface InactivitySettings {
   thresholdDays: number;
@@ -13,6 +16,10 @@ const Settings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchSettings();
@@ -47,6 +54,24 @@ const Settings: React.FC = () => {
       setMessage("Failed to save settings");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete("/auth/delete-account");
+      logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Failed to delete account", error);
+      setMessage("Failed to delete account");
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -176,6 +201,38 @@ const Settings: React.FC = () => {
           </div>
         </form>
       </div>
+
+      <div className="card p-6 mt-8 border-red-200 bg-red-50">
+        <h3 className="text-lg font-medium leading-6 text-red-900">
+          Danger Zone
+        </h3>
+        <div className="mt-2 max-w-xl text-sm text-red-700">
+          <p>
+            Once you delete your account, there is no going back. Please be
+            certain.
+          </p>
+        </div>
+        <div className="mt-5">
+          <button
+            type="button"
+            onClick={handleDeleteClick}
+            disabled={isDeleting}
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto"
+          >
+            {isDeleting ? "Deleting..." : "Delete Account"}
+          </button>
+        </div>
+      </div>
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Account"
+        message="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost."
+        confirmText={isDeleting ? "Deleting..." : "Delete Account"}
+        type="danger"
+      />
     </div>
   );
 };

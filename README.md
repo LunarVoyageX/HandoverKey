@@ -22,6 +22,7 @@
 **HandoverKey** is a secure, open-source digital legacy platform designed to ensure your critical digital assets (passwords, crypto keys, documents) are securely passed to your trusted contacts if something happens to you.
 
 It operates as a **"Dead Man's Switch"**:
+
 1.  You store encrypted secrets in your vault.
 2.  You designate trusted successors.
 3.  If you fail to check in for a configurable period (e.g., 90 days), the system initiates a handover protocol.
@@ -29,9 +30,9 @@ It operates as a **"Dead Man's Switch"**:
 
 ### Why HandoverKey?
 
-*   **🛡️ Zero-Knowledge Architecture**: We cannot see your data. Encryption happens client-side (AES-256-GCM) before it ever leaves your device.
-*   **🔑 Shamir's Secret Sharing**: Split your encryption keys among multiple trusted contacts so no single person can access your data prematurely.
-*   **⚡ Production Ready**: Built with a modern stack, comprehensive observability, and rigorous testing.
+- **🛡️ Zero-Knowledge Architecture**: We cannot see your data. Encryption happens client-side (AES-256-GCM) before it ever leaves your device.
+- **🔑 Shamir's Secret Sharing**: Split your encryption keys among multiple trusted contacts so no single person can access your data prematurely.
+- **⚡ Production Ready**: Built with a modern stack, comprehensive observability, and rigorous testing.
 
 ---
 
@@ -81,25 +82,28 @@ graph TD
 
 ### Prerequisites
 
-*   **Node.js**: v22.0.0 or higher
-*   **Docker**: For running local infrastructure (PostgreSQL, Redis)
-*   **npm**: v9.0.0 or higher
+- **Node.js**: v22.0.0 or higher
+- **Docker**: For running local infrastructure (PostgreSQL, Redis)
+- **npm**: v9.0.0 or higher
 
 ### Installation
 
 1.  **Clone the repository**
+
     ```bash
     git clone https://github.com/handoverkey/handoverkey.git
     cd handoverkey
     ```
 
 2.  **Install dependencies**
+
     ```bash
     npm install
     ```
 
 3.  **Environment Setup**
     Copy the example environment file and configure your secrets.
+
     ```bash
     cp env.example .env
     # Edit .env with your local configuration
@@ -107,30 +111,34 @@ graph TD
 
 4.  **Start Infrastructure**
     Spin up PostgreSQL and Redis using Docker Compose.
+
     ```bash
     npm run docker:up
     ```
 
 5.  **Database Migration**
     Initialize the database schema.
+
     ```bash
     npm run db:migrate
     ```
 
 6.  **Build Packages**
     Compile all shared packages and applications.
+
     ```bash
     npm run build
     ```
 
 7.  **Start Development Servers**
     Launch the API and Web client in development mode.
+
     ```bash
     npm run dev
     ```
 
-    *   Web App: `http://localhost:5173`
-    *   API: `http://localhost:3001`
+    - Web App: `http://localhost:5173`
+    - API: `http://localhost:3001`
 
 ---
 
@@ -155,9 +163,9 @@ npm test -- --coverage
 
 Security is the core of HandoverKey.
 
-*   **Encryption**: AES-256-GCM for data, PBKDF2 (100k+ iterations) for key derivation.
-*   **Zero-Knowledge**: The server never sees the raw user password or the data encryption key (DEK).
-*   **Dependencies**: We minimize external dependencies to reduce supply chain attack surface.
+- **Encryption**: AES-256-GCM for data, PBKDF2 (100k+ iterations) for key derivation.
+- **Zero-Knowledge**: The server never sees the raw user password or the data encryption key (DEK).
+- **Dependencies**: We minimize external dependencies to reduce supply chain attack surface.
 
 For a deep dive into our security model, please read [docs/security.md](docs/security.md).
 
@@ -170,10 +178,10 @@ Please email security@handoverkey.com (placeholder) or refer to our [Security Po
 
 ## Documentation
 
-*   [**Architecture Guide**](docs/architecture.md): System design, component interaction, and data flow.
-*   [**API Reference**](docs/api.md): Endpoints, request/response schemas, and authentication.
-*   [**Deployment**](docs/deployment.md): Docker, Kubernetes, and cloud deployment strategies.
-*   [**Contributing**](CONTRIBUTING.md): Guidelines for code style, PRs, and development workflow.
+- [**Architecture Guide**](docs/architecture.md): System design, component interaction, and data flow.
+- [**API Reference**](docs/api.md): Endpoints, request/response schemas, and authentication.
+- [**Deployment**](docs/deployment.md): Docker, Kubernetes, and cloud deployment strategies.
+- [**Contributing**](CONTRIBUTING.md): Guidelines for code style, PRs, and development workflow.
 
 ---
 
@@ -198,9 +206,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## Roadmap
 
 - [ ] Mobile applications (iOS & Android)
-- [ ] CLI tool for power users
 - [ ] Hardware key support (YubiKey, FIDO2)
-- [ ] Encrypted file attachments
 - [ ] Multi-language support
 
 ---

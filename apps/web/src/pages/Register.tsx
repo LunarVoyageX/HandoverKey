@@ -2,8 +2,14 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import {
+  setMasterKey,
+  deriveAuthKey,
+  generateEncryptionSalt,
+} from "../services/encryption";
 
 const Register: React.FC = () => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,15 +35,27 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
+      // 1. Generate Encryption Salt (for Master Key)
+      const encryptionSalt = generateEncryptionSalt();
+
+      // 2. Derive Auth Key (Client-side Hashing)
+      // This is what we send to the server as the "password"
+      const authKey = await deriveAuthKey(password, email);
+
+      // 3. Send Registration Request
+      // We send the authKey as the password, and the encryptionSalt to be stored
       const response = await api.post("/auth/register", {
+        name,
         email,
-        password,
-        confirmPassword,
+        password: authKey,
+        confirmPassword: authKey,
+        salt: encryptionSalt, // We need to update backend to accept this
       });
-      // The backend returns { user, tokens: { accessToken, refreshToken } }
-      // But our login function expects (token, user)
-      // Let's check the response structure in AuthController.register
-      // res.status(201).json({ ..., tokens: { accessToken, ... }, ... })
+
+      // 4. Set Master Key in Memory
+      // We use the original password and the generated salt
+      await setMasterKey(password, encryptionSalt);
+
       login(response.data.tokens.accessToken, response.data.user);
       navigate("/dashboard");
     } catch (err) {
@@ -86,6 +104,28 @@ const Register: React.FC = () => {
                 {error}
               </div>
             )}
+
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Full Name
+              </label>
+              <div className="mt-1">
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input"
+                  placeholder="John Doe"
+                />
+              </div>
+            </div>
 
             <div>
               <label

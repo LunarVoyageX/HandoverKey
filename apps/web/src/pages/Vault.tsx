@@ -3,7 +3,11 @@ import { PlusIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import api from "../services/api";
 import VaultEntryModal, { VaultEntryData } from "../components/VaultEntryModal";
 import ConfirmationModal from "../components/ConfirmationModal";
-import { encryptData, decryptData } from "../services/encryption";
+import {
+  encryptData,
+  decryptData,
+  arrayBufferToBase64,
+} from "../services/encryption";
 import { useToast } from "../contexts/ToastContext";
 
 interface VaultEntry {
@@ -13,6 +17,9 @@ interface VaultEntry {
   createdAt: string;
   // Decrypted data
   secret?: string;
+  type?: "text" | "file";
+  mimeType?: string;
+  fileName?: string;
 }
 
 const Vault: React.FC = () => {
@@ -29,11 +36,9 @@ const Vault: React.FC = () => {
   }, []);
 
   const fetchEntries = async () => {
-    console.log("Fetching entries...");
     try {
       // Add timestamp to prevent caching
       const response = await api.get(`/vault/entries?t=${Date.now()}`);
-      console.log("API Response:", response.data);
       const rawEntries = response.data.data || response.data; // Handle pagination wrapper if present
 
       // Decrypt entries to get name and category
@@ -50,8 +55,8 @@ const Vault: React.FC = () => {
                 bufferObj.type === "Buffer" &&
                 Array.isArray(bufferObj.data)
               ) {
-                return btoa(
-                  String.fromCharCode(...new Uint8Array(bufferObj.data)),
+                return arrayBufferToBase64(
+                  new Uint8Array(bufferObj.data).buffer,
                 );
               }
               return "";
@@ -62,11 +67,14 @@ const Vault: React.FC = () => {
               iv: bufferToBase64(entry.iv),
             });
 
-            const data = decrypted as { name: string; secret: string };
+            const data = decrypted as VaultEntryData;
             return {
               ...entry,
               name: data.name,
               secret: data.secret,
+              type: data.type,
+              mimeType: data.mimeType,
+              fileName: data.fileName,
             };
           } catch (e) {
             console.error("Failed to decrypt entry", entry.id, e);
@@ -75,7 +83,6 @@ const Vault: React.FC = () => {
         }),
       );
 
-      console.log("Decrypted entries:", decryptedEntries);
       setEntries(decryptedEntries);
     } catch (error) {
       console.error("Failed to fetch vault entries", error);
@@ -241,6 +248,9 @@ const Vault: React.FC = () => {
                 name: selectedEntry.name,
                 category: selectedEntry.category,
                 secret: selectedEntry.secret || "",
+                type: selectedEntry.type,
+                mimeType: selectedEntry.mimeType,
+                fileName: selectedEntry.fileName,
               }
             : null
         }

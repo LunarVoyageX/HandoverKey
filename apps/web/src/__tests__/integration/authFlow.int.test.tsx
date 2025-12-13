@@ -76,6 +76,7 @@ describe("Auth flows", () => {
     renderWithProviders(<Register />);
 
     const user = userEvent.setup();
+    await user.type(screen.getByLabelText(/full name/i), "John Doe");
     await user.type(screen.getByLabelText(/email/i), "new@example.com");
     await user.type(screen.getByLabelText(/^password$/i), "Password123!");
     await user.type(screen.getByLabelText(/confirm password/i), "Password123!");

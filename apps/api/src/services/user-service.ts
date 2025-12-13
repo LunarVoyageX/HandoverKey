@@ -21,15 +21,17 @@ export class UserService {
     return new ActivityRepository(dbClient.getKysely());
   }
 
-  static async createUser(registration: UserRegistration): Promise<User> {
-    const { email, password } = registration;
+  static async createUser(
+    registration: UserRegistration & { salt?: string },
+  ): Promise<User> {
+    const { name, email, password, salt: providedSalt } = registration;
 
     // Validate password strength
-    const passwordValidation = PasswordUtils.validatePasswordStrength(password);
-    if (!passwordValidation.isValid) {
-      throw new ValidationError(
-        `Password validation failed: ${passwordValidation.errors.join(", ")}`,
-      );
+    // Note: When using client-side hashing, the "password" is a hex string (Auth Key)
+    // We might need to relax validation or validate the original password on client side
+    // For now, we assume the client sends a strong Auth Key (which is long and random-looking)
+    if (password.length < 12) {
+      throw new ValidationError("Password must be at least 12 characters long");
     }
 
     // Check if user already exists
@@ -38,12 +40,18 @@ export class UserService {
       throw new ConflictError("User with this email already exists");
     }
 
-    // Hash password
+    // Hash password (Auth Key)
     const passwordHash = await PasswordUtils.hashPassword(password);
-    const salt = Buffer.from(PasswordUtils.generateSecurePassword(), "utf8");
+
+    // Use provided salt (encryption salt) or generate a new one (fallback)
+    // The provided salt is base64 encoded from the client
+    const salt = providedSalt
+      ? Buffer.from(providedSalt, "base64")
+      : Buffer.from(PasswordUtils.generateSecurePassword(), "utf8");
 
     const userRepo = this.getUserRepository();
     const dbUser = await userRepo.create({
+      name: name || null,
       email,
       password_hash: passwordHash,
       salt,
@@ -178,6 +186,7 @@ export class UserService {
   static async resetPassword(
     token: string,
     newPassword: string,
+    newSalt?: string,
   ): Promise<void> {
     const redis = getRedisClient();
     const userId = await redis.get(`RESET_TOKEN:${token}`);
@@ -186,24 +195,26 @@ export class UserService {
       throw new ValidationError("Invalid or expired password reset token");
     }
 
-    // Validate new password
-    const passwordValidation =
-      PasswordUtils.validatePasswordStrength(newPassword);
-    if (!passwordValidation.isValid) {
-      throw new ValidationError(
-        `Password validation failed: ${passwordValidation.errors.join(", ")}`,
-      );
+    // Validate password strength (Auth Key length check)
+    if (newPassword.length < 12) {
+      throw new ValidationError("Password must be at least 12 characters long");
     }
 
-    // Hash new password
+    // Hash new password (Auth Key)
     const passwordHash = await PasswordUtils.hashPassword(newPassword);
 
-    // Update user password
+    // Update user password and salt (if provided)
     const userRepo = this.getUserRepository();
-    await userRepo.update(userId, {
+    const updateData: any = {
       password_hash: passwordHash,
       updated_at: new Date(),
-    });
+    };
+
+    if (newSalt) {
+      updateData.salt = Buffer.from(newSalt, "base64");
+    }
+
+    await userRepo.update(userId, updateData);
 
     // Delete token
     await redis.del(`RESET_TOKEN:${token}`);
@@ -215,6 +226,7 @@ export class UserService {
   private static mapDbUserToUser(dbUser: {
     id: string;
     email: string;
+    name?: string | null;
     password_hash: string;
     salt: Buffer;
     email_verified?: boolean | null;
@@ -230,6 +242,7 @@ export class UserService {
     return {
       id: dbUser.id,
       email: dbUser.email,
+      name: dbUser.name || undefined,
       passwordHash: dbUser.password_hash,
       salt: dbUser.salt,
       emailVerified: dbUser.email_verified ?? false,

@@ -23,6 +23,24 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+// Mock FileReader
+class MockFileReader {
+  result = "";
+  onload: ((e: unknown) => void) | null = null;
+  onloadend: ((e: unknown) => void) | null = null;
+  readAsDataURL(_blob: Blob) {
+    this.result = "data:image/png;base64,fakebase64";
+    if (this.onload) {
+      this.onload({ target: { result: this.result } });
+    }
+    if (this.onloadend) {
+      this.onloadend({ target: { result: this.result } });
+    }
+  }
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).FileReader = MockFileReader;
+
 // Mock Heroicons
 vi.mock("@heroicons/react/24/outline", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
@@ -51,7 +69,7 @@ vi.mock("@heroicons/react/24/outline", async (importOriginal) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     XMarkIcon: (props: any) => <svg {...props} data-testid="x-mark-icon" />,
   };
-});// Mock Encryption Service
+}); // Mock Encryption Service
 vi.mock("../../services/encryption", () => ({
   decryptData: vi.fn().mockImplementation(async () => {
     return {
@@ -181,5 +199,52 @@ describe("Vault Integration", () => {
     // checking for "New Secret" might fail if decryptData is called on the new entry
     // and returns "Test Entry" again.
     // We should make decryptData smarter or check for the side effect (API call).
+  });
+
+  it("should open modal and add new file entry", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <Vault />
+          </ToastProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByText("Test Entry")).toBeInTheDocument();
+    });
+
+    // Click Add Entry button
+    const addButton = screen.getByText("Add Secret");
+    await user.click(addButton);
+
+    // Select File type
+    const fileRadio = screen.getByLabelText("File/Image");
+    await user.click(fileRadio);
+
+    // Upload file
+    const fileInput = screen.getByLabelText(/Upload File/i);
+    const file = new File(["hello"], "hello.png", { type: "image/png" });
+    await user.upload(fileInput, file);
+
+    // Fill other fields
+    const nameInput = screen.getByLabelText(/Name/i);
+    await user.type(nameInput, "My Image");
+
+    const categorySelect = screen.getByLabelText(/Category/i);
+    await user.selectOptions(categorySelect, "Document");
+
+    // Submit
+    const saveButton = screen.getByRole("button", { name: /Save/i });
+    await user.click(saveButton);
+
+    // Verify modal closes
+    await waitFor(() => {
+      expect(screen.queryByText("Add New Secret")).not.toBeInTheDocument();
+    });
   });
 });

@@ -519,6 +519,265 @@ Your digital legacy, securely managed.
     }
   }
 
+  async sendAccountDeletionEmail(email: string, name?: string): Promise<void> {
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: email,
+      subject: "Account Deleted - HandoverKey",
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              background-color: #F9FAFB;
+              padding: 20px;
+            }
+            .email-wrapper {
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+              border: 1px solid #F3F4F6;
+            }
+            .header {
+              background-color: #ffffff;
+              padding: 40px 30px 30px;
+              text-align: center;
+              border-bottom: 1px solid #F3F4F6;
+            }
+            .logo {
+              width: 56px;
+              height: 56px;
+              background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+              border-radius: 14px;
+              margin: 0 auto 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.2);
+            }
+            .logo svg {
+              width: 32px;
+              height: 32px;
+              color: white;
+            }
+            .content {
+              padding: 40px 30px;
+              color: #374151;
+            }
+            h1 {
+              color: #111827;
+              font-size: 24px;
+              font-weight: 700;
+              margin-bottom: 16px;
+              text-align: center;
+              letter-spacing: -0.025em;
+            }
+            p {
+              margin-bottom: 24px;
+              font-size: 16px;
+              color: #4B5563;
+            }
+            .footer {
+              background-color: #F9FAFB;
+              padding: 30px;
+              text-align: center;
+              font-size: 13px;
+              color: #6B7280;
+              border-top: 1px solid #F3F4F6;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="email-wrapper">
+            <div class="header">
+              <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h1>Account Deleted</h1>
+            </div>
+            <div class="content">
+              <p>Hello ${name || "User"},</p>
+              <p>This email is to confirm that your HandoverKey account has been permanently deleted as requested.</p>
+              <p>All your data, including your vault secrets and successor configurations, has been removed from our systems.</p>
+              <p>We're sorry to see you go. If you change your mind, you're always welcome to create a new account.</p>
+              <p>Thank you for using HandoverKey.</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HandoverKey. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Hello ${name || "User"},
+
+This email is to confirm that your HandoverKey account has been permanently deleted as requested.
+
+All your data, including your vault secrets and successor configurations, has been removed from our systems.
+
+We're sorry to see you go. If you change your mind, you're always welcome to create a new account.
+
+Thank you for using HandoverKey.
+
+---
+© ${new Date().getFullYear()} HandoverKey. All rights reserved.
+      `.trim(),
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`Account deletion email sent to ${email}`);
+    } catch (error) {
+      console.error("Failed to send account deletion email:", error);
+      // Don't throw here, as the account is already deleted
+    }
+  }
+
+  async sendAccountDeletionSuccessorEmail(
+    email: string,
+    userName: string,
+  ): Promise<void> {
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: email,
+      subject: "HandoverKey Account Deleted",
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              background-color: #F9FAFB;
+              padding: 20px;
+            }
+            .email-wrapper {
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+              border: 1px solid #F3F4F6;
+            }
+            .header {
+              background-color: #ffffff;
+              padding: 40px 30px 30px;
+              text-align: center;
+              border-bottom: 1px solid #F3F4F6;
+            }
+            .logo {
+              width: 56px;
+              height: 56px;
+              background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+              border-radius: 14px;
+              margin: 0 auto 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 10px 15px -3px rgba(107, 114, 128, 0.2);
+            }
+            .logo svg {
+              width: 32px;
+              height: 32px;
+              color: white;
+            }
+            .content {
+              padding: 40px 30px;
+              color: #374151;
+            }
+            h1 {
+              color: #111827;
+              font-size: 24px;
+              font-weight: 700;
+              margin-bottom: 16px;
+              text-align: center;
+              letter-spacing: -0.025em;
+            }
+            p {
+              margin-bottom: 24px;
+              font-size: 16px;
+              color: #4B5563;
+            }
+            .footer {
+              background-color: #F9FAFB;
+              padding: 30px;
+              text-align: center;
+              font-size: 13px;
+              color: #6B7280;
+              border-top: 1px solid #F3F4F6;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="email-wrapper">
+            <div class="header">
+              <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h1>Account Deleted</h1>
+            </div>
+            <div class="content">
+              <p>Hello,</p>
+              <p>We are writing to inform you that <strong>${userName}</strong> has deleted their HandoverKey account.</p>
+              <p>As a designated successor, you no longer have access to any potential handover information associated with this account.</p>
+              <p>No action is required on your part.</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HandoverKey. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Hello,
+
+We are writing to inform you that ${userName} has deleted their HandoverKey account.
+
+As a designated successor, you no longer have access to any potential handover information associated with this account.
+
+No action is required on your part.
+
+---
+© ${new Date().getFullYear()} HandoverKey. All rights reserved.
+      `.trim(),
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`Account deletion successor email sent to ${email}`);
+    } catch (error) {
+      console.error("Failed to send account deletion successor email:", error);
+    }
+  }
+
   async sendTestEmail(to: string): Promise<boolean> {
     try {
       await this.transporter.sendMail({

@@ -68,4 +68,13 @@ router.get(
   AuthController.getProfile,
 );
 
+// Delete account endpoint (requires authentication)
+router.delete(
+  "/delete-account",
+  authenticateJWT,
+  requireAuth,
+  SimpleActivityMiddleware.trackActivity("ACCOUNT_DELETION"),
+  AuthController.deleteAccount,
+);
+
 export default router;

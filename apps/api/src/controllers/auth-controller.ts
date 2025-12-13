@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { UserService } from "../services/user-service";
 import { SessionService } from "../services/session-service";
+import { SuccessorService } from "../services/successor-service";
+import { emailService } from "../services/email-service";
 import { JWTManager } from "../auth/jwt";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { UserRegistration, UserLogin } from "@handoverkey/shared";
@@ -14,12 +16,13 @@ export class AuthController {
   ): Promise<void> {
     try {
       // Data is already validated and sanitized by Zod middleware
-      const { email, password, confirmPassword } = req.body;
+      const { email, password, confirmPassword, salt } = req.body;
 
-      const registration: UserRegistration = {
+      const registration: UserRegistration & { salt?: string } = {
         email,
         password,
         confirmPassword,
+        salt,
       };
 
       const user = await UserService.createUser(registration);
@@ -53,6 +56,7 @@ export class AuthController {
         user: {
           id: user.id,
           email: user.email,
+          name: user.name,
           twoFactorEnabled: user.twoFactorEnabled,
           createdAt: user.createdAt,
           salt: Buffer.from(user.salt).toString("base64"),
@@ -178,6 +182,7 @@ export class AuthController {
         user: {
           id: user.id,
           email: user.email,
+          name: user.name,
           twoFactorEnabled: user.twoFactorEnabled,
           lastActivity: user.lastActivity,
           salt: Buffer.from(user.salt).toString("base64"),
@@ -344,6 +349,7 @@ export class AuthController {
         user: {
           id: user.id,
           email: user.email,
+          name: user.name,
           twoFactorEnabled: user.twoFactorEnabled,
           lastActivity: user.lastActivity,
           createdAt: user.createdAt,
@@ -374,14 +380,65 @@ export class AuthController {
     }
   }
 
+  static async deleteAccount(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const isAuthenticated = await SessionService.isAuthenticated(req);
+      if (!isAuthenticated) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      // Get user details before deletion to send email
+      const user = await UserService.findUserById(req.user!.userId);
+
+      // Get verified successors to notify
+      const successors = await SuccessorService.getSuccessors(req.user!.userId);
+      const verifiedSuccessors = successors.filter((s) => s.verified);
+
+      await UserService.deleteUser(req.user!.userId);
+      await SessionService.invalidateAllUserSessions(req.user!.userId);
+
+      // Send confirmation email to user
+      if (user) {
+        // Fire and forget - don't await to keep response fast
+        emailService
+          .sendAccountDeletionEmail(user.email, user.name)
+          .catch((err) => console.error("Failed to send deletion email:", err));
+
+        // Send notification emails to verified successors
+        verifiedSuccessors.forEach((successor) => {
+          emailService
+            .sendAccountDeletionSuccessorEmail(
+              successor.email,
+              user.name || user.email,
+            )
+            .catch((err) =>
+              console.error(
+                `Failed to send deletion email to successor ${successor.email}:`,
+                err,
+              ),
+            );
+        });
+      }
+
+      res.clearCookie("accessToken");
+      res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async resetPassword(
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { token, password } = req.body;
-      await UserService.resetPassword(token, password);
+      const { token, password, salt } = req.body;
+      await UserService.resetPassword(token, password, salt);
 
       res.json({
         message: "Password has been reset successfully. You can now login.",

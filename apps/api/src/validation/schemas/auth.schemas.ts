@@ -5,6 +5,10 @@ import { z } from "zod";
  */
 export const RegisterSchema = z
   .object({
+    name: z
+      .string()
+      .min(2, "Name must be at least 2 characters long")
+      .optional(),
     email: z
       .string()
       .email("Please provide a valid email address")
@@ -12,12 +16,12 @@ export const RegisterSchema = z
       .trim(),
     password: z
       .string()
-      .min(12, "Password must be at least 12 characters long")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-      ),
+      .min(12, "Password must be at least 12 characters long"),
+    // Removed complexity regex because we are now sending a hashed Auth Key (hex string)
+    // which might not contain special characters or uppercase letters depending on the hash format.
+    // The client is responsible for enforcing password complexity on the original password.
     confirmPassword: z.string(),
+    salt: z.string().optional(), // Added salt field for Zero-Knowledge registration
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Password confirmation does not match password",
@@ -66,12 +70,10 @@ export const PasswordResetConfirmSchema = z
     token: z.string().min(1, "Reset token is required"),
     password: z
       .string()
-      .min(12, "Password must be at least 12 characters long")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-      ),
+      .min(12, "Password must be at least 12 characters long"),
+    // Removed complexity regex because we are now sending a hashed Auth Key (hex string)
     confirmPassword: z.string(),
+    salt: z.string().optional(), // Added salt field for Zero-Knowledge password reset
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Password confirmation does not match password",

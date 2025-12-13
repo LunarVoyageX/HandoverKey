@@ -9,9 +9,14 @@ const mockDbClient = {
   getKysely: jest.fn(),
 };
 
+const mockUserRepo = {
+  update: jest.fn().mockResolvedValue(undefined),
+};
+
 jest.mock("@handoverkey/database", () => ({
   getDatabaseClient: jest.fn(() => mockDbClient),
   DatabaseClient: jest.fn(),
+  UserRepository: jest.fn(() => mockUserRepo),
 }));
 
 jest.mock("../../config/redis", () => ({

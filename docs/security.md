@@ -42,17 +42,23 @@ This document details the security model of HandoverKey, a zero-knowledge, end-t
 
 ### 3.1 Key Management
 
-#### 3.1.1 Master Key Derivation
+#### 3.1.1 Zero-Knowledge Authentication & Key Derivation
 
-- **Process**:
-  1. User enters password.
-  2. A unique, cryptographically secure salt is generated client-side for each user.
-  3. PBKDF2 (Password-Based Key Derivation Function 2) is used to derive a master encryption key from the password and salt.
-  - **Parameters**:
-    - **Algorithm**: SHA-256
-    - **Iterations**: 100,000+ (configurable, subject to performance testing)
-    - **Key Length**: 256 bits (for AES-256-GCM)
-- **Storage**: The derived master key is never stored. It is re-derived on each login. The salt is stored securely on the server alongside the user's encrypted data, as it is non-sensitive.
+We implement a strict separation between **Authentication** and **Encryption** to ensure the server never possesses the information needed to decrypt user data.
+
+1.  **Authentication Key (Auth Key)**
+    - **Purpose**: Used solely to prove identity to the server.
+    - **Derivation**: `PBKDF2(Password, Email, 10,000 iterations)`
+    - **Transmission**: The client sends `Auth Key` to the server.
+    - **Server Storage**: The server hashes the `Auth Key` (using bcrypt/Argon2) and stores the hash.
+    - **Security Property**: The server never sees the plaintext password. Even if the server is compromised, the attacker only gets a hash of the Auth Key, which cannot be used to derive the Master Key.
+
+2.  **Master Encryption Key (Master Key)**
+    - **Purpose**: Used to encrypt/decrypt the user's vault.
+    - **Derivation**: `PBKDF2(Password, Encryption Salt, 100,000 iterations)`
+    - **Salt**: A cryptographically secure random salt is generated on the client during registration and stored on the server.
+    - **Transmission**: The Master Key **NEVER** leaves the client device.
+    - **Security Property**: Since the server does not know the Password (only the Auth Key), it cannot derive the Master Key, even though it holds the Encryption Salt.
 
 #### 3.1.2 Data Encryption Keys (DEKs)
 
