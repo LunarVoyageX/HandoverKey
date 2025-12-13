@@ -17,7 +17,6 @@ import {
 import { createHash, randomBytes } from "crypto";
 
 export class NotificationService implements INotificationService {
-
   private static getUserRepository(): UserRepository {
     const dbClient = getDatabaseClient();
     return new UserRepository(dbClient.getKysely());
