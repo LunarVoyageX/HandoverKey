@@ -2,10 +2,14 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
 } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
+import LandingPage from "./pages/LandingPage";
+import HowItWorks from "./pages/HowItWorks";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -24,6 +28,11 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -31,17 +40,16 @@ function App() {
             <Route path="/verify-successor" element={<VerifySuccessor />} />
 
             <Route
-              path="/"
               element={
                 <ProtectedRoute>
                   <Layout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="vault" element={<Vault />} />
-              <Route path="successors" element={<Successors />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/vault" element={<Vault />} />
+              <Route path="/successors" element={<Successors />} />
+              <Route path="/successors" element={<Successors />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
