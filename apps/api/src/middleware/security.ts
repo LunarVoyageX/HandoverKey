@@ -57,17 +57,29 @@ export const registerRateLimiter = rateLimit({
 });
 
 export const corsOptions = {
-  origin:
-    process.env.NODE_ENV === "production"
-      ? ["https://handoverkey.com", "https://www.handoverkey.com"]
-      : [
-          "http://localhost:3001",
-          "http://localhost:5173",
-          "https://handoverkey.com",
-          "https://www.handoverkey.com",
-        ],
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void,
+  ) => {
+    const allowedOrigins =
+      process.env.NODE_ENV === "production"
+        ? ["https://handoverkey.com", "https://www.handoverkey.com"]
+        : [
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:5173",
+            "https://handoverkey.com",
+            "https://www.handoverkey.com",
+          ];
+
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: [
     "Content-Type",
     "Authorization",
@@ -75,8 +87,10 @@ export const corsOptions = {
     "Accept",
     "Origin",
     "DNT",
+    "Cache-Control",
+    "X-Request-ID",
   ],
-  exposedHeaders: ["X-Total-Count", "X-Page-Count"],
+  exposedHeaders: ["X-Total-Count", "X-Page-Count", "X-Request-ID"],
   optionsSuccessStatus: 200,
 };
 

@@ -72,6 +72,7 @@ app.use(requestIdMiddleware);
 
 // CORS middleware (must be before security headers and other middleware that might block requests)
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Logging middleware (must be early)
 app.use(loggingMiddleware);
