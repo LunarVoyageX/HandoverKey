@@ -61,16 +61,15 @@ export const corsOptions = {
     origin: string | undefined,
     callback: (err: Error | null, allow?: boolean) => void,
   ) => {
-    const allowedOrigins =
-      process.env.NODE_ENV === "production"
-        ? ["https://handoverkey.com", "https://www.handoverkey.com"]
-        : [
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://localhost:5173",
-            "https://handoverkey.com",
-            "https://www.handoverkey.com",
-          ];
+    // In development, allow all origins
+    if (process.env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
+
+    const allowedOrigins = [
+      "https://handoverkey.com",
+      "https://www.handoverkey.com",
+    ];
 
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
