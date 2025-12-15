@@ -70,6 +70,9 @@ if (process.env.NODE_ENV !== "test") {
 // Request ID middleware (must be first)
 app.use(requestIdMiddleware);
 
+// CORS middleware (must be before security headers and other middleware that might block requests)
+app.use(cors(corsOptions));
+
 // Logging middleware (must be early)
 app.use(loggingMiddleware);
 
@@ -78,7 +81,6 @@ app.use(metricsMiddleware);
 
 // Security middleware
 app.use(securityHeaders);
-app.use(cors(corsOptions));
 app.use(rateLimiter as unknown as express.RequestHandler);
 
 // Body parsing middleware

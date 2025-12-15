@@ -23,6 +23,7 @@ export const securityHeaders = helmet({
   },
   noSniff: true,
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }) as unknown as (req: Request, res: Response, next: NextFunction) => void;
 
 export const rateLimiter = rateLimit({
