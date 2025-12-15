@@ -59,11 +59,24 @@ export const corsOptions = {
   origin:
     process.env.NODE_ENV === "production"
       ? ["https://handoverkey.com", "https://www.handoverkey.com"]
-      : ["http://localhost:3000", "http://localhost:3001", "https://handoverkey.com", "https://www.handoverkey.com"],
+      : [
+          "http://localhost:3001",
+          "http://localhost:5173",
+          "https://handoverkey.com",
+          "https://www.handoverkey.com",
+        ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "DNT",
+  ],
   exposedHeaders: ["X-Total-Count", "X-Page-Count"],
+  optionsSuccessStatus: 200,
 };
 
 export const validateContentType = (
