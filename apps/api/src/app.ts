@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 dotenv.config();
@@ -9,9 +8,7 @@ const app = express();
 app.enable("trust proxy");
 
 import {
-  securityHeaders,
   rateLimiter,
-  corsOptions,
   validateContentType,
   sanitizeInput,
 } from "./middleware/security";
@@ -72,9 +69,23 @@ if (process.env.NODE_ENV !== "test") {
 // Request ID middleware (must be first)
 app.use(requestIdMiddleware);
 
-// CORS middleware (must be before security headers and other middleware that might block requests)
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+// Manual CORS middleware - Allow everything
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, DNT, Cache-Control, X-Request-ID");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Max-Age", "86400");
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 // Logging middleware (must be early)
 app.use(loggingMiddleware);
@@ -82,8 +93,7 @@ app.use(loggingMiddleware);
 // Metrics middleware (must be early)
 app.use(metricsMiddleware);
 
-// Security middleware
-app.use(securityHeaders);
+// Security middleware (rate limiter only)
 app.use(rateLimiter as unknown as express.RequestHandler);
 
 // Body parsing middleware

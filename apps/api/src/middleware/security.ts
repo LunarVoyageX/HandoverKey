@@ -1,30 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
-import helmet from "helmet";
 
-export const securityHeaders = helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true,
-  },
-  noSniff: true,
-  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-}) as unknown as (req: Request, res: Response, next: NextFunction) => void;
+
+
 
 export const rateLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"), // 15 minutes
@@ -55,51 +33,6 @@ export const registerRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-export const corsOptions = {
-  origin: (
-    origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void,
-  ) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    // In development, allow all origins
-    if (process.env.NODE_ENV !== "production") {
-      return callback(null, true);
-    }
-
-    const allowedOrigins = [
-      "https://handoverkey.com",
-      "https://www.handoverkey.com",
-      "https://api.handoverkey.com",
-    ];
-
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // Log the blocked origin for debugging
-      console.warn(`Blocked CORS origin: ${origin}`);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "Accept",
-    "Origin",
-    "DNT",
-    "Cache-Control",
-    "X-Request-ID",
-  ],
-  exposedHeaders: ["X-Total-Count", "X-Page-Count", "X-Request-ID"],
-  optionsSuccessStatus: 200,
-};
 
 export const validateContentType = (
   req: Request,
