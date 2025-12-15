@@ -69,22 +69,23 @@ if (process.env.NODE_ENV !== "test") {
 // Request ID middleware (must be first)
 app.use(requestIdMiddleware);
 
-// Manual CORS middleware - Allow everything
+// CORS middleware - explicit, before any auth or other middleware
 app.use((req, res, next) => {
+  // Allow all origins (reflect origin if present, else *)
   const origin = req.headers.origin;
   if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, DNT, Cache-Control, X-Request-ID");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Max-Age", "86400");
-
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Vary", "Origin");
   } else {
-    next();
+    res.header("Access-Control-Allow-Origin", "*");
   }
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, DNT, Cache-Control, X-Request-ID");
+  res.header("Access-Control-Allow-Credentials", "true");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
 });
 
 // Logging middleware (must be early)
