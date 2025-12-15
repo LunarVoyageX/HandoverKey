@@ -15,26 +15,25 @@ const logLevel = process.env.LOG_LEVEL || "info";
 /**
  * Determine if we're in development mode
  */
-const isDevelopment = process.env.NODE_ENV !== "production";
+
+// Vercel sets NODE_ENV to 'production' even for preview/dev deployments, so also check VERCEL_ENV
+const isDevelopment = process.env.NODE_ENV !== "production" || process.env.VERCEL_ENV === "development" || process.env.VERCEL_ENV === "preview";
 
 /**
  * Create Pino logger instance with custom configuration
  */
 export const logger = pino({
   level: logLevel,
-
-  // Use pino-pretty in development for human-readable logs
-  transport: isDevelopment
-    ? {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "HH:MM:ss Z",
-          ignore: "pid,hostname",
-        },
-      }
-    : undefined,
-
+  ...(isDevelopment && {
+    transport: {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "HH:MM:ss Z",
+        ignore: "pid,hostname",
+      },
+    },
+  }),
   // Custom formatters
   formatters: {
     level: (label) => {
