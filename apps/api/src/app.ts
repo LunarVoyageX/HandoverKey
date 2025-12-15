@@ -4,6 +4,10 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 dotenv.config();
 import { getDatabaseClient } from "@handoverkey/database";
+
+const app = express();
+app.enable("trust proxy");
+
 import {
   securityHeaders,
   rateLimiter,
@@ -28,8 +32,6 @@ import { JobProcessor, JobScheduler } from "./jobs";
 import { closeAllQueues } from "./config/queue";
 import { SessionService } from "./services/session-service";
 import { initializeRedis, closeRedis, checkRedisHealth } from "./config/redis";
-
-const app = express();
 
 // Initialize database connection
 const dbClient = getDatabaseClient();
