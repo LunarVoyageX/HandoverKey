@@ -14,7 +14,8 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    "docker:up": "docker-compose up -d",
+    "docker:up": "docker-compose up -d postgres redis",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up -d --build",
     "docker:down": "docker-compose down",
     "db:migrate": "cd apps/api && npm run migrate",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""

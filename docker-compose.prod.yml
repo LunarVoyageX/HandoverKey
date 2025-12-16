@@ -1,0 +1,65 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - handoverkey-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Database connection - PROVIDE THESE IN YOUR PRODUCTION ENV
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Redis connection - connects to the redis service defined above
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # App secrets
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      # Web URL
+      WEB_URL: ${WEB_URL:-http://localhost:3000}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - handoverkey-network
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Pass API URL to build time
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api/v1}
+    ports:
+      - "3000:80"
+    networks:
+      - handoverkey-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+
+
+networks:
+  handoverkey-network:
+    driver: bridge

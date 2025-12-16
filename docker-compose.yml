@@ -2,13 +2,20 @@ services:
   postgres:
     image: postgres:14-alpine
     environment:
-      POSTGRES_DB: handoverkey_dev
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME:-handoverkey_dev}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - handoverkey-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -16,7 +23,64 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - handoverkey-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Database connection
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-handoverkey_dev}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      # Redis connection
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # App secrets (should serve from .env file)
+      JWT_SECRET: ${JWT_SECRET:-changeme_dev_secret}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme_32_byte_key_min_length!!}
+      # Web URL for CORS
+      WEB_URL: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - handoverkey-network
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Pass API URL to build time for Vite
+        VITE_API_URL: http://localhost:3001/api/v1
+    ports:
+      - "3000:80"
+    networks:
+      - handoverkey-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
-  redis_data: 
+  redis_data:
+
+
+networks:
+  handoverkey-network:
+    driver: bridge

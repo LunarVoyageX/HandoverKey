@@ -16,19 +16,14 @@ const logLevel = process.env.LOG_LEVEL || "info";
  * Determine if we're in development mode
  */
 
-// Vercel sets NODE_ENV to 'production' even for preview/dev deployments, so also check VERCEL_ENV
-const isDevelopment =
-  (process.env.NODE_ENV !== "production" ||
-    process.env.VERCEL_ENV === "development" ||
-    process.env.VERCEL_ENV === "preview") &&
-  !process.env.VERCEL; // Disable pino-pretty in Vercel serverless environment to prevent 500s
+const isDev = process.env.NODE_ENV === "development";
 
 /**
  * Create Pino logger instance with custom configuration
  */
 export const logger = pino({
   level: logLevel,
-  ...(isDevelopment && {
+  ...(isDev && {
     transport: {
       target: "pino-pretty",
       options: {
