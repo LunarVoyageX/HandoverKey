@@ -11,7 +11,6 @@ export class UserRepository {
         .selectFrom("users")
         .selectAll()
         .where("id", "=", id)
-        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       return user ?? null;
@@ -29,7 +28,6 @@ export class UserRepository {
         .selectFrom("users")
         .selectAll()
         .where("email", "=", email)
-        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       return user ?? null;
@@ -67,7 +65,6 @@ export class UserRepository {
           updated_at: new Date(),
         })
         .where("id", "=", id)
-        .where("deleted_at", "is", null)
         .returningAll()
         .executeTakeFirst();
 
@@ -89,15 +86,13 @@ export class UserRepository {
 
   async delete(id: string): Promise<void> {
     try {
-      // Soft delete
+      // Hard delete
       const result = await this.db
-        .updateTable("users")
-        .set({ deleted_at: new Date() })
+        .deleteFrom("users")
         .where("id", "=", id)
-        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
-      if (result.numUpdatedRows === 0n) {
+      if (result.numDeletedRows === 0n) {
         throw new NotFoundError("User");
       }
     } catch (error) {
@@ -171,7 +166,6 @@ export class UserRepository {
         .selectFrom("users")
         .selectAll()
         .where("last_login", "<", cutoffDate)
-        .where("deleted_at", "is", null)
         .execute();
 
       return users;

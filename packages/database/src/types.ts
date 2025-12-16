@@ -30,11 +30,6 @@ export interface UsersTable {
   inactivity_threshold_days: ColumnType<number, number | undefined, number>;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
-  deleted_at: ColumnType<
-    Date | null,
-    Date | string | null,
-    Date | string | null
-  >;
 }
 
 export type User = Selectable<UsersTable>;
@@ -70,11 +65,6 @@ export interface VaultEntriesTable {
   version: ColumnType<number, number | undefined, number>;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
-  deleted_at: ColumnType<
-    Date | null,
-    Date | string | null,
-    Date | string | null
-  >;
 }
 
 export type VaultEntry = Selectable<VaultEntriesTable>;

@@ -82,7 +82,7 @@ export default function LandingPage() {
             </motion.div>
           </div>
         </div>
-        
+
         {/* Background decoration */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full overflow-hidden -z-10 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>

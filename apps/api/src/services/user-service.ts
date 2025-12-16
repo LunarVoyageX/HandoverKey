@@ -50,13 +50,20 @@ export class UserService {
       : Buffer.from(PasswordUtils.generateSecurePassword(), "utf8");
 
     const userRepo = this.getUserRepository();
-    const dbUser = await userRepo.create({
-      name: name || null,
-      email,
-      password_hash: passwordHash,
-      salt,
-    });
-
+    let dbUser;
+    try {
+      dbUser = await userRepo.create({
+        name: name || null,
+        email,
+        password_hash: passwordHash,
+        salt,
+      });
+    } catch (error: any) {
+      if (error.code === "23505" || error.originalError?.code === "23505") {
+        throw new ConflictError("User with this email already exists");
+      }
+      throw error;
+    }
     return this.mapDbUserToUser(dbUser);
   }
 
@@ -166,11 +173,14 @@ export class UserService {
   }
 
   static async requestPasswordReset(email: string): Promise<void> {
+    console.log(`[UserService] Requesting password reset for: ${email}`);
     const user = await this.findUserByEmail(email);
     if (!user) {
+      console.log(`[UserService] User not found for email: ${email}`);
       // Don't reveal if user exists
       return;
     }
+    console.log(`[UserService] User found: ${user.id}. Generating token...`);
 
     const token = crypto.randomBytes(32).toString("hex");
     const redis = getRedisClient();
@@ -180,7 +190,9 @@ export class UserService {
       EX: 3600,
     });
 
+    console.log(`[UserService] Sending password reset email to ${email}...`);
     await emailService.sendPasswordResetEmail(email, token);
+    console.log(`[UserService] Password reset email sent.`);
   }
 
   static async resetPassword(

@@ -6,7 +6,7 @@ dotenv.config();
 import { getDatabaseClient } from "@handoverkey/database";
 
 const app = express();
-app.enable("trust proxy");
+app.set("trust proxy", 1);
 
 import {
   rateLimiter,

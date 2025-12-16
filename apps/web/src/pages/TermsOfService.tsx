@@ -41,22 +41,32 @@ export default function TermsOfService() {
             1. Acceptance of Terms
           </h2>
           <p className="text-gray-600 mb-4">
-            By accessing and using HandoverKey, you accept and agree to be bound by the terms and provision of this agreement.
+            By accessing and using HandoverKey, you accept and agree to be bound
+            by the terms and provision of this agreement.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">
             2. Description of Service
           </h2>
           <p className="text-gray-600 mb-4">
-            HandoverKey provides a digital legacy service that includes a "Dead Man's Switch" mechanism. We store encrypted data and release it to designated successors upon the failure of the account holder to check in within a specified timeframe.
+            HandoverKey provides a digital legacy service that includes a "Dead
+            Man's Switch" mechanism. We store encrypted data and release it to
+            designated successors upon the failure of the account holder to
+            check in within a specified timeframe.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">
             3. User Responsibilities
           </h2>
           <ul className="list-disc pl-6 text-gray-600 mb-4 space-y-2">
-            <li>You are responsible for maintaining the confidentiality of your master password. We cannot recover it for you.</li>
-            <li>You are responsible for ensuring your contact information and that of your successors is up to date.</li>
+            <li>
+              You are responsible for maintaining the confidentiality of your
+              master password. We cannot recover it for you.
+            </li>
+            <li>
+              You are responsible for ensuring your contact information and that
+              of your successors is up to date.
+            </li>
             <li>You agree not to use the service for any illegal purposes.</li>
           </ul>
 
@@ -64,14 +74,18 @@ export default function TermsOfService() {
             4. Limitation of Liability
           </h2>
           <p className="text-gray-600 mb-4">
-            HandoverKey is provided "as is". We are not liable for any damages arising from the use or inability to use the service, including but not limited to data loss or failure to deliver data to successors.
+            HandoverKey is provided "as is". We are not liable for any damages
+            arising from the use or inability to use the service, including but
+            not limited to data loss or failure to deliver data to successors.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">
             5. Termination
           </h2>
           <p className="text-gray-600 mb-4">
-            We reserve the right to terminate your access to the service without cause or notice, which may result in the forfeiture and destruction of all information associated with your account.
+            We reserve the right to terminate your access to the service without
+            cause or notice, which may result in the forfeiture and destruction
+            of all information associated with your account.
           </p>
         </div>
       </div>

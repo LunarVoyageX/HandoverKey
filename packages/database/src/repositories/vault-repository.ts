@@ -22,7 +22,6 @@ export class VaultRepository {
         .selectAll()
         .where("id", "=", id)
         .where("user_id", "=", userId)
-        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       return entry ?? null;
@@ -42,8 +41,7 @@ export class VaultRepository {
       let query = this.db
         .selectFrom("vault_entries")
         .selectAll()
-        .where("user_id", "=", userId)
-        .where("deleted_at", "is", null);
+        .where("user_id", "=", userId);
 
       if (filters.category) {
         query = query.where("category", "=", filters.category);
@@ -97,7 +95,6 @@ export class VaultRepository {
         })
         .where("id", "=", id)
         .where("user_id", "=", userId)
-        .where("deleted_at", "is", null)
         .returningAll()
         .executeTakeFirst();
 
@@ -119,34 +116,15 @@ export class VaultRepository {
 
   async delete(id: string, userId: string): Promise<void> {
     try {
-      // Soft delete
+      // Hard delete
       const result = await this.db
-        .updateTable("vault_entries")
-        .set({ deleted_at: new Date() })
+        .deleteFrom("vault_entries")
         .where("id", "=", id)
         .where("user_id", "=", userId)
-        .where("deleted_at", "is", null)
         .executeTakeFirst();
 
-      // If no rows updated, it might be already deleted or not found
-      // But for idempotency, we can consider it success if it's already deleted
-      // However, the service expects an error if not found to return false
-      // Let's check if it exists but is already deleted
-      if (result.numUpdatedRows === 0n) {
-        // Check if it exists at all (even if deleted)
-        const exists = await this.db
-          .selectFrom("vault_entries")
-          .select("id")
-          .where("id", "=", id)
-          .where("user_id", "=", userId)
-          .executeTakeFirst();
-
-        if (!exists) {
-          throw new NotFoundError("Vault entry");
-        }
-        // If it exists, it must be already deleted (since deleted_at is null check failed)
-        // So we can consider it a success (idempotent)
-        return;
+      if (result.numDeletedRows === 0n) {
+        throw new NotFoundError("Vault entry");
       }
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -167,7 +145,6 @@ export class VaultRepository {
         .distinct()
         .where("user_id", "=", userId)
         .where("category", "is not", null)
-        .where("deleted_at", "is", null)
         .orderBy("category")
         .execute();
 
@@ -189,7 +166,6 @@ export class VaultRepository {
         .select("tags")
         .where("user_id", "=", userId)
         .where("tags", "is not", null)
-        .where("deleted_at", "is", null)
         .execute();
 
       const allTags = new Set<string>();
@@ -214,7 +190,6 @@ export class VaultRepository {
         .selectFrom("vault_entries")
         .select((eb) => eb.fn.count<number>("id").as("count"))
         .where("user_id", "=", userId)
-        .where("deleted_at", "is", null)
         .executeTakeFirstOrThrow();
 
       return Number(result.count);
