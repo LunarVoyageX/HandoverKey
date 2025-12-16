@@ -71,7 +71,7 @@ services:
         # Pass API URL to build time for Vite
         VITE_API_URL: http://localhost:3001/api/v1
     ports:
-      - "3000:80"
+      - "3000:3000"
     networks:
       - handoverkey-network
     restart: unless-stopped

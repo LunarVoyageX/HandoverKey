@@ -22,14 +22,18 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN turbo run build --filter=@handoverkey/web...
 
 # --- Runtime Stage ---
-FROM nginx:alpine AS runner
+FROM node:22-alpine AS runner
 
-# Copy built assets to Nginx html directory
-COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Expose HTTP port
-EXPOSE 80
+# Install simple static server
+RUN npm install -g serve
 
-# Default Nginx config usually serves port 80. 
-# For SPA routing (React Router), we might need a custom nginx.conf later.
-CMD ["nginx", "-g", "daemon off;"]
+# Copy built assets
+COPY --from=builder /app/apps/web/dist ./dist
+
+# Expose port
+EXPOSE 3000
+
+# Start serve
+CMD ["serve", "-s", "dist", "-l", "3000"]
