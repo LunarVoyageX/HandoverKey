@@ -1,5 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 import { getDatabaseClient } from "@handoverkey/database";
@@ -70,23 +71,26 @@ if (process.env.NODE_ENV !== "test") {
 app.use(requestIdMiddleware);
 
 // CORS middleware - explicit, before any auth or other middleware
-app.use((req, res, next) => {
-  // Allow all origins (reflect origin if present, else *)
-  const origin = req.headers.origin;
-  if (origin) {
-    res.header("Access-Control-Allow-Origin", origin);
-    res.header("Vary", "Origin");
-  } else {
-    res.header("Access-Control-Allow-Origin", "*");
-  }
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, DNT, Cache-Control, X-Request-ID");
-  res.header("Access-Control-Allow-Credentials", "true");
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-  next();
-});
+// CORS middleware - explicit, before any auth or other middleware
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+      "DNT",
+      "Cache-Control",
+      "X-Request-ID",
+    ],
+  }),
+);
 
 // Logging middleware (must be early)
 app.use(loggingMiddleware);

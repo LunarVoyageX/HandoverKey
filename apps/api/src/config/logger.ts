@@ -17,7 +17,11 @@ const logLevel = process.env.LOG_LEVEL || "info";
  */
 
 // Vercel sets NODE_ENV to 'production' even for preview/dev deployments, so also check VERCEL_ENV
-const isDevelopment = process.env.NODE_ENV !== "production" || process.env.VERCEL_ENV === "development" || process.env.VERCEL_ENV === "preview";
+const isDevelopment =
+  (process.env.NODE_ENV !== "production" ||
+    process.env.VERCEL_ENV === "development" ||
+    process.env.VERCEL_ENV === "preview") &&
+  !process.env.VERCEL; // Disable pino-pretty in Vercel serverless environment to prevent 500s
 
 /**
  * Create Pino logger instance with custom configuration

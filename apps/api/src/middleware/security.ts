@@ -266,7 +266,7 @@ export const sanitizeInput = (
         if (!obj || typeof obj !== "object") return null;
 
         // Check for __proto__ as a string key
-        if ((obj as Record<string, unknown>)["__proto__"] !== undefined) {
+        if (Object.prototype.hasOwnProperty.call(obj, "__proto__")) {
           return "__proto__";
         }
 
@@ -274,7 +274,7 @@ export const sanitizeInput = (
         if (
           (obj as Record<string, unknown>)["constructor"] !== undefined &&
           (obj as Record<string, unknown>)["constructor"] !==
-            Object.prototype.constructor
+          Object.prototype.constructor
         ) {
           return "constructor";
         }
@@ -314,20 +314,34 @@ export const sanitizeInput = (
 
     // Sanitize query parameters (these are read-only so we need to modify in place)
     if (req.query && typeof req.query === "object") {
-      const sanitized = sanitizeObject(req.query) as Record<string, unknown>;
-      Object.keys(req.query).forEach(
-        (key) => delete (req.query as Record<string, unknown>)[key],
-      );
-      Object.assign(req.query, sanitized);
+      try {
+        const sanitized = sanitizeObject(req.query) as Record<string, unknown>;
+        Object.keys(req.query).forEach(
+          (key) => delete (req.query as Record<string, unknown>)[key],
+        );
+        Object.assign(req.query, sanitized);
+      } catch (err) {
+        // Ignore errors if query is immutable
+        if (process.env.NODE_ENV !== "test") {
+          console.warn("Failed to sanitize query parameters:", err);
+        }
+      }
     }
 
     // Sanitize URL parameters (these are read-only so we need to modify in place)
     if (req.params && typeof req.params === "object") {
-      const sanitized = sanitizeObject(req.params) as Record<string, unknown>;
-      Object.keys(req.params).forEach(
-        (key) => delete (req.params as Record<string, unknown>)[key],
-      );
-      Object.assign(req.params, sanitized);
+      try {
+        const sanitized = sanitizeObject(req.params) as Record<string, unknown>;
+        Object.keys(req.params).forEach(
+          (key) => delete (req.params as Record<string, unknown>)[key],
+        );
+        Object.assign(req.params, sanitized);
+      } catch (err) {
+        // Ignore errors if params is immutable
+        if (process.env.NODE_ENV !== "test") {
+          console.warn("Failed to sanitize params:", err);
+        }
+      }
     }
 
     next();
