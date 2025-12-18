@@ -44,5 +44,5 @@ ENV NODE_ENV=production
 ENV PORT=3001
 EXPOSE 3001
 
-# Start the application using the bundled entry point
-CMD ["node", "dist/index.js"]
+# Start the application using a script that runs migrations first
+CMD ["npm", "run", "start:prod"]

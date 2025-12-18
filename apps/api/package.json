@@ -22,6 +22,7 @@
     "build:prod": "npm run build:standalone && npm run build:migrate && mkdir -p dist/schema && cp src/database/schema/*.sql dist/schema/",
     "dev": "ts-node-dev --respawn --transpile-only --debounce 1000 --exit-child --ignore-watch node_modules --ignore-watch dist --ignore-watch ../../packages/shared/dist --ignore-watch ../../packages/database/dist --ignore-watch ../../packages/crypto/dist src/index.ts",
     "start": "node dist/apps/api/src/index.js",
+    "start:prod": "node dist/migrate.js && node dist/index.js",
     "test": "jest",
     "lint": "eslint src",
     "clean": "rm -rf dist",
