@@ -1,41 +1,50 @@
-FROM node:22-alpine AS builder
+FROM node:20-alpine AS base
 
-# Set working directory
+FROM base AS pruner
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
-
-# Install global dependencies
 RUN npm install -g turbo
-
-# Copy root configuration
-COPY package.json package-lock.json turbo.json ./
-
-# Copy all packages and apps (simpler for monorepo than selective copy)
 COPY . .
+RUN turbo prune --scope=@handoverkey/api --docker
 
-# Install dependencies based on lockfile
-RUN npm ci
-
-# Build the API
-RUN turbo run build --filter=@handoverkey/api...
-
-# --- Runtime Stage ---
-FROM node:22-alpine AS runner
-
+FROM base AS builder
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy built application and node_modules from builder
-# Ideally we would prune dev dependencies, but for simplicity/speed we copy.
-# A more advanced setup would reinstall prod deps only.
-COPY --from=builder /app/package.json ./package.json
+# First install dependencies (as they change less often)
+COPY --from=pruner /app/out/json/ .
+# Remove lockfile to force fresh install of Linux binaries (e.g. bcrypt)
+RUN rm -f package-lock.json && npm install
+
+# Build the project
+COPY --from=pruner /app/out/full/ .
+RUN npx turbo run build --filter=@handoverkey/api...
+
+FROM base AS runner
+WORKDIR /app
+
+# Don't run as root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 expressjs
+USER expressjs
+
+# Copy node_modules (required for API runtime)
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api ./apps/api
-COPY --from=builder /app/packages ./packages
+# Copy built artifacts for the API
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+# Copy built artifacts for internal packages that the API depends on
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/database/dist ./packages/database/dist
+COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder /app/packages/database/package.json ./packages/database/package.json
+COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/package.json
 
-# Set environment
+# Set env
 ENV NODE_ENV=production
-
-# Expose port
+ENV PORT=3001
 EXPOSE 3001
 
-# Start the application
+# Start the application using path from package.json structure
 CMD ["node", "apps/api/dist/apps/api/src/index.js"]

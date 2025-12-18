@@ -1,39 +1,38 @@
-FROM node:22-alpine AS builder
+FROM node:20-alpine AS base
 
+FROM base AS pruner
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+RUN npm install -g turbo
+COPY . .
+RUN turbo prune --scope=@handoverkey/web --docker
+
+FROM base AS builder
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install global dependencies
-RUN npm install -g turbo
+# First install dependencies (as they change less often)
+COPY --from=pruner /app/out/json/ .
+RUN rm -f package-lock.json && npm install
 
-# Copy root configuration
-COPY package.json package-lock.json turbo.json ./
+# Build the project
+COPY --from=pruner /app/out/full/ .
 
-# Copy source
-COPY . .
-
-# Install dependencies
-RUN npm ci
-
-# Build the Web app
-# Important: Env vars must be passed at build time for Vite if they are embedded
+# Pass build args
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
-RUN turbo run build --filter=@handoverkey/web...
+RUN npx turbo run build --filter=@handoverkey/web...
 
-# --- Runtime Stage ---
-FROM node:22-alpine AS runner
-
+FROM base AS runner
 WORKDIR /app
 
-# Install simple static server
+# Install serve to run the application
 RUN npm install -g serve
 
-# Copy built assets
 COPY --from=builder /app/apps/web/dist ./dist
 
-# Expose port
+ENV PORT=3000
 EXPOSE 3000
 
-# Start serve
 CMD ["serve", "-s", "dist", "-l", "3000"]
