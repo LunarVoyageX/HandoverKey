@@ -17,8 +17,8 @@
   "homepage": "https://handoverkey.com",
   "scripts": {
     "build": "tsc",
-    "build:standalone": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --format=cjs --external:pg-native",
-    "build:migrate": "esbuild src/database/migrate.ts --bundle --platform=node --target=node20 --outfile=dist/migrate.js --format=cjs --external:pg-native",
+    "build:standalone": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --format=cjs --external:pg-native --alias:@handoverkey/shared=./packages/shared/src/index.ts --alias:@handoverkey/shared/src=./packages/shared/src --alias:@handoverkey/database=./packages/database/src/index.ts --alias:@handoverkey/database/src=./packages/database/src --alias:@handoverkey/crypto=./packages/crypto/src/index.ts --alias:@handoverkey/crypto/src=./packages/crypto/src",
+    "build:migrate": "esbuild src/database/migrate.ts --bundle --platform=node --target=node20 --outfile=dist/migrate.js --format=cjs --external:pg-native --alias:@handoverkey/shared=./packages/shared/src/index.ts --alias:@handoverkey/shared/src=./packages/shared/src --alias:@handoverkey/database=./packages/database/src/index.ts --alias:@handoverkey/database/src=./packages/database/src --alias:@handoverkey/crypto=./packages/crypto/src/index.ts --alias:@handoverkey/crypto/src=./packages/crypto/src",
     "build:prod": "npm run build:standalone && npm run build:migrate && mkdir -p dist/schema && cp src/database/schema/*.sql dist/schema/",
     "dev": "ts-node-dev --respawn --transpile-only --debounce 1000 --exit-child --ignore-watch node_modules --ignore-watch dist --ignore-watch ../../packages/shared/dist --ignore-watch ../../packages/database/dist --ignore-watch ../../packages/crypto/dist src/index.ts",
     "start": "node dist/apps/api/src/index.js",
