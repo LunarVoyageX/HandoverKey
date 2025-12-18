@@ -17,6 +17,9 @@
   "homepage": "https://handoverkey.com",
   "scripts": {
     "build": "tsc",
+    "build:standalone": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --format=cjs --external:pg-native",
+    "build:migrate": "esbuild src/database/migrate.ts --bundle --platform=node --target=node20 --outfile=dist/migrate.js --format=cjs --external:pg-native",
+    "build:prod": "npm run build:standalone && npm run build:migrate && mkdir -p dist/schema && cp src/database/schema/*.sql dist/schema/",
     "dev": "ts-node-dev --respawn --transpile-only --debounce 1000 --exit-child --ignore-watch node_modules --ignore-watch dist --ignore-watch ../../packages/shared/dist --ignore-watch ../../packages/database/dist --ignore-watch ../../packages/crypto/dist src/index.ts",
     "start": "node dist/apps/api/src/index.js",
     "test": "jest",
@@ -25,9 +28,9 @@
     "migrate": "ts-node src/database/migrate.ts"
   },
   "dependencies": {
-    "@handoverkey/crypto": "*",
-    "@handoverkey/database": "*",
-    "@handoverkey/shared": "*",
+    "@handoverkey/crypto": "file:./packages/crypto",
+    "@handoverkey/database": "file:./packages/database",
+    "@handoverkey/shared": "file:./packages/shared",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.65.1",
     "cookie-parser": "^1.4.7",
@@ -58,6 +61,8 @@
     "@types/nodemailer": "^7.0.4",
     "@types/pg": "^8.15.6",
     "@types/supertest": "^6.0.3",
+    "esbuild": "^0.27.2",
+    "esbuild-register": "^3.6.0",
     "jest": "^30.2.0",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.6",

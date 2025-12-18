@@ -1,50 +1,44 @@
-FROM node:20-alpine AS base
+# STAGE 1: Build the application
+FROM node:20-alpine AS builder
 
-FROM base AS pruner
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
-RUN npm install -g turbo
+
+# Copy package files
+COPY package.json ./
+
+# Create packages directory and copy internal dependencies
+# This is necessary because the Docker build context is now the apps/api folder
+COPY packages ./packages
+
+# Install dependencies including those from local file: paths
+RUN npm install
+
+# Copy source code
 COPY . .
-RUN turbo prune --scope=@handoverkey/api --docker
 
-FROM base AS builder
-RUN apk add --no-cache libc6-compat
+# Build the production bundle (this runs esbuild and copies schemas as defined in package.json)
+RUN npm run build:prod
+
+# STAGE 2: Run the application
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-# First install dependencies (as they change less often)
-COPY --from=pruner /app/out/json/ .
-# Remove lockfile to force fresh install of Linux binaries (e.g. bcrypt)
-RUN rm -f package-lock.json && npm install
-
-# Build the project
-COPY --from=pruner /app/out/full/ .
-RUN npx turbo run build --filter=@handoverkey/api...
-
-FROM base AS runner
-WORKDIR /app
-
-# Don't run as root
+# Create a non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 expressjs
+
+# Copy only the necessary files from the builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+# Don't run as root
 USER expressjs
 
-# Copy node_modules (required for API runtime)
-COPY --from=builder /app/node_modules ./node_modules
-# Copy built artifacts for the API
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
-# Copy built artifacts for internal packages that the API depends on
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
-COPY --from=builder /app/packages/database/dist ./packages/database/dist
-COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
-COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
-COPY --from=builder /app/packages/database/package.json ./packages/database/package.json
-COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/package.json
-
-# Set env
+# Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3001
 EXPOSE 3001
 
-# Start the application using path from package.json structure
-CMD ["node", "apps/api/dist/apps/api/src/index.js"]
+# Start the application using the bundled entry point
+CMD ["node", "dist/index.js"]

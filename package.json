@@ -6,7 +6,7 @@
   "packageManager": "npm@11.6.4",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "apps/api/packages/*"
   ],
   "scripts": {
     "dev": "turbo run dev",

@@ -1,0 +1,7 @@
+node_modules
+dist
+.turbo
+.env
+.DS_Store
+# Also ignore nested node_modules in packages
+packages/**/node_modules

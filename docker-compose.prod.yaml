@@ -13,8 +13,8 @@ services:
 
   api:
     build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+      context: ./apps/api
+      dockerfile: Dockerfile
     ports:
       - "3011:3001"
     environment:
@@ -43,8 +43,8 @@ services:
 
   web:
     build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+      context: ./apps/web
+      dockerfile: Dockerfile
       args:
         # Pass API URL to build time
         VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api/v1}

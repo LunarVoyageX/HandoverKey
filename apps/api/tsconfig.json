@@ -17,9 +17,9 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@handoverkey/shared": ["../../packages/shared/src"],
-      "@handoverkey/database": ["../../packages/database/src"],
-      "@handoverkey/crypto": ["../../packages/crypto/src"]
+      "@handoverkey/shared": ["./packages/shared/src"],
+      "@handoverkey/database": ["./packages/database/src"],
+      "@handoverkey/crypto": ["./packages/crypto/src"]
     }
   },
   "include": ["src/**/*"],

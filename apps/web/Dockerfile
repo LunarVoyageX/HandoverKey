@@ -1,38 +1,25 @@
-FROM node:20-alpine AS base
+# STAGE 1: Build the application
+FROM node:20-alpine AS builder
 
-FROM base AS pruner
+# esbuild on Alpine needs libc6-compat
 RUN apk add --no-cache libc6-compat
+
 WORKDIR /app
-RUN npm install -g turbo
+COPY package.json ./
+RUN npm install
 COPY . .
-RUN turbo prune --scope=@handoverkey/web --docker
 
-FROM base AS builder
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-
-# First install dependencies (as they change less often)
-COPY --from=pruner /app/out/json/ .
-RUN rm -f package-lock.json && npm install
-
-# Build the project
-COPY --from=pruner /app/out/full/ .
-
-# Pass build args
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
+ENV CI=true
 
-RUN npx turbo run build --filter=@handoverkey/web...
+RUN npm run build
 
-FROM base AS runner
+# STAGE 2: Run the application
+FROM node:20-alpine AS runner
 WORKDIR /app
-
-# Install serve to run the application
 RUN npm install -g serve
-
-COPY --from=builder /app/apps/web/dist ./dist
-
+COPY --from=builder /app/dist ./dist
 ENV PORT=3000
 EXPOSE 3000
-
 CMD ["serve", "-s", "dist", "-l", "3000"]
