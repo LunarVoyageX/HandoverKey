@@ -1,6 +1,9 @@
 # STAGE 1: Build the application
 FROM node:20-alpine AS builder
 
+# esbuild on Alpine needs libc6-compat
+RUN apk add --no-cache libc6-compat
+
 WORKDIR /app
 
 # Copy package files
@@ -10,7 +13,8 @@ COPY package.json ./
 # This is necessary because the Docker build context is now the apps/api folder
 COPY packages ./packages
 
-# Install dependencies including those from local file: paths
+# Install dependencies including devDependencies for the build step
+ENV NODE_ENV=development
 RUN npm install
 
 # Copy source code
