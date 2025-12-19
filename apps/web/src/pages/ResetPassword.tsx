@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { deriveAuthKey, generateEncryptionSalt } from "../services/encryption";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
+import Spinner from "../components/Spinner";
 
 const ResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -54,6 +55,7 @@ const ResetPassword: React.FC = () => {
         password: authKey,
         confirmPassword: authKey,
         salt: encryptionSalt,
+        email,
       });
       setMessage(
         "Password has been reset successfully. Redirecting to login...",

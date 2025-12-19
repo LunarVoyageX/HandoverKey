@@ -41,6 +41,19 @@ export class AuthenticationError extends AppError {
 }
 
 /**
+ * Email verification required error for unverified email addresses
+ */
+export class EmailVerificationRequiredError extends AuthenticationError {
+  constructor(
+    message: string = "Please verify your email address before logging in",
+  ) {
+    super(message);
+    this.name = "EmailVerificationRequiredError";
+    Object.setPrototypeOf(this, EmailVerificationRequiredError.prototype);
+  }
+}
+
+/**
  * Authorization error for insufficient permissions
  */
 export class AuthorizationError extends AppError {

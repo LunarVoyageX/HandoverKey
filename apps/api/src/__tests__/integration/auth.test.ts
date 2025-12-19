@@ -38,6 +38,7 @@ jest.mock("../../services/user-service", () => ({
       Promise.resolve({
         id: "user-123",
         email: data.email,
+        emailVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         salt: Buffer.from("salt"),
@@ -50,15 +51,12 @@ jest.mock("../../services/user-service", () => ({
           new AuthenticationError("Invalid email or password"),
         );
       }
-      return Promise.resolve({
-        id: "user-123",
-        email: login.email,
-        passwordHash: "hashed",
-        salt: Buffer.from("salt"),
-        twoFactorEnabled: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      // For unverified users
+      return Promise.reject(
+        new AuthenticationError(
+          "Please verify your email address before logging in",
+        ),
+      );
     }),
     findUserByEmail: jest.fn().mockResolvedValue(null),
     logActivity: jest.fn().mockResolvedValue(undefined),
@@ -108,18 +106,18 @@ describe("Auth Integration", () => {
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("user");
     expect(res.body.user.email).toBe(testUser.email);
-    expect(res.body).toHaveProperty("tokens");
+    expect(res.body.user.emailVerified).toBe(false);
+    expect(res.body).not.toHaveProperty("tokens");
   });
 
-  it("should login with the registered user", async () => {
+  it("should not login with unverified user", async () => {
     const res = await (request(app).post("/api/v1/auth/login") as any).send({
       email: testUser.email,
       password: testUser.password,
     });
 
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("tokens");
-    expect(res.body.tokens).toHaveProperty("accessToken");
+    expect(res.status).toBe(401);
+    expect(res.body.error.message).toContain("verify your email");
   });
 
   it("should fail login with wrong password", async () => {

@@ -5,7 +5,13 @@ import {
 } from "@handoverkey/database";
 import { PasswordUtils } from "../auth/password";
 import { User, UserRegistration, UserLogin } from "@handoverkey/shared";
-import { ValidationError, ConflictError, AuthenticationError } from "../errors";
+import {
+  ValidationError,
+  ConflictError,
+  AuthenticationError,
+  NotFoundError,
+  EmailVerificationRequiredError,
+} from "../errors";
 import { getRedisClient } from "../config/redis";
 import { emailService } from "./email-service";
 import crypto from "crypto";
@@ -49,6 +55,9 @@ export class UserService {
       ? Buffer.from(providedSalt, "base64")
       : Buffer.from(PasswordUtils.generateSecurePassword(), "utf8");
 
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
     const userRepo = this.getUserRepository();
     let dbUser;
     try {
@@ -57,6 +66,8 @@ export class UserService {
         email,
         password_hash: passwordHash,
         salt,
+        verification_token: verificationToken,
+        email_verified: false,
       });
     } catch (error: unknown) {
       const dbError = error as {
@@ -68,6 +79,17 @@ export class UserService {
       }
       throw error;
     }
+
+    // Send verification email (don't fail registration if email fails)
+    try {
+      await emailService.sendUserVerificationEmail(email, verificationToken);
+    } catch (emailError) {
+      console.warn(
+        "Failed to send verification email, but continuing with registration:",
+        emailError,
+      );
+    }
+
     return this.mapDbUserToUser(dbUser);
   }
 
@@ -107,6 +129,13 @@ export class UserService {
     );
     if (!isValidPassword) {
       throw new AuthenticationError("Invalid email or password");
+    }
+
+    // Check if email is verified
+    if (!user.emailVerified) {
+      throw new EmailVerificationRequiredError(
+        "Please verify your email address before logging in",
+      );
     }
 
     // Update last login
@@ -203,12 +232,26 @@ export class UserService {
     token: string,
     newPassword: string,
     newSalt?: string,
+    email?: string,
   ): Promise<void> {
     const redis = getRedisClient();
     const userId = await redis.get(`RESET_TOKEN:${token}`);
 
     if (!userId) {
       throw new ValidationError("Invalid or expired password reset token");
+    }
+
+    // If email is provided, validate it matches the user's email
+    if (email) {
+      const user = await this.findUserById(userId);
+      if (!user) {
+        throw new ValidationError("User not found");
+      }
+      if (user.email.toLowerCase().trim() !== email.toLowerCase().trim()) {
+        throw new ValidationError(
+          "Email address does not match the reset token",
+        );
+      }
     }
 
     // Validate password strength (Auth Key length check)
@@ -225,6 +268,8 @@ export class UserService {
       password_hash: string;
       updated_at: Date;
       salt?: Buffer;
+      email_verified?: boolean;
+      verification_token?: null;
     } = {
       password_hash: passwordHash,
       updated_at: new Date(),
@@ -234,13 +279,58 @@ export class UserService {
       updateData.salt = Buffer.from(newSalt, "base64");
     }
 
+    // Since user successfully used password reset token (sent to their email),
+    // we can automatically verify their email address
+    updateData.email_verified = true;
+    updateData.verification_token = null;
+
     await userRepo.update(userId, updateData);
 
     // Delete token
     await redis.del(`RESET_TOKEN:${token}`);
 
-    // Log activity
-    await this.logActivity(userId, "PASSWORD_RESET", "system");
+    // Log activity (no IP for system operations)
+    await this.logActivity(userId, "PASSWORD_RESET");
+  }
+
+  static async verifyUserByToken(
+    verificationToken: string,
+  ): Promise<{ success: boolean; alreadyVerified: boolean; userId?: string }> {
+    const userRepo = this.getUserRepository();
+    const db = userRepo["db"]; // Access the kysely instance
+
+    // First check if token exists for any user (verified or not)
+    const anyUserWithToken = await db
+      .selectFrom("users")
+      .selectAll()
+      .where("verification_token", "=", verificationToken)
+      .executeTakeFirst();
+
+    if (anyUserWithToken) {
+      if (anyUserWithToken.email_verified) {
+        // User is already verified
+        return {
+          success: true,
+          alreadyVerified: true,
+          userId: anyUserWithToken.id,
+        };
+      } else {
+        // User exists and is not verified - verify them
+        await userRepo.update(anyUserWithToken.id, {
+          email_verified: true,
+          // Keep the verification token so the link continues to work
+        });
+
+        return {
+          success: true,
+          alreadyVerified: false,
+          userId: anyUserWithToken.id,
+        };
+      }
+    }
+
+    // Token not found
+    return { success: false, alreadyVerified: false };
   }
 
   private static mapDbUserToUser(dbUser: {
@@ -249,6 +339,7 @@ export class UserService {
     name?: string | null;
     password_hash: string;
     salt: Buffer;
+    verification_token?: string | null;
     email_verified?: boolean | null;
     two_factor_enabled?: boolean | null;
     two_factor_secret?: string | null;
@@ -265,6 +356,7 @@ export class UserService {
       name: dbUser.name || undefined,
       passwordHash: dbUser.password_hash,
       salt: dbUser.salt,
+      verificationToken: dbUser.verification_token ?? undefined,
       emailVerified: dbUser.email_verified ?? false,
       twoFactorEnabled: dbUser.two_factor_enabled ?? false,
       twoFactorSecret: dbUser.two_factor_secret ?? undefined,
@@ -274,6 +366,44 @@ export class UserService {
       inactivityThresholdDays: dbUser.inactivity_threshold_days ?? 90,
       createdAt: dbUser.created_at,
       updatedAt: dbUser.updated_at,
+    };
+  }
+
+  static async resendVerificationEmail(
+    email: string,
+  ): Promise<{ success: boolean; message: string; alreadyVerified?: boolean }> {
+    console.log(`[UserService] Resending verification email for: ${email}`);
+    const user = await this.findUserByEmail(email);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    if (user.emailVerified) {
+      console.log(`[UserService] Email ${email} is already verified`);
+      return {
+        success: true,
+        message: "Email is already verified. You can now login.",
+        alreadyVerified: true,
+      };
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    // Update user with new token
+    const userRepo = this.getUserRepository();
+    await userRepo.update(user.id, {
+      verification_token: verificationToken,
+      updated_at: new Date(),
+    });
+
+    console.log(`[UserService] Sending verification email to ${email}...`);
+    await emailService.sendUserVerificationEmail(email, verificationToken);
+    console.log(`[UserService] Verification email sent.`);
+
+    return {
+      success: true,
+      message: "Verification email sent successfully. Please check your email.",
     };
   }
 }

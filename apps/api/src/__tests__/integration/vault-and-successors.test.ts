@@ -17,6 +17,24 @@ async function registerAndLogin() {
 
   expect(registerRes.status).toBe(201);
 
+  // Get the verification token from database
+  const dbClient = getDatabaseClient();
+  const db = dbClient.getKysely();
+  const user = await db
+    .selectFrom("users")
+    .select("verification_token")
+    .where("email", "=", email)
+    .executeTakeFirst();
+
+  expect(user).toBeDefined();
+  expect(user!.verification_token).toBeDefined();
+
+  // Verify the email
+  const verifyRes = await request(app).get(
+    `/api/v1/auth/verify-email?token=${user!.verification_token}`,
+  );
+  expect(verifyRes.status).toBe(200);
+
   const loginRes = await (request(app).post("/api/v1/auth/login") as any).send({
     email,
     password,

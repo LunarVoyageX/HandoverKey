@@ -48,6 +48,12 @@ router.post(
   SimpleActivityMiddleware.trackActivity("PASSWORD_RESET"),
 );
 
+// Verify email endpoint
+router.get("/verify-email", AuthController.verifyEmail);
+
+// Resend verification email endpoint
+router.post("/resend-verification", AuthController.resendVerificationEmail);
+
 // Logout endpoint (requires authentication)
 router.post("/logout", authenticateJWT, requireAuth, AuthController.logout);
 

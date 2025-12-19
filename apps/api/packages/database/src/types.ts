@@ -13,6 +13,7 @@ export interface UsersTable {
   name: string | null;
   password_hash: string;
   salt: Buffer;
+  verification_token: string | null;
   email_verified: ColumnType<boolean, boolean | undefined, boolean>;
   two_factor_enabled: ColumnType<boolean, boolean | undefined, boolean>;
   two_factor_secret: string | null;

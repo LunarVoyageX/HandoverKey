@@ -5,6 +5,7 @@ export interface User {
   passwordHash: string;
   salt: Uint8Array;
   emailVerified: boolean;
+  verificationToken?: string;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
   lastActivity?: Date;

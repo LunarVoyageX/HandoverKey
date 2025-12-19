@@ -1,12 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
-import {
-  setMasterKey,
-  deriveAuthKey,
-  generateEncryptionSalt,
-} from "../services/encryption";
+import { deriveAuthKey, generateEncryptionSalt } from "../services/encryption";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import LoadingButton from "../components/LoadingButton";
 
@@ -16,13 +11,14 @@ const Register: React.FC = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -46,7 +42,7 @@ const Register: React.FC = () => {
 
       // 3. Send Registration Request
       // We send the authKey as the password, and the encryptionSalt to be stored
-      const response = await api.post("/auth/register", {
+      await api.post("/auth/register", {
         name,
         email,
         password: authKey,
@@ -54,12 +50,14 @@ const Register: React.FC = () => {
         salt: encryptionSalt, // We need to update backend to accept this
       });
 
-      // 4. Set Master Key in Memory
-      // We use the original password and the generated salt
-      await setMasterKey(password, encryptionSalt);
-
-      login(response.data.tokens.accessToken, response.data.user);
-      navigate("/dashboard");
+      // 4. Show success message and redirect to login
+      // User must verify email before they can login
+      setSuccess(
+        `Registration successful! Please check your email at ${email} to verify your account before logging in.`,
+      );
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } catch (err) {
       const error = err as {
         response?: {
@@ -116,6 +114,12 @@ const Register: React.FC = () => {
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm">
+                {success}
               </div>
             )}
 

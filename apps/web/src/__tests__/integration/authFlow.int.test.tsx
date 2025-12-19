@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import Login from "../../pages/Login";
@@ -124,20 +124,29 @@ describe("Auth flows", () => {
       expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     });
 
-    await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.type(screen.getByLabelText(/password/i), "Password123!");
-    await user.click(screen.getByRole("button", { name: /sign in/i }));
+    await act(async () => {
+      await user.type(screen.getByLabelText(/email/i), "test@example.com");
+      await user.type(screen.getByLabelText(/password/i), "Password123!");
+      await user.click(screen.getByRole("button", { name: /sign in/i }));
+    });
 
     await waitFor(() => {
       expect(localStorage.getItem("token")).toBe("token-123");
     });
   });
 
-  it("registers new user and stores token", async () => {
+  it("registers new user and shows success message", async () => {
     (api.post as vi.Mock).mockResolvedValue({
       data: {
-        user: { id: "user-2", email: "new@example.com", salt: "mock-salt" },
-        tokens: { accessToken: "token-999", refreshToken: "refresh-999" },
+        message:
+          "User registered successfully. Please check your email to verify your account before logging in.",
+        user: {
+          id: "user-2",
+          email: "new@example.com",
+          name: "John Doe",
+          emailVerified: false,
+          createdAt: "2025-12-19T21:19:11.554Z",
+        },
       },
     });
 
@@ -148,14 +157,24 @@ describe("Auth flows", () => {
       expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     });
 
-    await user.type(screen.getByLabelText(/full name/i), "John Doe");
-    await user.type(screen.getByLabelText(/email/i), "new@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "Password123!");
-    await user.type(screen.getByLabelText(/confirm password/i), "Password123!");
-    await user.click(screen.getByRole("button", { name: /create account/i }));
+    await act(async () => {
+      await user.type(screen.getByLabelText(/full name/i), "John Doe");
+      await user.type(screen.getByLabelText(/email/i), "new@example.com");
+      await user.type(screen.getByLabelText(/^password$/i), "Password123!");
+      await user.type(
+        screen.getByLabelText(/confirm password/i),
+        "Password123!",
+      );
+      await user.click(screen.getByRole("button", { name: /create account/i }));
+    });
 
     await waitFor(() => {
-      expect(localStorage.getItem("token")).toBe("token-999");
+      expect(screen.getByText(/Registration successful!/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          /Please check your email at new@example.com to verify your account before logging in/i,
+        ),
+      ).toBeInTheDocument();
     });
   });
 });

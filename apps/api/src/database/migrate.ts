@@ -16,6 +16,7 @@ const MIGRATION_FILES = [
   "add_require_majority.sql",
   "add_vault_deleted_at.sql",
   "add_name_to_users.sql",
+  "add_email_verification_to_users.sql",
 ];
 
 import { Generated } from "kysely";

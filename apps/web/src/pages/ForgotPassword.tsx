@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
+import Spinner from "../components/Spinner";
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("");

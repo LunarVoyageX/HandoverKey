@@ -305,6 +305,261 @@ Your digital legacy, securely managed.
     }
   }
 
+  async sendUserVerificationEmail(
+    email: string,
+    verificationToken: string,
+  ): Promise<void> {
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const verificationLink = `${baseUrl}/verify-email?token=${verificationToken}`;
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: email,
+      subject: "Verify Your Email - HandoverKey",
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              background-color: #F9FAFB;
+              padding: 20px;
+            }
+            .email-wrapper {
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+              border: 1px solid #F3F4F6;
+            }
+            .header {
+              background-color: #ffffff;
+              padding: 40px 30px 30px;
+              text-align: center;
+              border-bottom: 1px solid #F3F4F6;
+            }
+            .logo {
+              width: 56px;
+              height: 56px;
+              background: linear-gradient(135deg, #007AFF 0%, #0062CC 100%);
+              border-radius: 14px;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 16px;
+              font-size: 28px;
+              box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+            }
+            .header h1 {
+              color: #111827;
+              font-size: 26px;
+              font-weight: 600;
+              margin: 0;
+              letter-spacing: -0.5px;
+            }
+            .content {
+              padding: 40px 30px;
+              background-color: #ffffff;
+            }
+            .content h2 {
+              color: #111827;
+              font-size: 22px;
+              font-weight: 600;
+              margin-bottom: 20px;
+            }
+            .content p {
+              color: #4B5563;
+              font-size: 15px;
+              line-height: 1.7;
+              margin-bottom: 16px;
+            }
+            .button-container {
+              text-align: center;
+              margin: 32px 0;
+            }
+            .button {
+              display: inline-block;
+              background: #007AFF;
+              color: #ffffff !important;
+              padding: 13px 32px;
+              text-decoration: none;
+              border-radius: 10px;
+              font-weight: 600;
+              font-size: 15px;
+              box-shadow: 0 4px 6px -1px rgba(0, 122, 255, 0.2), 0 2px 4px -1px rgba(0, 122, 255, 0.1);
+              transition: all 0.2s ease;
+            }
+            .info-box {
+              background: linear-gradient(to right, #DBEAFE, #BFDBFE);
+              border-left: 3px solid #007AFF;
+              padding: 16px 20px;
+              margin: 24px 0;
+              border-radius: 10px;
+            }
+            .info-box p {
+              color: #1E3A8A;
+              font-size: 14px;
+              margin: 0;
+              line-height: 1.6;
+            }
+            .what-next {
+              background-color: #F9FAFB;
+              border-radius: 10px;
+              padding: 20px;
+              margin: 24px 0;
+            }
+            .what-next h3 {
+              color: #111827;
+              font-size: 16px;
+              font-weight: 600;
+              margin-bottom: 12px;
+            }
+            .what-next ul {
+              margin: 0;
+              padding-left: 20px;
+            }
+            .what-next li {
+              color: #4B5563;
+              font-size: 14px;
+              line-height: 1.7;
+              margin-bottom: 8px;
+            }
+            .footer {
+              background-color: #F9FAFB;
+              padding: 30px;
+              text-align: center;
+              border-top: 1px solid #E5E7EB;
+            }
+            .footer p {
+              color: #6B7280;
+              font-size: 13px;
+              margin-bottom: 6px;
+            }
+            .divider {
+              height: 1px;
+              background-color: #E5E7EB;
+              margin: 28px 0;
+            }
+            @media only screen and (max-width: 600px) {
+              body {
+                padding: 0;
+              }
+              .email-wrapper {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+              }
+              .header, .content, .footer {
+                padding: 24px 20px;
+              }
+              .content h2 {
+                font-size: 20px;
+              }
+              .button {
+                display: block;
+                width: 100%;
+                padding: 14px 24px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="email-wrapper">
+            <div class="header">
+              <div class="logo">🔐</div>
+              <h1>HandoverKey</h1>
+            </div>
+            
+            <div class="content">
+              <h2>Welcome to HandoverKey!</h2>
+              <p>Hello,</p>
+              <p>Thank you for registering with HandoverKey. To complete your account setup and ensure the security of your digital assets, please verify your email address.</p>
+              
+              <div class="info-box">
+                <p><strong>🔔 Action Required:</strong> Please verify your email address to activate your account.</p>
+              </div>
+              
+              <div class="button-container">
+                <a href="${verificationLink}" class="button">Verify Email Address</a>
+              </div>
+              
+              <div class="what-next">
+                <h3>What happens next?</h3>
+                <ul>
+                  <li>Click the verification button above to confirm your email</li>
+                  <li>Your account will be activated</li>
+                  <li>You can start setting up your digital legacy</li>
+                  <li>Your data remains secure throughout the process</li>
+                </ul>
+              </div>
+              
+              <div class="divider"></div>
+              
+              <p style="font-size: 14px; color: #6B7280;">
+                If you did not create this account or believe this email was sent in error, you can safely ignore it. Your account will not be activated without verification.
+              </p>
+              
+              <p style="font-size: 14px; color: #6B7280; margin-top: 16px;">
+                This is an automated message. For questions about HandoverKey, please visit our website.
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HandoverKey. All rights reserved.</p>
+              <p>Your digital legacy, securely managed.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Welcome to HandoverKey!
+
+Hello,
+
+Thank you for registering with HandoverKey. To complete your account setup and ensure the security of your digital assets, please verify your email address.
+
+🔔 ACTION REQUIRED: Please verify your email address to activate your account.
+
+Verify your email by clicking this link:
+${verificationLink}
+
+What happens next?
+- Click the verification link above to confirm your email
+- Your account will be activated
+- You can start setting up your digital legacy
+- Your data remains secure throughout the process
+
+If you did not create this account or believe this email was sent in error, you can safely ignore it. Your account will not be activated without verification.
+
+This is an automated message. For questions about HandoverKey, please visit our website.
+
+---
+© ${new Date().getFullYear()} HandoverKey. All rights reserved.
+Your digital legacy, securely managed.
+      `.trim(),
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`User verification email sent to ${email}`);
+    } catch (error) {
+      console.error("Failed to send user verification email:", error);
+      throw new Error("Failed to send user verification email");
+    }
+  }
+
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
     const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const resetLink = `${baseUrl}/reset-password?token=${token}`;
