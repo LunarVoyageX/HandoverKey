@@ -16,9 +16,10 @@ export class AuthController {
   ): Promise<void> {
     try {
       // Data is already validated and sanitized by Zod middleware
-      const { email, password, confirmPassword, salt } = req.body;
+      const { name, email, password, confirmPassword, salt } = req.body;
 
       const registration: UserRegistration & { salt?: string } = {
+        name,
         email,
         password,
         confirmPassword,
