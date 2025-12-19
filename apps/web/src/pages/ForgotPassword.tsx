@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
+import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -39,6 +40,14 @@ const ForgotPassword: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <Link
+              to="/"
+              className="bg-blue-50 p-3 rounded-2xl border border-blue-100 shadow-sm focus:outline-none"
+            >
+              <ShieldCheckIcon className="h-10 w-10 text-blue-600" />
+            </Link>
+          </div>
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">
             Reset your password
           </h2>
@@ -119,9 +128,16 @@ const ForgotPassword: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+              className="w-full btn btn-primary flex justify-center"
             >
-              {loading ? "Sending..." : "Send reset link"}
+              {loading ? (
+                <>
+                  <Spinner className="mr-2 h-5 w-5" />
+                  Sending...
+                </>
+              ) : (
+                "Send reset link"
+              )}
             </button>
           </div>
 

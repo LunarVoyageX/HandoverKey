@@ -82,7 +82,12 @@ beforeEach(() => {
     if (url.includes("/auth/profile")) {
       return Promise.resolve({
         data: {
-          user: { id: "user-1", email: "test@example.com", salt: "mock-salt" },
+          user: {
+            id: "user-1",
+            email: "test@example.com",
+            name: "Test User",
+            salt: "mock-salt",
+          },
         },
       });
     }

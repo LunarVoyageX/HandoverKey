@@ -16,10 +16,10 @@ export default function LandingPage() {
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-2">
               <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">
-                HandoverKey
+              <span className="text-xl font-bold tracking-tight text-gray-900">
+                Handover<span className="text-blue-600">Key</span>
               </span>
             </div>
             <div className="flex items-center space-x-4">
@@ -69,7 +69,7 @@ export default function LandingPage() {
             >
               <Link
                 to="/register"
-                className="btn btn-primary text-lg px-8 py-3 shadow-apple-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                className="btn btn-primary text-lg px-8 py-3"
               >
                 Start Your Legacy Plan
               </Link>
@@ -150,7 +150,7 @@ export default function LandingPage() {
           </p>
           <Link
             to="/register"
-            className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-lg text-blue-600 bg-white hover:bg-gray-50 transition-all transform hover:-translate-y-1"
+            className="btn btn-primary text-lg px-8 py-4 font-bold"
           >
             Create Free Account
           </Link>
@@ -160,10 +160,11 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="bg-gray-50 border-t border-gray-200 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center mb-4 md:mb-0">
+          <div className="flex items-center mb-4 md:mb-0 gap-x-2">
             <ShieldCheckIcon className="h-6 w-6 text-gray-400" />
-            <span className="ml-2 text-gray-500 font-medium">
-              HandoverKey &copy; {new Date().getFullYear()}
+            <span className="text-gray-500 font-medium tracking-tight">
+              Handover<span className="text-gray-400">Key</span> &copy;{" "}
+              {new Date().getFullYear()}
             </span>
           </div>
           <div className="flex space-x-6">

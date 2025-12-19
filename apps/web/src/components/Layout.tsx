@@ -9,6 +9,7 @@ import {
   Cog6ToothIcon,
   UserGroupIcon,
   ArrowRightOnRectangleIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import clsx from "clsx";
@@ -82,12 +83,16 @@ const Layout: React.FC = () => {
                   </Transition.Child>
                   {/* Sidebar component, swap this element with another sidebar if you like */}
                   <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
-                    <div className="flex h-16 shrink-0 items-center">
-                      <img
-                        className="h-8 w-auto"
-                        src="https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600"
-                        alt="HandoverKey"
-                      />
+                    <div className="flex h-16 shrink-0 items-center gap-x-2 focus:outline-none justify-between">
+                      <Link
+                        to={user ? "/dashboard" : "/"}
+                        className="flex items-center gap-x-2"
+                      >
+                        <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
+                        <span className="text-xl font-bold tracking-tight text-gray-900">
+                          Handover<span className="text-blue-600">Key</span>
+                        </span>
+                      </Link>
                     </div>
                     <nav className="flex flex-1 flex-col">
                       <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -160,10 +165,16 @@ const Layout: React.FC = () => {
         {/* Static sidebar for desktop */}
         <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
           <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
-            <div className="flex h-16 shrink-0 items-center">
-              <span className="text-2xl font-bold text-blue-600">
-                HandoverKey
-              </span>
+            <div className="flex h-16 shrink-0 items-center gap-x-2 focus:outline-none justify-between">
+              <Link
+                to={user ? "/dashboard" : "/"}
+                className="flex items-center gap-x-2"
+              >
+                <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
+                <span className="text-xl font-bold tracking-tight text-gray-900">
+                  Handover<span className="text-blue-600">Key</span>
+                </span>
+              </Link>
             </div>
             <nav className="flex flex-1 flex-col">
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -255,7 +266,7 @@ const Layout: React.FC = () => {
             </div>
           </div>
 
-          <main className="py-10">
+          <main className="py-10 bg-gray-50 min-h-screen transition-colors">
             <div className="px-4 sm:px-6 lg:px-8">
               <Outlet />
             </div>

@@ -1,31 +1,100 @@
+/* Floating label input styles */
+.form-group {
+  @apply relative mb-6;
+}
+
+.form-input {
+  @apply input bg-transparent placeholder-transparent;
+}
+
+.form-label {
+  @apply absolute left-4 top-2.5 text-gray-400 pointer-events-none transition-all duration-200 origin-left bg-transparent px-1;
+  background: none;
+}
+
+.form-input:focus + .form-label,
+.form-input:not(:placeholder-shown) + .form-label {
+  @apply text-blue-600 scale-90 -translate-y-5 left-3 bg-white/80 px-1;
+  background: rgba(255,255,255,0.8);
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-gray-900 antialiased selection:bg-blue-100 dark:bg-gray-900 dark:text-gray-100;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-6 py-2.5 rounded-full font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md;
+    transition-property: background, box-shadow, transform;
   }
-  
+
   .btn-primary {
-    @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500 shadow-sm hover:shadow-md;
+    @apply bg-gradient-to-r from-blue-600 to-blue-500 text-white border-0 dark:from-blue-500 dark:to-blue-700;
+    box-shadow: 0 6px 24px 0 rgba(0, 122, 255, 0.15), 0 1.5px 4px 0 rgba(0,0,0,0.04);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    @apply from-blue-700 to-blue-600;
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 10px 32px 0 rgba(0, 122, 255, 0.18), 0 2px 8px 0 rgba(0,0,0,0.06);
+  }
+
+  .btn-primary:focus-visible {
+    @apply ring-4 ring-blue-300;
   }
   
   .btn-secondary {
-    @apply bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 focus:ring-gray-200 shadow-sm;
+    @apply bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 focus:ring-gray-200 shadow-sm hover:shadow-md;
   }
 
   .input {
-    @apply block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5 px-3 bg-white/50 backdrop-blur-sm transition-all duration-200;
+    @apply block w-full rounded-xl border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500/20 sm:text-sm py-2.5 px-4 bg-white transition-all duration-200 border;
   }
 
   .card {
-    @apply bg-white rounded-2xl shadow-apple border border-gray-100 overflow-hidden;
+    @apply bg-white/70 rounded-2xl shadow-apple border border-gray-100/80 overflow-hidden backdrop-blur-lg transition-all duration-300 dark:bg-gray-800/70 dark:border-gray-700;
+    background: linear-gradient(135deg, rgba(255,255,255,0.85) 60%, rgba(230,244,255,0.7) 100%);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .dark .card {
+    background: linear-gradient(135deg, rgba(31,41,55,0.92) 60%, rgba(51,65,85,0.7) 100%);
+    box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18);
+    border: 1px solid rgba(30,41,59,0.18);
+  }
+
+  .modal, .dialog {
+    @apply bg-white/60 rounded-2xl shadow-apple-lg backdrop-blur-xl border border-gray-100/60 dark:bg-gray-800/80 dark:border-gray-700;
+    background: linear-gradient(120deg, rgba(255,255,255,0.85) 70%, rgba(200,220,255,0.5) 100%);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.14);
+    border: 1px solid rgba(255,255,255,0.22);
+  }
+  .dark .modal, .dark .dialog {
+    background: linear-gradient(120deg, rgba(31,41,55,0.92) 70%, rgba(51,65,85,0.5) 100%);
+    box-shadow: 0 12px 40px 0 rgba(0,0,0,0.22);
+    border: 1px solid rgba(30,41,59,0.22);
+  }
+
+  .card:hover {
+    @apply shadow-apple-lg scale-[1.025] border-blue-100;
+  }
+
+  .input:focus {
+    @apply ring-2 ring-blue-400 border-blue-400 bg-blue-50/40 shadow-md;
+    transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
+  }
+
+  .btn svg, .icon {
+    @apply transition-transform duration-200;
+  }
+  .btn:hover svg, .icon:hover {
+    @apply scale-110;
   }
 }

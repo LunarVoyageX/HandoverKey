@@ -9,6 +9,7 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: "./src/setupTests.ts",
+    include: ["**/__tests__/**/*.test.tsx"],
   },
   server: {
     proxy: {

@@ -88,7 +88,7 @@ const VerifySuccessor: React.FC = () => {
               <p className="text-gray-600 mb-6">{message}</p>
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="btn btn-primary inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg w-auto"
               >
                 Go to Login
               </Link>
@@ -118,7 +118,7 @@ const VerifySuccessor: React.FC = () => {
               <p className="text-gray-600 mb-6">{message}</p>
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="btn btn-primary inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg w-auto"
               >
                 Go to Login
               </Link>
