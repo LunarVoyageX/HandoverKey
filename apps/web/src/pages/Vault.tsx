@@ -37,12 +37,10 @@ const Vault: React.FC = () => {
 
   const fetchEntries = async () => {
     try {
-      // Add timestamp to prevent caching
       const response = await api.get(`/vault/entries?t=${Date.now()}`);
-      const rawEntries = response.data.data || response.data; // Handle pagination wrapper if present
+      const rawEntries = response.data.data || response.data;
 
       // Decrypt entries to get name and category
-
       const decryptedEntries = await Promise.all(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rawEntries.map(async (entry: any) => {

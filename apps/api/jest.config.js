@@ -14,8 +14,9 @@ module.exports = {
   },
   transformIgnorePatterns: ["node_modules/(?!(uuid|@handoverkey)/)"],
   moduleNameMapper: {
-    "^@handoverkey/shared$": "<rootDir>/../../packages/shared/src",
-    "^@handoverkey/database$": "<rootDir>/../../packages/database/src",
-    "^@handoverkey/crypto$": "<rootDir>/../../packages/crypto/src",
+    "^@handoverkey/shared$": "<rootDir>/packages/shared/src",
+    "^@handoverkey/database$": "<rootDir>/packages/database/src",
+    "^@handoverkey/crypto$": "<rootDir>/packages/crypto/src",
   },
+  rootDir: ".",
 };

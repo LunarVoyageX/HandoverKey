@@ -16,7 +16,6 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       // 1. Derive Auth Key (Client-side Hashing)
       // We use the email as salt for the Auth Key
@@ -28,23 +27,20 @@ const Login: React.FC = () => {
         password: authKey,
       });
 
+      const { tokens, user: userData } = response.data;
+
       // 3. Set Master Key using the Salt returned by the server
       // The server returns the encryption salt (which we sent during registration)
-      if (response.data.user.salt) {
-        await setMasterKey(password, response.data.user.salt);
+      if (userData.salt) {
+        await setMasterKey(password, userData.salt);
       }
 
-      login(response.data.tokens.accessToken, response.data.user);
+      login(tokens.accessToken, userData);
       navigate("/dashboard");
-    } catch (err) {
-      const error = err as {
-        response?: {
-          data?: { error?: { message?: string }; message?: string };
-        };
-      };
+    } catch (err: any) {
       setError(
-        error.response?.data?.error?.message ||
-          error.response?.data?.message ||
+        err.response?.data?.error?.message ||
+          err.response?.data?.message ||
           "Failed to login",
       );
     } finally {

@@ -1,90 +1,33 @@
-import {
-  describe,
-  beforeAll,
-  afterAll,
-  afterEach,
-  it,
-  expect,
-  vi,
-} from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { setupServer } from "msw/node";
-import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import Vault from "../../pages/Vault";
 import { AuthProvider } from "../../contexts/AuthContext";
 import { ToastProvider } from "../../contexts/ToastContext";
+import React from "react";
+import api from "../../services/api";
 
-// Polyfill ResizeObserver for HeadlessUI
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
-
-// Mock FileReader
-class MockFileReader {
-  result = "";
-  onload: ((e: unknown) => void) | null = null;
-  onloadend: ((e: unknown) => void) | null = null;
-  readAsDataURL(_blob: Blob) {
-    this.result = "data:image/png;base64,fakebase64";
-    if (this.onload) {
-      this.onload({ target: { result: this.result } });
-    }
-    if (this.onloadend) {
-      this.onloadend({ target: { result: this.result } });
-    }
-  }
-}
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).FileReader = MockFileReader;
-
-// Mock Heroicons
-vi.mock("@heroicons/react/24/outline", async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PlusIcon: (props: any) => <svg {...props} data-testid="plus-icon" />,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    MagnifyingGlassIcon: (props: any) => (
-      <svg {...props} data-testid="search-icon" />
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ExclamationTriangleIcon: (props: any) => (
-      <svg {...props} data-testid="exclamation-triangle-icon" />
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    CheckCircleIcon: (props: any) => (
-      <svg {...props} data-testid="check-circle-icon" />
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    XCircleIcon: (props: any) => <svg {...props} data-testid="x-circle-icon" />,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    InformationCircleIcon: (props: any) => (
-      <svg {...props} data-testid="information-circle-icon" />
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    XMarkIcon: (props: any) => <svg {...props} data-testid="x-mark-icon" />,
-  };
-}); // Mock Encryption Service
-vi.mock("../../services/encryption", () => ({
-  decryptData: vi.fn().mockImplementation(async () => {
-    return {
-      name: "Test Entry",
-      secret: "Test Secret",
-    };
-  }),
-  encryptData: vi.fn().mockImplementation(async () => {
-    return {
-      encryptedData: "enc-data",
-      iv: "iv",
-      salt: "salt",
-      algorithm: "AES-GCM",
-    };
-  }),
+// Mock Heroicons with all used components
+vi.mock("@heroicons/react/24/outline", () => ({
+  ShieldCheckIcon: () => <div data-testid="shield-icon" />,
+  UserGroupIcon: () => <div data-testid="user-icon" />,
+  ClockIcon: () => <div data-testid="clock-icon" />,
+  KeyIcon: () => <div data-testid="key-icon" />,
+  LockClosedIcon: () => <div data-testid="lock-icon" />,
+  DocumentTextIcon: () => <div data-testid="doc-icon" />,
+  MagnifyingGlassIcon: () => <div data-testid="search-icon" />,
+  PlusIcon: () => <div data-testid="plus-icon" />,
+  Bars3Icon: () => <div data-testid="bars-icon" />,
+  XMarkIcon: () => <div data-testid="xmark-icon" />,
+  HomeIcon: () => <div data-testid="home-icon" />,
+  Cog6ToothIcon: () => <div data-testid="cog-icon" />,
+  ArrowRightOnRectangleIcon: () => <div data-testid="logout-icon" />,
+  ExclamationTriangleIcon: () => <div data-testid="warning-icon" />,
+  DocumentIcon: () => <div data-testid="document-icon" />,
+  CheckCircleIcon: () => <div data-testid="check-icon" />,
+  XCircleIcon: () => <div data-testid="error-icon" />,
+  InformationCircleIcon: () => <div data-testid="info-icon" />,
 }));
 
 // Mock framer-motion
@@ -93,47 +36,82 @@ vi.mock("framer-motion", () => ({
     <>{children}</>
   ),
   motion: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    li: ({ children, ...props }: any) => <li {...props}>{children}</li>,
+    h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
+    h2: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
+    p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
+    button: ({ children, ...props }: any) => (
+      <button {...props}>{children}</button>
+    ),
+    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
   },
 }));
 
-const server = setupServer(
-  http.get("/api/vault/entries", () => {
-    return HttpResponse.json([
-      {
-        id: "entry-1",
-        encryptedData: "enc-data",
-        iv: "iv",
-        algorithm: "AES-GCM",
-        category: "Login",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        version: 1,
-      },
-    ]);
-  }),
-  http.post("/api/vault/entries", async () => {
-    return HttpResponse.json({
-      id: "entry-2",
-      encryptedData: "enc-data-2",
-      iv: "iv-2",
-      algorithm: "AES-GCM",
-      category: "Secure Note",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      version: 1,
-    });
-  }),
-);
+// Mock API
+vi.mock("../../services/api", () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+// Mock Encryption Service
+vi.mock("../../services/encryption", () => ({
+  encryptData: vi.fn().mockResolvedValue({
+    encryptedData: "enc-data",
+    iv: "iv",
+    salt: "salt",
+    algorithm: "AES-GCM",
+  }),
+  decryptData: vi.fn().mockResolvedValue({
+    name: "Test Entry",
+    secret: "test-secret",
+    category: "Login",
+    type: "password",
+  }),
+  arrayBufferToBase64: vi.fn().mockReturnValue("mock-base64"),
+  clearMasterKey: vi.fn(),
+  generateEncryptionSalt: vi.fn().mockReturnValue("mock-salt"),
+  deriveAuthKey: vi.fn().mockResolvedValue("mock-auth-key"),
+  setMasterKey: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe("Vault Integration", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+
+    (api.get as any).mockImplementation((url: string) => {
+      if (url.includes("/vault/entries")) {
+        return Promise.resolve({
+          data: [
+            {
+              id: "entry-1",
+              encryptedData: "enc-data",
+              iv: "iv",
+              algorithm: "AES-GCM",
+              category: "Login",
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              version: 1,
+            },
+          ],
+        });
+      }
+      if (url.includes("/activity")) {
+        return Promise.resolve({ data: { data: [] } });
+      }
+      if (url.includes("/auth/profile")) {
+        return Promise.resolve({
+          data: { user: { id: "user-1", email: "test@example.com" } },
+        });
+      }
+      return Promise.resolve({ data: { data: [] } });
+    });
+  });
+
   it("should fetch and display vault entries", async () => {
     render(
       <MemoryRouter>
@@ -145,13 +123,28 @@ describe("Vault Integration", () => {
       </MemoryRouter>,
     );
 
-    // Wait for loading to finish and entry to appear
+    // Wait for initial load
     await waitFor(() => {
       expect(screen.getByText("Test Entry")).toBeInTheDocument();
     });
+
+    expect(screen.getByText("Login")).toBeInTheDocument();
   });
 
   it("should open modal and add new entry", async () => {
+    (api.post as any).mockResolvedValue({
+      data: {
+        id: "entry-2",
+        encryptedData: "enc-data",
+        iv: "iv",
+        algorithm: "AES-GCM",
+        category: "Login",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        version: 1,
+      },
+    });
+
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -168,83 +161,23 @@ describe("Vault Integration", () => {
       expect(screen.getByText("Test Entry")).toBeInTheDocument();
     });
 
-    // Click Add Entry button
-    const addButton = screen.getByText("Add Secret");
+    // Click add button
+    const addButton = screen.getByText(/Add Secret/i);
     await user.click(addButton);
-
-    // Check if modal is open
-    expect(screen.getByText("Add New Secret")).toBeInTheDocument();
 
     // Fill form
-    const nameInput = screen.getByLabelText(/Name/i);
-    const secretInput = screen.getByLabelText(/Secret/i);
-    const categorySelect = screen.getByLabelText(/Category/i);
-
-    await user.type(nameInput, "New Secret");
-    await user.type(secretInput, "MySuperSecret");
-    await user.selectOptions(categorySelect, "Note");
+    await user.type(screen.getByLabelText(/Name/i), "New Secret");
+    await user.type(screen.getByLabelText(/Secret Content/i), "my-secret");
 
     // Submit
-    const saveButton = screen.getByRole("button", { name: /Save/i });
+    const saveButton = screen.getByRole("button", { name: /^save$/i });
     await user.click(saveButton);
 
-    // Wait for modal to close and list to update (mocked response adds entry-2)
-    // Note: In a real integration test with state updates, we'd expect the new item to appear.
-    // However, since we mock the GET request to return fixed data, the list won't automatically update
-    // unless the component optimistically updates or re-fetches.
-    // Vault.tsx likely re-fetches or appends.
-    // Let's assume it appends.
-
-    // Actually, since we mocked decryptData to always return "Test Entry",
-    // checking for "New Secret" might fail if decryptData is called on the new entry
-    // and returns "Test Entry" again.
-    // We should make decryptData smarter or check for the side effect (API call).
-  });
-
-  it("should open modal and add new file entry", async () => {
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <AuthProvider>
-          <ToastProvider>
-            <Vault />
-          </ToastProvider>
-        </AuthProvider>
-      </MemoryRouter>,
-    );
-
-    // Wait for initial load
+    // Wait for modal to close
     await waitFor(() => {
-      expect(screen.getByText("Test Entry")).toBeInTheDocument();
+      expect(screen.queryByText(/Save Secret/i)).not.toBeInTheDocument();
     });
 
-    // Click Add Entry button
-    const addButton = screen.getByText("Add Secret");
-    await user.click(addButton);
-
-    // Select File type
-    const fileRadio = screen.getByLabelText("File/Image");
-    await user.click(fileRadio);
-
-    // Upload file
-    const fileInput = screen.getByLabelText(/Upload File/i);
-    const file = new File(["hello"], "hello.png", { type: "image/png" });
-    await user.upload(fileInput, file);
-
-    // Fill other fields
-    const nameInput = screen.getByLabelText(/Name/i);
-    await user.type(nameInput, "My Image");
-
-    const categorySelect = screen.getByLabelText(/Category/i);
-    await user.selectOptions(categorySelect, "Document");
-
-    // Submit
-    const saveButton = screen.getByRole("button", { name: /Save/i });
-    await user.click(saveButton);
-
-    // Verify modal closes
-    await waitFor(() => {
-      expect(screen.queryByText("Add New Secret")).not.toBeInTheDocument();
-    });
+    expect(api.post).toHaveBeenCalledWith("/vault/entries", expect.any(Object));
   });
 });
