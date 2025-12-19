@@ -33,7 +33,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       # Web URL
-      WEB_URL: ${WEB_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-https://handoverkey.com}
     depends_on:
       redis:
         condition: service_healthy

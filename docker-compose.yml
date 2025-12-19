@@ -52,8 +52,8 @@ services:
       # App secrets (should serve from .env file)
       JWT_SECRET: ${JWT_SECRET:-changeme_dev_secret}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme_32_byte_key_min_length!!}
-      # Web URL for CORS
-      WEB_URL: http://localhost:3000
+      # Web URL for CORS & Emails
+      FRONTEND_URL: http://localhost:3000
     depends_on:
       postgres:
         condition: service_healthy

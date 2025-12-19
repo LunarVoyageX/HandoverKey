@@ -224,7 +224,7 @@ export class NotificationService implements INotificationService {
     });
 
     // Return the check-in URL (token is not hashed in URL)
-    const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     return `${baseUrl}/checkin?token=${token}`;
   }
 
@@ -318,7 +318,7 @@ export class NotificationService implements INotificationService {
     userEmail: string,
     checkInLink: string,
   ): { subject: string; body: string } {
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
     switch (reminderType) {
       case ReminderType.FIRST_REMINDER:
@@ -403,7 +403,7 @@ The HandoverKey Team
     successorName: string,
     _successorEmail: string,
   ): { subject: string; body: string } {
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
     return {
       subject: "HandoverKey: Digital Asset Handover Initiated",
