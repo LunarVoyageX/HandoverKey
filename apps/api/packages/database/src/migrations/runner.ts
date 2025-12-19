@@ -9,7 +9,7 @@ import {
 import { Pool } from "pg";
 import { Database } from "../types";
 
-async function migrateToLatest() {
+async function migrateToLatest(): Promise<void> {
   const db = new Kysely<Database>({
     dialect: new PostgresDialect({
       pool: new Pool({

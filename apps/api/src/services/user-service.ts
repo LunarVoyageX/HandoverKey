@@ -58,8 +58,12 @@ export class UserService {
         password_hash: passwordHash,
         salt,
       });
-    } catch (error: any) {
-      if (error.code === "23505" || error.originalError?.code === "23505") {
+    } catch (error: unknown) {
+      const dbError = error as {
+        code?: string;
+        originalError?: { code?: string };
+      };
+      if (dbError.code === "23505" || dbError.originalError?.code === "23505") {
         throw new ConflictError("User with this email already exists");
       }
       throw error;
@@ -217,7 +221,11 @@ export class UserService {
 
     // Update user password and salt (if provided)
     const userRepo = this.getUserRepository();
-    const updateData: any = {
+    const updateData: {
+      password_hash: string;
+      updated_at: Date;
+      salt?: Buffer;
+    } = {
       password_hash: passwordHash,
       updated_at: new Date(),
     };

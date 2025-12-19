@@ -1,13 +1,4 @@
-import {
-  describe,
-  beforeAll,
-  afterAll,
-  afterEach,
-  it,
-  expect,
-  vi,
-  beforeEach,
-} from "vitest";
+import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -46,14 +37,24 @@ vi.mock("framer-motion", () => ({
     <>{children}</>
   ),
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
-    h2: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
-    p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
-    button: ({ children, ...props }: any) => (
+    div: ({ children, ...props }: React.ComponentProps<"div">) => (
+      <div {...props}>{children}</div>
+    ),
+    h1: ({ children, ...props }: React.ComponentProps<"h1">) => (
+      <h1 {...props}>{children}</h1>
+    ),
+    h2: ({ children, ...props }: React.ComponentProps<"h2">) => (
+      <h2 {...props}>{children}</h2>
+    ),
+    p: ({ children, ...props }: React.ComponentProps<"p">) => (
+      <p {...props}>{children}</p>
+    ),
+    button: ({ children, ...props }: React.ComponentProps<"button">) => (
       <button {...props}>{children}</button>
     ),
-    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+    span: ({ children, ...props }: React.ComponentProps<"span">) => (
+      <span {...props}>{children}</span>
+    ),
   },
 }));
 
@@ -77,7 +78,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
 
-  (api.get as any).mockImplementation((url: string) => {
+  (api.get as Mock).mockImplementation((url: string) => {
     if (url.includes("/auth/profile")) {
       return Promise.resolve({
         data: {
@@ -104,7 +105,7 @@ function renderWithProviders(ui: React.ReactElement) {
 
 describe("Auth flows", () => {
   it("logs in and stores token", async () => {
-    (api.post as any).mockResolvedValue({
+    (api.post as vi.Mock).mockResolvedValue({
       data: {
         user: { id: "user-1", email: "test@example.com", salt: "mock-salt" },
         tokens: { accessToken: "token-123", refreshToken: "refresh-123" },
@@ -128,7 +129,7 @@ describe("Auth flows", () => {
   });
 
   it("registers new user and stores token", async () => {
-    (api.post as any).mockResolvedValue({
+    (api.post as vi.Mock).mockResolvedValue({
       data: {
         user: { id: "user-2", email: "new@example.com", salt: "mock-salt" },
         tokens: { accessToken: "token-999", refreshToken: "refresh-999" },

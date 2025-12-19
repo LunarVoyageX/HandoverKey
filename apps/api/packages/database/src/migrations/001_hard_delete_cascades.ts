@@ -1,6 +1,6 @@
 import { Kysely, sql } from "kysely";
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
   // Drop deleted_at columns
   await db.schema.alterTable("users").dropColumn("deleted_at").execute();
   await db.schema
@@ -78,8 +78,9 @@ export async function up(db: Kysely<any>): Promise<void> {
         ])
         .onDelete("cascade")
         .execute();
-    } catch (e: any) {
-      if (e.code === "42710") {
+    } catch (e: unknown) {
+      const error = e as { code?: string };
+      if (error.code === "42710") {
         // duplicate_object
         console.log(
           `Constraint ${newConstraintName} already exists, skipping addition.`,
@@ -98,7 +99,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   // Let's start with user_id cascades as that's the primary blocker for User Hard Delete.
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
   // Re-add deleted_at columns
   await db.schema
     .alterTable("users")

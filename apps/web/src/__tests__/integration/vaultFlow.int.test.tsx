@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -36,14 +36,24 @@ vi.mock("framer-motion", () => ({
     <>{children}</>
   ),
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
-    h2: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
-    p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
-    button: ({ children, ...props }: any) => (
+    div: ({ children, ...props }: React.ComponentProps<"div">) => (
+      <div {...props}>{children}</div>
+    ),
+    h1: ({ children, ...props }: React.ComponentProps<"h1">) => (
+      <h1 {...props}>{children}</h1>
+    ),
+    h2: ({ children, ...props }: React.ComponentProps<"h2">) => (
+      <h2 {...props}>{children}</h2>
+    ),
+    p: ({ children, ...props }: React.ComponentProps<"p">) => (
+      <p {...props}>{children}</p>
+    ),
+    button: ({ children, ...props }: React.ComponentProps<"button">) => (
       <button {...props}>{children}</button>
     ),
-    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+    span: ({ children, ...props }: React.ComponentProps<"span">) => (
+      <span {...props}>{children}</span>
+    ),
   },
 }));
 
@@ -83,7 +93,7 @@ describe("Vault Integration", () => {
     vi.clearAllMocks();
     localStorage.clear();
 
-    (api.get as any).mockImplementation((url: string) => {
+    (api.get as Mock).mockImplementation((url: string) => {
       if (url.includes("/vault/entries")) {
         return Promise.resolve({
           data: [
@@ -132,7 +142,7 @@ describe("Vault Integration", () => {
   });
 
   it("should open modal and add new entry", async () => {
-    (api.post as any).mockResolvedValue({
+    (api.post as Mock).mockResolvedValue({
       data: {
         id: "entry-2",
         encryptedData: "enc-data",
