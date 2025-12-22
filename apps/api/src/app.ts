@@ -26,6 +26,7 @@ import inactivityRoutes from "./routes/inactivity-routes";
 import sessionRoutes from "./routes/session-routes";
 import successorRoutes, { verifyRouter } from "./routes/successor-routes";
 import adminRoutes from "./routes/admin-routes";
+import contactRoutes from "./routes/contact-routes";
 import { JobProcessor, JobScheduler } from "./jobs";
 import { closeAllQueues } from "./config/queue";
 import { SessionService } from "./services/session-service";
@@ -164,6 +165,7 @@ app.use("/api/v1/sessions", sessionRoutes);
 app.use("/api/v1/successors", verifyRouter); // Public verify route (no auth)
 app.use("/api/v1/successors", successorRoutes); // Protected routes
 app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/contact", contactRoutes);
 
 // 404 handler - must be after all routes
 app.use(notFoundHandler);

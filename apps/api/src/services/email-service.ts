@@ -233,6 +233,48 @@ export class EmailService {
       );
     }
   }
+
+  async sendContactFormEmail(
+    fromEmail: string,
+    name: string,
+    message: string,
+  ): Promise<void> {
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Contact Form Submission</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <h2>New Contact Form Submission</h2>
+  <p><strong>From:</strong> ${name} (${fromEmail})</p>
+  <p><strong>Message:</strong></p>
+  <p style="white-space: pre-wrap;">${message}</p>
+  <hr>
+  <p>This message was sent from the HandoverKey contact form.</p>
+</body>
+</html>
+    `.trim();
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: "info@handoverkey.com",
+      subject: `Contact Form: Message from ${name}`,
+      html,
+      replyTo: fromEmail,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(
+        `Contact form email sent from ${fromEmail} to info@handoverkey.com`,
+      );
+    } catch (error) {
+      console.error("Failed to send contact form email:", error);
+      throw new Error("Failed to send contact form email");
+    }
+  }
 }
 
 export const emailService = new EmailService();

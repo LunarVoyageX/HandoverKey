@@ -1,7 +1,59 @@
 import { Link } from "react-router-dom";
 import { ShieldCheckIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
+import { useState } from "react";
 
 export default function Contact() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    try {
+      const response = await fetch("/api/contact/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setSubmitMessage(
+          "Thank you for your message. We'll get back to you soon!",
+        );
+        setFormData({ name: "", email: "", message: "" });
+      } else {
+        const error = await response.json();
+        setSubmitMessage(
+          error.error || "Failed to send message. Please try again.",
+        );
+      }
+    } catch (_) {
+      // eslint-disable-line @typescript-eslint/no-unused-vars
+      setSubmitMessage("Failed to send message. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
@@ -48,13 +100,20 @@ export default function Contact() {
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <EnvelopeIcon className="w-6 h-6 text-blue-200" />
-                  <span>support@handoverkey.com</span>
+                  <span>info@handoverkey.com</span>
                 </div>
               </div>
             </div>
 
             <div className="p-8">
-              <form className="space-y-6">
+              {submitMessage && (
+                <div
+                  className={`mb-6 p-4 rounded-lg ${submitMessage.includes("Thank you") ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"}`}
+                >
+                  {submitMessage}
+                </div>
+              )}
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <label
                     htmlFor="name"
@@ -65,6 +124,10 @@ export default function Contact() {
                   <input
                     type="text"
                     id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
                     className="mt-1 input"
                     placeholder="Your name"
                   />
@@ -79,6 +142,10 @@ export default function Contact() {
                   <input
                     type="email"
                     id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
                     className="mt-1 input"
                     placeholder="you@example.com"
                   />
@@ -92,13 +159,21 @@ export default function Contact() {
                   </label>
                   <textarea
                     id="message"
+                    name="message"
                     rows={4}
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    required
                     className="mt-1 input"
                     placeholder="How can we help you?"
                   />
                 </div>
-                <button type="submit" className="w-full btn btn-primary">
-                  Send Message
+                <button
+                  type="submit"
+                  className="w-full btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Sending..." : "Send Message"}
                 </button>
               </form>
             </div>

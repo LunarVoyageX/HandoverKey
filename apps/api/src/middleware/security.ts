@@ -31,6 +31,16 @@ export const registerRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+export const contactRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: process.env.NODE_ENV === "development" ? 1000 : 3, // limit each IP to 3 contact form submissions per hour (1000 in dev)
+  message: {
+    error: "Too many contact form submissions, please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export const validateContentType = (
   req: Request,
   res: Response,

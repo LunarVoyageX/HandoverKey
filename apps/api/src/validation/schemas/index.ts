@@ -38,3 +38,6 @@ export {
 
 // Activity schemas
 export { CheckInSchema } from "./activity.schemas";
+
+// Contact schemas
+export { ContactFormSchema } from "./contact.schemas";

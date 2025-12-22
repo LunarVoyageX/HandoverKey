@@ -11,18 +11,12 @@ if ! command -v node &> /dev/null || ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# Create .env if needed
-if [ ! -f .env ]; then
-    cp env.example .env
-    echo "Created .env file"
-fi
-
 # Install dependencies and build
 npm install
 npm run build
 
-# Start services
-docker-compose up -d
+# Start required database services
+npm run docker:up
 
 # Wait for database
 echo "⏳ Waiting for database..."
@@ -33,8 +27,6 @@ npm run db:migrate
 
 echo "Development environment ready!"
 echo ""
-echo "Web app: http://localhost:5173"
-echo "API: http://localhost:3001"
-echo "Database: localhost:5432"
+echo "Now use 'npm run dev' to start the development server."
 echo ""
-echo "To stop: docker-compose down"
+echo "To stop: npm run docker:down"
