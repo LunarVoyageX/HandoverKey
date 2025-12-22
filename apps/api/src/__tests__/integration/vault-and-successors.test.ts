@@ -13,7 +13,7 @@ async function registerAndLogin() {
 
   const registerRes = await (
     request(app).post("/api/v1/auth/register") as any
-  ).send({ email, password, confirmPassword: password });
+  ).send({ name: "Test User", email, password, confirmPassword: password });
 
   expect(registerRes.status).toBe(201);
 
@@ -51,7 +51,7 @@ describe("Vault and Successors Integration", () => {
     await dbClient.initialize({
       host: process.env.DB_HOST || "localhost",
       port: parseInt(process.env.DB_PORT || "5432"),
-      database: process.env.DB_NAME || "handoverkey_test",
+      database: "handoverkey_test",
       user: process.env.DB_USER || "postgres",
       password: process.env.DB_PASSWORD || "postgres",
       min: 2,

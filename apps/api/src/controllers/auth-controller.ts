@@ -390,17 +390,19 @@ export class AuthController {
       if (user) {
         // Fire and forget - don't await to keep response fast
         emailService
-          .sendAccountDeletionEmail(user.email, user.name)
-          .catch((err) => console.error("Failed to send deletion email:", err));
+          .sendAccountDeletionConfirmation(user.email, user.name || "User")
+          .catch((err: Error) =>
+            console.error("Failed to send deletion email:", err),
+          );
 
         // Send notification emails to verified successors
         verifiedSuccessors.forEach((successor) => {
           emailService
-            .sendAccountDeletionSuccessorEmail(
+            .sendAccountDeletionToSuccessors(
               successor.email,
               user.name || user.email,
             )
-            .catch((err) =>
+            .catch((err: Error) =>
               console.error(
                 `Failed to send deletion email to successor ${successor.email}:`,
                 err,

@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: "node",
   roots: ["<rootDir>/src"],
   testMatch: ["**/*.test.ts"],
+  globalSetup: "<rootDir>/src/__tests__/global-setup.ts",
   transform: {
     "^.+\\.[tj]sx?$": [
       "ts-jest",
