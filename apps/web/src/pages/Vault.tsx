@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { PlusIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  LockClosedIcon,
+} from "@heroicons/react/24/outline";
 import api from "../services/api";
 import VaultEntryModal, { VaultEntryData } from "../components/VaultEntryModal";
 import ConfirmationModal from "../components/ConfirmationModal";
@@ -195,6 +199,26 @@ const Vault: React.FC = () => {
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : filteredEntries.length === 0 && entries.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <LockClosedIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-semibold text-gray-900">
+              No secrets yet
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Get started by adding your first secret.
+            </p>
+          </div>
+        ) : filteredEntries.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-semibold text-gray-900">
+              No results found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Try adjusting your search term.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
