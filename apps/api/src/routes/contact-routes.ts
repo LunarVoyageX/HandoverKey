@@ -8,7 +8,7 @@ const router = Router();
 
 // Contact form submission endpoint
 router.post(
-  "/contact",
+  "/",
   contactRateLimiter as unknown as import("express").RequestHandler,
   validateRequest(ContactFormSchema, "body"),
   ContactController.submitContactForm,

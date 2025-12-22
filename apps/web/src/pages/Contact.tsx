@@ -27,7 +27,7 @@ export default function Contact() {
     setSubmitMessage("");
 
     try {
-      const response = await fetch("/api/contact/contact", {
+      const response = await fetch("/api/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,8 +46,7 @@ export default function Contact() {
           error.error || "Failed to send message. Please try again.",
         );
       }
-    } catch (_) {
-      // eslint-disable-line @typescript-eslint/no-unused-vars
+    } catch {
       setSubmitMessage("Failed to send message. Please try again.");
     } finally {
       setIsSubmitting(false);
