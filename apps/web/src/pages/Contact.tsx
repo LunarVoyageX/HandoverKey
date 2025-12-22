@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ShieldCheckIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import api from "../services/api";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -27,26 +28,13 @@ export default function Contact() {
     setSubmitMessage("");
 
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        setSubmitMessage(
-          "Thank you for your message. We'll get back to you soon!",
-        );
-        setFormData({ name: "", email: "", message: "" });
-      } else {
-        const error = await response.json();
-        setSubmitMessage(
-          error.error || "Failed to send message. Please try again.",
-        );
-      }
-    } catch {
+      await api.post("/contact", formData);
+      setSubmitMessage(
+        "Thank you for your message. We'll get back to you soon!",
+      );
+      setFormData({ name: "", email: "", message: "" });
+    } catch (error) {
+      console.error("Contact form submission error:", error);
       setSubmitMessage("Failed to send message. Please try again.");
     } finally {
       setIsSubmitting(false);

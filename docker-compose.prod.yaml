@@ -47,7 +47,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Pass API URL to build time
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api/v1}
+        VITE_API_URL: ${VITE_API_URL:-https://api.handoverkey.com/api/v1}
     ports:
       - "3010:3000"
     networks:
