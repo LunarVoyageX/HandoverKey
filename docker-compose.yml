@@ -65,8 +65,8 @@ services:
 
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
       args:
         # Pass API URL to build time for Vite
         VITE_API_URL: http://localhost:3001/api/v1

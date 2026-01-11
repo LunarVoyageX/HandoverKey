@@ -43,8 +43,8 @@ services:
 
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
       args:
         # Pass API URL to build time
         VITE_API_URL: ${VITE_API_URL:-https://api.handoverkey.com/api/v1}

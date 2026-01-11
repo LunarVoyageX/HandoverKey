@@ -5,21 +5,36 @@ FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
-COPY package.json ./
+
+# Copy root configuration
+COPY package.json package-lock.json* turbo.json tsconfig.json ./
+
+# Copy workspace package.json files
+COPY apps/web/package.json ./apps/web/
+COPY apps/api/packages/crypto/package.json ./apps/api/packages/crypto/
+COPY apps/api/packages/shared/package.json ./apps/api/packages/shared/
+
+# Install dependencies
 RUN npm install
-COPY . .
+
+# Copy source code
+COPY apps/web ./apps/web
+COPY apps/api/packages/crypto ./apps/api/packages/crypto
+COPY apps/api/packages/shared ./apps/api/packages/shared
 
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 ENV CI=true
 
+# Build the web application
+WORKDIR /app/apps/web
 RUN npm run build
 
 # STAGE 2: Run the application
 FROM node:20-alpine AS runner
 WORKDIR /app
 RUN npm install -g serve
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/web/dist ./dist
 ENV PORT=3000
 EXPOSE 3000
 CMD ["serve", "-s", "dist", "-l", "3000"]
