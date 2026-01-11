@@ -275,6 +275,26 @@ export class EmailService {
       throw new Error("Failed to send contact form email");
     }
   }
+
+  /**
+   * Generic method to send any email
+   */
+  async sendEmail(to: string, subject: string, html: string): Promise<void> {
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject,
+      html,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`Email sent to ${to}: ${subject}`);
+    } catch (error) {
+      console.error(`Failed to send email to ${to}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const emailService = new EmailService();

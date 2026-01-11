@@ -95,6 +95,7 @@ export interface SuccessorsTable {
   name: string | null;
   verification_token: string | null;
   verified: ColumnType<boolean, boolean | undefined, boolean>;
+  encrypted_share: string | null;
   handover_delay_days: ColumnType<number, number | undefined, number>;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }

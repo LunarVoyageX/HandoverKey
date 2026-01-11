@@ -4,9 +4,9 @@ import {
   DEFAULT_ALGORITHM,
   DEFAULT_IV_LENGTH,
   DEFAULT_TAG_LENGTH,
-} from "./types";
-import { EncryptionError, DecryptionError, ValidationError } from "./errors";
-import { generateIV } from "./utils";
+} from "./types.js";
+import { EncryptionError, DecryptionError, ValidationError } from "./errors.js";
+import { generateIV } from "./utils.js";
 
 /**
  * Encrypts data using AES-256-GCM

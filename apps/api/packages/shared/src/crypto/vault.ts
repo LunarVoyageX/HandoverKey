@@ -1,4 +1,4 @@
-import { VaultEntry } from "../types/crypto";
+import { VaultEntry } from "../types/crypto.js";
 import { encrypt, decrypt, decryptFile } from "@handoverkey/crypto";
 import { v4 as uuidv4 } from "uuid";
 

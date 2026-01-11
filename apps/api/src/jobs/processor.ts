@@ -239,8 +239,19 @@ export class JobProcessor {
       "Sending reminder notification",
     );
 
-    // TODO: Implement actual notification sending
-    // For now, just log it
+    const { NotificationService } =
+      await import("../services/notification-service");
+    const notificationService = new NotificationService();
+
+    // Map job level to ReminderType
+    const { ReminderType } =
+      await import("@handoverkey/shared/src/types/dead-mans-switch");
+
+    let reminderType = ReminderType.FIRST_REMINDER;
+    if (data.level === "warning") reminderType = ReminderType.SECOND_REMINDER;
+    if (data.level === "critical") reminderType = ReminderType.FINAL_WARNING;
+
+    await notificationService.sendReminder(data.userId, reminderType);
 
     return {
       success: true,
@@ -266,12 +277,23 @@ export class JobProcessor {
       "Executing handover",
     );
 
-    // TODO: Implement actual handover execution
-    // This would involve:
-    // 1. Splitting vault encryption keys using Shamir's Secret Sharing
-    // 2. Distributing shares to successors
-    // 3. Sending notifications
-    // 4. Updating handover status
+    const { HandoverOrchestrator } =
+      await import("../services/handover-orchestrator");
+    const orchestrator = new HandoverOrchestrator();
+
+    // Find the active handover process
+    const handoverProcess = await orchestrator.getHandoverStatus(data.userId);
+
+    if (!handoverProcess) {
+      return {
+        success: false,
+        message: "No active handover process found",
+        data: { userId: data.userId },
+      };
+    }
+
+    // Execute the handover (expire grace period, notify successors with keys)
+    await orchestrator.processGracePeriodExpiration(handoverProcess.id);
 
     return {
       success: true,
@@ -279,6 +301,7 @@ export class JobProcessor {
       data: {
         userId: data.userId,
         reason: data.reason,
+        handoverId: handoverProcess.id,
       },
     };
   }

@@ -7,7 +7,9 @@ import {
   HandoverOrchestrator as IHandoverOrchestrator,
   HandoverProcess,
   HandoverProcessStatus,
+  ReminderType,
 } from "@handoverkey/shared/src/types/dead-mans-switch";
+import { NotificationService } from "./notification-service";
 
 export class HandoverOrchestrator implements IHandoverOrchestrator {
   private static readonly GRACE_PERIOD_HOURS = 48;
@@ -61,8 +63,12 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
         `Handover process initiated for user ${userId}, grace period ends: ${gracePeriodEnds.toISOString()}`,
       );
 
-      // TODO: Send initial grace period notifications
-      // TODO: Schedule grace period monitoring
+      // Send initial grace period notifications
+      const notificationService = new NotificationService();
+      await notificationService.sendReminder(
+        userId,
+        ReminderType.FINAL_WARNING,
+      );
 
       return handoverProcess;
     } catch (error) {
@@ -95,7 +101,35 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
 
       console.log(`Handover process cancelled for user ${userId}: ${reason}`);
 
-      // TODO: Send cancellation notifications to successors if they were already notified
+      // Send cancellation notifications to successors.
+      // Note: Ideally we should only notify successors who were actually alerted,
+      // but for now we notify all configured successors for safety.
+
+      try {
+        const dbClient = getDatabaseClient();
+        const successorRepo = new (
+          await import("@handoverkey/database")
+        ).SuccessorRepository(dbClient.getKysely());
+        const successors = await successorRepo.findByUserId(userId);
+        if (successors.length > 0) {
+          const notificationService = new NotificationService();
+          await notificationService.sendHandoverCancellation(
+            userId,
+            successors.map((s) => ({
+              name: s.name,
+              email: s.email,
+              encrypted_share: s.encrypted_share,
+            })),
+            reason,
+          );
+        }
+      } catch (notifyError) {
+        console.error(
+          "Failed to send cancellation notifications:",
+          notifyError,
+        );
+        // Don't fail the cancellation process itself if notification fails
+      }
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
@@ -179,8 +213,19 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
         `Grace period expired for handover ${handoverId}, notifying successors`,
       );
 
-      // TODO: Notify successors
-      // TODO: Begin successor verification process
+      // Notify successors
+      const dbClient = getDatabaseClient();
+      const successorRepo = new (
+        await import("@handoverkey/database")
+      ).SuccessorRepository(dbClient.getKysely());
+      const successors = await successorRepo.findByUserId(process.user_id);
+      // Notification sent with key share
+      const notificationService = new NotificationService();
+      await notificationService.sendHandoverAlert(
+        process.user_id,
+        successors,
+        handoverId,
+      );
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {

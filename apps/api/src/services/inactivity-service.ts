@@ -3,7 +3,7 @@ import {
   UserRepository,
   InactivitySettingsRepository,
 } from "@handoverkey/database";
-import { HandoverService } from "./handover-service";
+import { HandoverProcessStatus } from "@handoverkey/shared/src/types/dead-mans-switch";
 
 export interface InactivitySettings {
   userId: string;
@@ -55,7 +55,38 @@ export class InactivityService {
       });
     }
 
+    // Also check for grace period expirations
+    await this.monitorActiveHandovers();
+
     console.log("Inactivity check completed");
+  }
+
+  /**
+   * Monitors active handovers for grace period expiration
+   */
+  static async monitorActiveHandovers(): Promise<void> {
+    try {
+      const { HandoverOrchestrator } = await import("./handover-orchestrator");
+      const orchestrator = new HandoverOrchestrator();
+
+      const processes = await orchestrator.getHandoversNeedingAttention();
+
+      for (const process of processes) {
+        // Check if grace period expired
+        if (
+          process.status === HandoverProcessStatus.GRACE_PERIOD &&
+          new Date(process.gracePeriodEnds) <= new Date()
+        ) {
+          console.log(
+            `Processing expired grace period for handover ${process.id}`,
+          );
+          await orchestrator.processGracePeriodExpiration(process.id);
+        }
+        // We could also handle other states here
+      }
+    } catch (error) {
+      console.error("Failed to monitor active handovers:", error);
+    }
   }
 
   /**
@@ -82,7 +113,10 @@ export class InactivityService {
       console.log(`User ${user.email} is inactive. Initiating handover...`);
 
       try {
-        await HandoverService.initiateHandover(user.id);
+        const { HandoverOrchestrator } =
+          await import("./handover-orchestrator");
+        const orchestrator = new HandoverOrchestrator();
+        await orchestrator.initiateHandover(user.id);
         console.log(`Handover initiated for user ${user.email}`);
       } catch (error) {
         console.error(

@@ -34,6 +34,7 @@ export {
   UpdateSuccessorSchema,
   VerifySuccessorSchema,
   SuccessorIdSchema,
+  UpdateSharesSchema,
 } from "./successor.schemas";
 
 // Activity schemas

@@ -16,6 +16,7 @@ export const AddSuccessorSchema = z.object({
     .min(1, "Handover delay must be at least 1 day")
     .max(365, "Handover delay cannot exceed 365 days")
     .optional(),
+  encryptedShare: z.string().optional(),
 });
 
 /**
@@ -29,6 +30,7 @@ export const UpdateSuccessorSchema = z.object({
     .min(1, "Handover delay must be at least 1 day")
     .max(365, "Handover delay cannot exceed 365 days")
     .optional(),
+  encryptedShare: z.string().optional(),
 });
 
 /**
@@ -36,6 +38,18 @@ export const UpdateSuccessorSchema = z.object({
  */
 export const VerifySuccessorSchema = z.object({
   verificationToken: z.string().min(1, "Verification token is required").trim(),
+});
+
+/**
+ * Schema for updating multiple successor shares
+ */
+export const UpdateSharesSchema = z.object({
+  shares: z.array(
+    z.object({
+      id: z.string().uuid("Invalid successor ID"),
+      encryptedShare: z.string().min(1, "Encrypted share is required"),
+    }),
+  ),
 });
 
 /**

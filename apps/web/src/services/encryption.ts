@@ -87,11 +87,17 @@ export function isMasterKeySet(): boolean {
   return cachedKey !== null;
 }
 
-async function getMasterKey(): Promise<CryptoKey> {
+export async function getMasterKey(): Promise<CryptoKey> {
   if (cachedKey) return cachedKey;
   throw new Error(
     "Master key not set. Please login again to unlock your vault.",
   );
+}
+
+export async function exportRawMasterKey(): Promise<Uint8Array> {
+  const key = await getMasterKey();
+  const raw = await window.crypto.subtle.exportKey("raw", key);
+  return new Uint8Array(raw);
 }
 
 async function deriveKey(
@@ -124,7 +130,7 @@ async function deriveKey(
     "raw",
     derivedBits,
     { name: ALGORITHM },
-    false,
+    true, // extractable must be true to support Shamir's Secret Sharing export
     ["encrypt", "decrypt"],
   );
 }
@@ -170,8 +176,18 @@ export async function decryptData(payload: {
   encryptedData: string;
   iv: string;
 }): Promise<unknown> {
+  const key = await getMasterKey();
+  return decryptDataWithKey(payload, key);
+}
+
+export async function decryptDataWithKey(
+  payload: {
+    encryptedData: string;
+    iv: string;
+  },
+  key: CryptoKey,
+): Promise<unknown> {
   try {
-    const key = await getMasterKey();
     const iv = Uint8Array.from(atob(payload.iv), (c) => c.charCodeAt(0));
     const data = Uint8Array.from(atob(payload.encryptedData), (c) =>
       c.charCodeAt(0),
@@ -192,4 +208,16 @@ export async function decryptData(payload: {
     console.error("Decryption failed:", error);
     return null;
   }
+}
+
+export async function importRawMasterKey(
+  rawKey: Uint8Array,
+): Promise<CryptoKey> {
+  return window.crypto.subtle.importKey(
+    "raw",
+    rawKey,
+    { name: ALGORITHM },
+    false,
+    ["encrypt", "decrypt"],
+  );
 }

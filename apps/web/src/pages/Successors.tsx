@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AxiosError } from "axios";
-import { PlusIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import api from "../services/api";
 import { useToast } from "../contexts/ToastContext";
 import ConfirmationModal from "../components/ConfirmationModal";
@@ -37,8 +37,6 @@ const Successors: React.FC = () => {
   const fetchSuccessors = async () => {
     try {
       const response = await api.get("/successors");
-      // API returns { successors: [...] } or just [...] depending on implementation
-      // Controller says res.json({ successors })
       setSuccessors(response.data.successors || []);
     } catch (error) {
       console.error("Failed to fetch successors", error);

@@ -2,8 +2,8 @@ import {
   KeyDerivationOptions,
   DEFAULT_ITERATIONS,
   DEFAULT_HASH,
-} from "./types";
-import { KeyDerivationError, ValidationError } from "./errors";
+} from "./types.js";
+import { KeyDerivationError, ValidationError } from "./errors.js";
 
 /**
  * Derives a cryptographic key from a password using PBKDF2

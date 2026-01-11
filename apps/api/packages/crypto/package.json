@@ -2,6 +2,7 @@
   "name": "@handoverkey/crypto",
   "version": "1.0.0",
   "description": "Unified cryptographic operations using Web Crypto API",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

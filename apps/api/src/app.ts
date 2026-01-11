@@ -20,7 +20,7 @@ import { metricsMiddleware } from "./middleware/metrics";
 import { logger } from "./config/logger";
 import { getMetrics, getMetricsContentType } from "./config/metrics";
 import authRoutes from "./routes/auth-routes";
-import vaultRoutes from "./routes/vault-routes";
+import vaultRoutes, { publicVaultRouter } from "./routes/vault-routes";
 import activityRoutes from "./routes/activity-routes";
 import inactivityRoutes from "./routes/inactivity-routes";
 import sessionRoutes from "./routes/session-routes";
@@ -158,6 +158,7 @@ app.get("/metrics", async (req, res) => {
 
 // API routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/vault", publicVaultRouter);
 app.use("/api/v1/vault", vaultRoutes);
 app.use("/api/v1/activity", activityRoutes);
 app.use("/api/v1/inactivity", inactivityRoutes);

@@ -15,6 +15,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import Dashboard from "./pages/Dashboard";
 import Vault from "./pages/Vault";
 import Successors from "./pages/Successors";
+import SuccessorAccess from "./pages/SuccessorAccess";
 import Settings from "./pages/Settings";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -36,6 +37,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/verify-successor" element={<VerifySuccessor />} />
+            <Route path="/successor-access" element={<SuccessorAccess />} />
 
             <Route
               element={
@@ -46,7 +48,6 @@ function App() {
             >
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/vault" element={<Vault />} />
-              <Route path="/successors" element={<Successors />} />
               <Route path="/successors" element={<Successors />} />
               <Route path="settings" element={<Settings />} />
             </Route>

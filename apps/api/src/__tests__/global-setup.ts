@@ -18,6 +18,8 @@ const MIGRATION_FILES = [
   "add_vault_deleted_at.sql",
   "add_name_to_users.sql",
   "add_email_verification_to_users.sql",
+  "add_encrypted_share_to_successors.sql",
+  "add_metadata_to_handover_processes.sql",
 ];
 
 export default async function globalSetup() {

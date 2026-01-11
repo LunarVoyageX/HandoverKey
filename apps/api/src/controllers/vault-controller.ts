@@ -1,8 +1,10 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { VaultService } from "../services/vault-service";
 import { UserService } from "../services/user-service";
+import { SuccessorService } from "../services/successor-service";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { AuthenticationError, NotFoundError } from "../errors";
+import { HandoverProcessStatus } from "@handoverkey/shared/src/types/dead-mans-switch";
 
 export class VaultController {
   static async createEntry(
@@ -188,6 +190,75 @@ export class VaultController {
       res.json({ message: "Vault entry deleted successfully" });
     } catch (error) {
       console.error(`[VaultController] Error deleting entry:`, error);
+      next(error);
+    }
+  }
+  static async getSuccessorEntries(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== "string") {
+        throw new AuthenticationError("Verification token is required");
+      }
+
+      // 1. Verify successor token and get metadata
+      const result = await SuccessorService.verifySuccessorByToken(token);
+
+      if (!result.success || !result.userId) {
+        throw new AuthenticationError("Invalid or expired verification token");
+      }
+
+      // 2. Check handover status
+      const allowedStatuses: string[] = [
+        HandoverProcessStatus.AWAITING_SUCCESSORS,
+        HandoverProcessStatus.COMPLETED,
+      ];
+      if (
+        !result.handoverStatus ||
+        !allowedStatuses.includes(result.handoverStatus)
+      ) {
+        res.status(403).json({
+          error: "Handover access is not yet open",
+          status: result.handoverStatus,
+        });
+        return;
+      }
+
+      // 3. Get encrypted entries
+      const entries = await VaultService.getSuccessorEntries(result.userId);
+
+      // Log the access
+      await UserService.logActivity(
+        result.userId,
+        "SUCCESSOR_VAULT_ACCESS",
+        req.ip,
+      );
+
+      // Prevent caching
+      res.set(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate",
+      );
+
+      const responseEntries = entries.map((entry) => ({
+        id: entry.id,
+        encryptedData: entry.encryptedData,
+        iv: entry.iv,
+        algorithm: entry.algorithm,
+        category: entry.category,
+        tags: entry.tags,
+        version: entry.version,
+      }));
+
+      res.json({
+        ownerName: result.userName,
+        entries: responseEntries,
+      });
+    } catch (error) {
       next(error);
     }
   }

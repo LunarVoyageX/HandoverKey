@@ -15,9 +15,14 @@ module.exports = {
   },
   transformIgnorePatterns: ["node_modules/(?!(uuid|@handoverkey)/)"],
   moduleNameMapper: {
-    "^@handoverkey/shared$": "<rootDir>/packages/shared/src",
-    "^@handoverkey/database$": "<rootDir>/packages/database/src",
-    "^@handoverkey/crypto$": "<rootDir>/packages/crypto/src",
+    "^@handoverkey/shared$": "<rootDir>/packages/shared/src/index.ts",
+    "^@handoverkey/shared/src/(.*)$": "<rootDir>/packages/shared/src/$1",
+    "^@handoverkey/database$": "<rootDir>/packages/database/src/index.ts",
+    "^@handoverkey/database/src/(.*)$": "<rootDir>/packages/database/src/$1",
+    "^@handoverkey/crypto$": "<rootDir>/packages/crypto/src/index.ts",
+    "^@handoverkey/crypto/src/(.*)$": "<rootDir>/packages/crypto/src/$1",
+    // Strip .js extension for local imports when running in Jest/CommonJS
+    "^(\\.{1,2}/.*)\\.js$": "$1",
   },
   rootDir: ".",
 };

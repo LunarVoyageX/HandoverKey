@@ -7,11 +7,13 @@ export interface AddSuccessorData {
   email: string;
   name?: string;
   handoverDelayDays?: number;
+  encryptedShare?: string;
 }
 
 export interface UpdateSuccessorData {
   name?: string;
   handoverDelayDays?: number;
+  encryptedShare?: string;
 }
 
 export interface Successor {
@@ -20,6 +22,7 @@ export interface Successor {
   name: string | null;
   verified: boolean;
   handoverDelayDays: number;
+  encryptedShare: string | null;
   createdAt: Date;
 }
 
@@ -49,6 +52,7 @@ export class SuccessorService {
         verification_token: verificationToken,
         verified: false,
         handover_delay_days: data.handoverDelayDays ?? 90,
+        encrypted_share: data.encryptedShare ?? null,
       });
     } catch (error: unknown) {
       // Check for unique constraint violation (Postgres code 23505)
@@ -77,6 +81,7 @@ export class SuccessorService {
       name: successor.name,
       verified: successor.verified,
       handoverDelayDays: successor.handover_delay_days,
+      encryptedShare: successor.encrypted_share,
       createdAt: successor.created_at,
     };
   }
@@ -91,6 +96,7 @@ export class SuccessorService {
       name: s.name,
       verified: s.verified,
       handoverDelayDays: s.handover_delay_days,
+      encryptedShare: s.encrypted_share,
       createdAt: s.created_at,
     }));
   }
@@ -112,6 +118,7 @@ export class SuccessorService {
       name: successor.name,
       verified: successor.verified,
       handoverDelayDays: successor.handover_delay_days,
+      encryptedShare: successor.encrypted_share,
       createdAt: successor.created_at,
     };
   }
@@ -145,6 +152,7 @@ export class SuccessorService {
       name: successor.name,
       verified: successor.verified,
       handoverDelayDays: successor.handover_delay_days,
+      encryptedShare: successor.encrypted_share,
       createdAt: successor.created_at,
     };
   }
@@ -191,38 +199,66 @@ export class SuccessorService {
     return true;
   }
 
-  static async verifySuccessorByToken(
-    verificationToken: string,
-  ): Promise<{ success: boolean; alreadyVerified: boolean; userId?: string }> {
+  static async updateShares(
+    userId: string,
+    shares: { id: string; encryptedShare: string }[],
+  ): Promise<void> {
+    const successorRepo = this.getSuccessorRepository();
+
+    // 1. Validate ownership of all successors
+    for (const share of shares) {
+      const successor = await successorRepo.findById(share.id);
+      if (!successor || successor.user_id !== userId) {
+        throw new NotFoundError(`Successor not found: ${share.id}`);
+      }
+    }
+
+    // 2. Perform updates
+    for (const share of shares) {
+      await successorRepo.update(share.id, {
+        encrypted_share: share.encryptedShare,
+      });
+    }
+  }
+
+  static async verifySuccessorByToken(verificationToken: string): Promise<{
+    success: boolean;
+    alreadyVerified: boolean;
+    userId?: string;
+    userName?: string;
+    handoverStatus?: string;
+  }> {
     const successorRepo = this.getSuccessorRepository();
     const db = successorRepo["db"]; // Access the kysely instance
 
-    // First check if successor exists with this token and is already verified
-    const existingSuccessor = await db
-      .selectFrom("successors")
-      .selectAll()
-      .where("verification_token", "=", verificationToken)
-      .where("verified", "=", true)
-      .executeTakeFirst();
-
-    if (existingSuccessor) {
-      return {
-        success: true,
-        alreadyVerified: true,
-        userId: existingSuccessor.user_id,
-      };
-    }
-
-    // Find unverified successor by verification token
+    // Find successor by verification token
     const successor = await db
       .selectFrom("successors")
-      .selectAll()
-      .where("verification_token", "=", verificationToken)
-      .where("verified", "=", false)
+      .innerJoin("users", "users.id", "successors.user_id")
+      .leftJoin("handover_processes", "handover_processes.user_id", "users.id")
+      .select([
+        "successors.id",
+        "successors.user_id",
+        "successors.verified",
+        "users.name as user_name",
+        "handover_processes.status as handover_status",
+      ])
+      .where("successors.verification_token", "=", verificationToken)
+      .orderBy("handover_processes.initiated_at", "desc")
       .executeTakeFirst();
 
     if (!successor) {
       return { success: false, alreadyVerified: false };
+    }
+
+    if (successor.verified) {
+      return {
+        success: true,
+        alreadyVerified: true,
+        userId: successor.user_id,
+        userName: successor.user_name || undefined,
+        handoverStatus: (successor.handover_status as string) || undefined,
+      };
     }
 
     // Update to verified
@@ -230,7 +266,13 @@ export class SuccessorService {
       verified: true,
     });
 
-    return { success: true, alreadyVerified: false, userId: successor.user_id };
+    return {
+      success: true,
+      alreadyVerified: false,
+      userId: successor.user_id,
+      userName: successor.user_name || undefined,
+      handoverStatus: (successor.handover_status as string) || undefined,
+    };
   }
 
   static async resendVerification(

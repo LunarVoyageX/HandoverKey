@@ -162,6 +162,14 @@ export class VaultService {
     return await vaultRepo.getCount(userId);
   }
 
+  static async getSuccessorEntries(
+    userId: string,
+  ): Promise<VaultEntryResponse[]> {
+    const vaultRepo = this.getVaultRepository();
+    const dbEntries = await vaultRepo.findByUserId(userId, {});
+    return dbEntries.map(this.mapDbEntryToVaultEntry);
+  }
+
   private static mapDbEntryToVaultEntry(dbEntry: {
     id: string;
     user_id: string;

@@ -1,5 +1,5 @@
-import { DEFAULT_SALT_LENGTH, DEFAULT_IV_LENGTH } from "./types";
-import { ValidationError } from "./errors";
+import { DEFAULT_SALT_LENGTH, DEFAULT_IV_LENGTH } from "./types.js";
+import { ValidationError } from "./errors.js";
 
 /**
  * Generates a cryptographically secure random salt

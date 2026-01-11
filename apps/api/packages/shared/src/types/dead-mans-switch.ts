@@ -136,6 +136,7 @@ export enum ActivityType {
   API_REQUEST = "api_request",
   SUCCESSOR_MANAGEMENT = "successor_management",
   HANDOVER_CANCELLED = "handover_cancelled",
+  SUCCESSOR_VAULT_ACCESS = "successor_vault_access",
 }
 
 export enum ClientType {
@@ -169,6 +170,7 @@ export enum ReminderType {
   GRACE_PERIOD = "grace_period", // 100%+
   HANDOVER_INITIATED = "handover_initiated",
   SUCCESSOR_NOTIFICATION = "successor_notification",
+  HANDOVER_CANCELLED = "handover_cancelled",
 }
 
 export enum NotificationMethod {
@@ -257,7 +259,11 @@ export interface NotificationService {
   ): Promise<NotificationResult>;
   sendHandoverAlert(
     userId: string,
-    successors: string[],
+    successors: {
+      name: string | null;
+      email: string;
+      encrypted_share?: string | null;
+    }[],
   ): Promise<NotificationResult[]>;
   generateCheckInLink(userId: string, expiresIn: number): Promise<string>;
   validateCheckInLink(token: string): Promise<CheckInValidation>;

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { VaultController } from "../controllers/vault-controller";
 import { authenticateJWT, requireAuth } from "../middleware/auth";
 import { SimpleActivityMiddleware } from "../middleware/simple-activity";
@@ -57,4 +58,18 @@ router.delete(
   VaultController.deleteEntry,
 );
 
+// Successor access route (public, but logic handles verification)
+// Rate limited to prevent abuse
+const publicVaultRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+const publicVaultRouter = Router();
+publicVaultRouter.use(publicVaultRateLimiter);
+publicVaultRouter.get("/successor-access", VaultController.getSuccessorEntries);
+
+export { publicVaultRouter };
 export default router;
