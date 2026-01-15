@@ -6,21 +6,26 @@ RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy root configuration
+COPY package.json package-lock.json* turbo.json tsconfig.json ./
 
-# Create packages directory and copy internal dependencies
-# This is necessary because the Docker build context is now the apps/api folder
-COPY packages ./packages
+# Copy workspace package.json files
+COPY apps/api/package.json ./apps/api/
+COPY packages/crypto/package.json ./packages/crypto/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/database/package.json ./packages/database/
 
-# Install dependencies including devDependencies for the build step
-ENV NODE_ENV=development
+# Install dependencies
 RUN npm install
 
 # Copy source code
-COPY . .
+COPY apps/api ./apps/api
+COPY packages/crypto ./packages/crypto
+COPY packages/shared ./packages/shared
+COPY packages/database ./packages/database
 
-# Build the production bundle (this runs esbuild and copies schemas as defined in package.json)
+# Build the production bundle
+WORKDIR /app/apps/api
 RUN npm run build:prod
 
 # STAGE 2: Run the application
@@ -32,9 +37,9 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 expressjs
 
 # Copy only the necessary files from the builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/apps/api/package.json ./package.json
 
 # Don't run as root
 USER expressjs

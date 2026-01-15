@@ -11,16 +11,16 @@ COPY package.json package-lock.json* turbo.json tsconfig.json ./
 
 # Copy workspace package.json files
 COPY apps/web/package.json ./apps/web/
-COPY apps/api/packages/crypto/package.json ./apps/api/packages/crypto/
-COPY apps/api/packages/shared/package.json ./apps/api/packages/shared/
+COPY packages/crypto/package.json ./packages/crypto/
+COPY packages/shared/package.json ./packages/shared/
 
 # Install dependencies
 RUN npm install
 
 # Copy source code
 COPY apps/web ./apps/web
-COPY apps/api/packages/crypto ./apps/api/packages/crypto
-COPY apps/api/packages/shared ./apps/api/packages/shared
+COPY packages/crypto ./packages/crypto
+COPY packages/shared ./packages/shared
 
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL

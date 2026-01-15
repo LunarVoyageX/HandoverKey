@@ -16,10 +16,10 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@handoverkey/core": ["apps/api/packages/core/src"],
-      "@handoverkey/shared": ["apps/api/packages/shared/src"],
+      "@handoverkey/shared": ["packages/shared/src"],
       "@handoverkey/api": ["apps/api/src"],
-      "@handoverkey/database": ["apps/api/packages/database/src"]
+      "@handoverkey/database": ["packages/database/src"],
+      "@handoverkey/crypto": ["packages/crypto/src"]
     }
   },
   "include": ["apps/**/*", "packages/**/*"],

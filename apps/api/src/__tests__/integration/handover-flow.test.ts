@@ -78,25 +78,25 @@ describe("Handover Flow Integration", () => {
     const auth = { Authorization: `Bearer ${token}` };
 
     // 1. Create a Vault Entry
-    await request(app).post("/api/v1/vault/entries").set(auth).send({
-      encryptedData: "test-data",
-      iv: "test-iv",
-      algorithm: "AES-GCM",
-      category: "Login",
-      tags: ["test"],
-    });
+    await request(app)
+      .post("/api/v1/vault/entries")
+      .set(auth)
+      .send({
+        encryptedData: "test-data",
+        iv: "test-iv",
+        algorithm: "AES-GCM",
+        category: "Login",
+        tags: ["test"],
+      });
 
     // 2. Add Successor with Encrypted Share
     const share = "encrypted-shamir-share-v1";
-    const res = await request(app)
-      .post("/api/v1/successors")
-      .set(auth)
-      .send({
-        email: "successor-share@example.com",
-        name: "Key Share Holder",
-        handoverDelayDays: 14,
-        encryptedShare: share,
-      });
+    const res = await request(app).post("/api/v1/successors").set(auth).send({
+      email: "successor-share@example.com",
+      name: "Key Share Holder",
+      handoverDelayDays: 14,
+      encryptedShare: share,
+    });
 
     expect(res.status).toBe(201);
 
@@ -121,10 +121,7 @@ describe("Handover Flow Integration", () => {
     expect(process.status).toBe(HandoverProcessStatus.GRACE_PERIOD);
 
     // 2. Cancel Handover
-    await orchestrator.cancelHandover(
-      userId,
-      "User manually cancelled",
-    );
+    await orchestrator.cancelHandover(userId, "User manually cancelled");
 
     // 3. Verify Status via direct DB check since getHandoverStatus might return null for cancelled
     const dbClient = getDatabaseClient();
