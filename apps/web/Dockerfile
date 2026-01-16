@@ -26,6 +26,13 @@ ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 ENV CI=true
 
+# Build dependencies in order (crypto first, then shared, then web)
+WORKDIR /app/packages/crypto
+RUN npm run build
+
+WORKDIR /app/packages/shared
+RUN npm run build
+
 # Build the web application
 WORKDIR /app/apps/web
 RUN npm run build
