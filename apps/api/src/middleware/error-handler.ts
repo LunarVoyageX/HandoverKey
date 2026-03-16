@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError, ValidationError, RateLimitError } from "../errors";
 import { ZodError } from "zod";
+import {
+  DatabaseError,
+  NotFoundError as DbNotFoundError,
+} from "@handoverkey/database";
 import { logger } from "../config/logger";
 
 /**
@@ -83,6 +87,53 @@ export function errorHandler(
     }
 
     res.status(error.statusCode).json(response);
+    return;
+  }
+
+  // Handle database NotFoundError -> 404
+  if (error instanceof DbNotFoundError) {
+    logger.warn(
+      {
+        type: "not_found",
+        message: error.message,
+        requestId,
+        path: req.path,
+        method: req.method,
+      },
+      `Resource not found: ${error.message}`,
+    );
+
+    res.status(404).json({
+      error: {
+        code: "NOT_FOUND",
+        message: error.message,
+        requestId,
+      },
+    });
+    return;
+  }
+
+  // Handle other database errors -> 500
+  if (error instanceof DatabaseError) {
+    logger.error(
+      {
+        err: error,
+        type: "database_error",
+        code: error.code,
+        requestId,
+        path: req.path,
+        method: req.method,
+      },
+      `Database error: ${error.message}`,
+    );
+
+    res.status(500).json({
+      error: {
+        code: "DATABASE_ERROR",
+        message: "A database error occurred",
+        requestId,
+      },
+    });
     return;
   }
 

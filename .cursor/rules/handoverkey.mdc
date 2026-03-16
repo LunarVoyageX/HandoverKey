@@ -1,0 +1,86 @@
+---
+description: HandoverKey project conventions, architecture, and guardrails
+alwaysApply: true
+---
+
+# HandoverKey Project Rules
+
+## Architecture
+
+Turborepo monorepo with npm workspaces. Two apps, three shared packages:
+
+- `apps/api` -- Express 5 REST API (Node 22, TypeScript)
+- `apps/web` -- React 19 SPA (Vite, Tailwind CSS)
+- `packages/crypto` -- AES-256-GCM, PBKDF2, Shamir's Secret Sharing (Web Crypto API)
+- `packages/database` -- Kysely + PostgreSQL repositories
+- `packages/shared` -- Cross-package types, constants, validation
+
+### Dependency Direction
+
+```
+apps/api → packages/database, packages/crypto, packages/shared
+apps/web → packages/shared (indirectly via API responses)
+packages/shared → packages/crypto
+packages/database → (standalone)
+packages/crypto → (standalone)
+```
+
+Never introduce circular dependencies between packages.
+
+## API Conventions
+
+- All routes under `/api/v1/` prefix
+- Pattern: `routes/ → controllers/ → services/ → repositories/`
+- Controllers handle HTTP; services handle business logic; repositories handle data
+- Always use `next(error)` in controllers -- never `res.status(500).json()` directly
+- Always use the Pino `logger` from `src/config/logger.ts` -- never `console.log/error/warn`
+- Wrap async route handlers with `asyncHandler` or catch and call `next(error)`
+- Validate requests with Zod schemas in `src/validation/schemas/`
+
+## Error Handling
+
+- Throw typed errors from `apps/api/src/errors/index.ts` (AppError hierarchy)
+- The global `errorHandler` middleware formats all errors consistently
+- Operational errors (4xx) log at `warn`; non-operational (5xx) log at `error`
+- Never expose internal error details in production responses
+- Database `NotFoundError` (from `@handoverkey/database`) is auto-mapped to HTTP 404 by the error handler
+- Other `DatabaseError` subclasses are auto-mapped to HTTP 500
+- `ValidationError` exists separately in `packages/crypto` (crypto layer) and `apps/api/src/errors` (HTTP layer) -- this is intentional since they serve different abstraction layers
+
+## Security Constraints
+
+- Never hardcode secrets or provide fallback values for JWT_SECRET, DB passwords, etc.
+- Use environment variable validation at startup -- fail fast if required vars are missing
+- CORS must use an explicit origin allowlist, not `callback(null, true)`
+- Tokens must be stored in httpOnly cookies, not localStorage
+- All admin routes must enforce role-based authorization
+- Body parser limit should be <=5MB for JSON endpoints
+
+## Frontend Conventions
+
+- Pages in `src/pages/`, reusable components in `src/components/`
+- Auth state via `AuthContext`, toast notifications via `ToastContext`
+- API calls through the axios instance in `src/services/api.ts`
+- Client-side encryption via `src/services/encryption.ts`
+- All protected routes wrapped in `ProtectedRoute`
+
+## Testing
+
+- API: Jest 30 with integration tests against real PostgreSQL
+- Web: Vitest with @testing-library/react
+- Packages: Jest 30 with ESM preset
+- Crypto package enforces 80% coverage threshold
+- Never commit placeholder tests (empty `it("works")` blocks)
+- Critical flows (auth, vault CRUD, handover) must have integration tests
+
+## File Naming
+
+- Kebab-case for all files: `vault-controller.ts`, `auth-routes.ts`
+- Test files: `*.test.ts` or `*.test.tsx`, colocated in `__tests__/`
+- SQL migrations: descriptive names in `src/database/schema/`
+
+## Git & CI
+
+- Conventional Commits: `feat:`, `fix:`, `build:`, `docs:`, `test:`, `refactor:`
+- PR pipeline runs lint, build, migrate, test against PostgreSQL 16 + Redis 7
+- Dependabot manages npm (weekly) and GitHub Actions (monthly)

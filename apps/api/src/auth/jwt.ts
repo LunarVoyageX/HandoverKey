@@ -15,8 +15,16 @@ export interface TokenGenerationOptions {
 }
 
 export class JWTManager {
-  private static readonly JWT_SECRET =
-    process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production";
+  private static getJwtSecret(): string {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error(
+        "JWT_SECRET environment variable is required. Refusing to start with no secret.",
+      );
+    }
+    return secret;
+  }
+
   private static readonly ACCESS_TOKEN_EXPIRES_IN =
     process.env.JWT_EXPIRES_IN || "1h";
   private static readonly REFRESH_TOKEN_EXPIRES_IN =
@@ -37,7 +45,8 @@ export class JWTManager {
     };
 
     // Generate token without sessionId first to get expiration
-    const tempToken = jwt.sign(payload, this.JWT_SECRET, {
+    const secret = this.getJwtSecret();
+    const tempToken = jwt.sign(payload, secret, {
       expiresIn: this.ACCESS_TOKEN_EXPIRES_IN,
     } as jwt.SignOptions);
 
@@ -58,7 +67,7 @@ export class JWTManager {
 
     // Generate final token with sessionId
     payload.sessionId = sessionId;
-    const token = jwt.sign(payload, this.JWT_SECRET, {
+    const token = jwt.sign(payload, secret, {
       expiresIn: this.ACCESS_TOKEN_EXPIRES_IN,
     } as jwt.SignOptions);
 
@@ -75,14 +84,14 @@ export class JWTManager {
       sessionId: "refresh", // Special marker for refresh tokens
     };
 
-    return jwt.sign(payload, this.JWT_SECRET, {
+    return jwt.sign(payload, this.getJwtSecret(), {
       expiresIn: this.REFRESH_TOKEN_EXPIRES_IN,
     } as jwt.SignOptions);
   }
 
   static verifyToken(token: string): JWTPayload {
     try {
-      const decoded = jwt.verify(token, this.JWT_SECRET) as JWTPayload;
+      const decoded = jwt.verify(token, this.getJwtSecret()) as JWTPayload;
       return decoded;
     } catch {
       throw new Error("Invalid or expired token");

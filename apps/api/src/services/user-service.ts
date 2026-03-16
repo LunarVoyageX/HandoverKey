@@ -13,6 +13,7 @@ import {
   EmailVerificationRequiredError,
 } from "../errors";
 import { getRedisClient } from "../config/redis";
+import { logger } from "../config/logger";
 import { emailService } from "./email-service";
 import crypto from "crypto";
 
@@ -84,9 +85,9 @@ export class UserService {
     try {
       await emailService.sendUserVerificationEmail(email, verificationToken);
     } catch (emailError) {
-      console.warn(
-        "Failed to send verification email, but continuing with registration:",
-        emailError,
+      logger.warn(
+        { err: emailError },
+        "Failed to send verification email, but continuing with registration",
       );
     }
 
@@ -196,7 +197,7 @@ export class UserService {
       await this.updateLastActivity(userId);
     } catch (error) {
       // Log the error but don't throw - activity logging should not block critical operations
-      console.error("Failed to log activity:", error);
+      logger.error({ err: error }, "Failed to log activity");
     }
   }
 
@@ -206,14 +207,13 @@ export class UserService {
   }
 
   static async requestPasswordReset(email: string): Promise<void> {
-    console.log(`[UserService] Requesting password reset for: ${email}`);
+    logger.info(`[UserService] Requesting password reset for: ${email}`);
     const user = await this.findUserByEmail(email);
     if (!user) {
-      console.log(`[UserService] User not found for email: ${email}`);
       // Don't reveal if user exists
       return;
     }
-    console.log(`[UserService] User found: ${user.id}. Generating token...`);
+    logger.info(`[UserService] User found: ${user.id}. Generating token...`);
 
     const token = crypto.randomBytes(32).toString("hex");
     const redis = getRedisClient();
@@ -223,9 +223,9 @@ export class UserService {
       EX: 3600,
     });
 
-    console.log(`[UserService] Sending password reset email to ${email}...`);
+    logger.info(`[UserService] Sending password reset email to ${email}...`);
     await emailService.sendPasswordResetEmail(email, token);
-    console.log(`[UserService] Password reset email sent.`);
+    logger.info("[UserService] Password reset email sent.");
   }
 
   static async resetPassword(
@@ -372,14 +372,14 @@ export class UserService {
   static async resendVerificationEmail(
     email: string,
   ): Promise<{ success: boolean; message: string; alreadyVerified?: boolean }> {
-    console.log(`[UserService] Resending verification email for: ${email}`);
+    logger.info(`[UserService] Resending verification email for: ${email}`);
     const user = await this.findUserByEmail(email);
     if (!user) {
       throw new NotFoundError("User not found");
     }
 
     if (user.emailVerified) {
-      console.log(`[UserService] Email ${email} is already verified`);
+      logger.info(`[UserService] Email ${email} is already verified`);
       return {
         success: true,
         message: "Email is already verified. You can now login.",
@@ -397,9 +397,9 @@ export class UserService {
       updated_at: new Date(),
     });
 
-    console.log(`[UserService] Sending verification email to ${email}...`);
+    logger.info(`[UserService] Sending verification email to ${email}...`);
     await emailService.sendUserVerificationEmail(email, verificationToken);
-    console.log(`[UserService] Verification email sent.`);
+    logger.info("[UserService] Verification email sent.");
 
     return {
       success: true,

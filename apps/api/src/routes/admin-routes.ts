@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { AdminController } from "../controllers/admin-controller";
 import { authenticateJWT } from "../middleware/auth";
+import { requireAdmin } from "../middleware/admin";
 
 const router = Router();
 
-// All admin routes require authentication
-// TODO: Add admin role check middleware
 router.use(authenticateJWT);
+router.use(requireAdmin);
 
 // Unlock a user account
 router.post("/users/:userId/unlock", AdminController.unlockAccount);

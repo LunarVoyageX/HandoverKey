@@ -29,7 +29,7 @@ const Login: React.FC = () => {
         password: authKey,
       });
 
-      const { tokens, user: userData } = response.data;
+      const { user: userData } = response.data;
 
       // 3. Set Master Key using the Salt returned by the server
       // The server returns the encryption salt (which we sent during registration)
@@ -37,7 +37,7 @@ const Login: React.FC = () => {
         await setMasterKey(password, userData.salt);
       }
 
-      login(tokens.accessToken, userData);
+      login(userData);
       navigate("/dashboard");
     } catch (err: unknown) {
       const error = err as {

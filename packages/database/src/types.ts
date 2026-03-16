@@ -72,7 +72,7 @@ export type VaultEntry = Selectable<VaultEntriesTable>;
 export type NewVaultEntry = Insertable<VaultEntriesTable>;
 export type VaultEntryUpdate = Updateable<VaultEntriesTable>;
 
-// Activity logs table types
+/** @deprecated Use ActivityRecordsTable instead. Kept for schema compatibility. */
 export interface ActivityLogsTable {
   id: Generated<string>;
   user_id: string;

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
 import LandingPage from "./pages/LandingPage";
@@ -23,40 +24,42 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <ToastProvider>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/verify-successor" element={<VerifySuccessor />} />
-            <Route path="/successor-access" element={<SuccessorAccess />} />
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <ToastProvider>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/verify-successor" element={<VerifySuccessor />} />
+              <Route path="/successor-access" element={<SuccessorAccess />} />
 
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/vault" element={<Vault />} />
-              <Route path="/successors" element={<Successors />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
-          </Routes>
-          <Analytics />
-        </ToastProvider>
-      </AuthProvider>
-    </Router>
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/vault" element={<Vault />} />
+                <Route path="/successors" element={<Successors />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+            </Routes>
+            <Analytics />
+          </ToastProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

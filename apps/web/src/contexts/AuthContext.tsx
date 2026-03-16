@@ -13,7 +13,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, user: User) => void;
+  login: (user: User) => void;
   logout: () => void;
 }
 
@@ -27,18 +27,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          // Assuming there's a /auth/me endpoint to validate token and get user details
-          // If not, we might need to decode the token or rely on stored user data
-          // For now, let's try to fetch user profile
-          const response = await api.get("/auth/profile");
-          setUser(response.data.user);
-        } catch (error) {
-          console.error("Auth check failed", error);
-          localStorage.removeItem("token");
-        }
+      try {
+        const response = await api.get("/auth/profile");
+        setUser(response.data.user);
+      } catch {
+        // Not authenticated or cookie expired -- that's fine
       }
       setIsLoading(false);
     };
@@ -46,13 +39,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     checkAuth();
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem("token", token);
+  const login = (userData: User) => {
     setUser(userData);
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Even if logout API fails, clear local state
+    }
     setUser(null);
     clearMasterKey();
   };

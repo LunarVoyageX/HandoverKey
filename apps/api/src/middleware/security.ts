@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
+import { logger } from "../config/logger";
 
 export const rateLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"), // 15 minutes
@@ -303,14 +304,17 @@ export const sanitizeInput = (
     if (foundPattern) {
       // Only log warnings in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.warn("Suspicious input detected:", {
-          ip: req.ip,
-          userAgent: req.get("User-Agent"),
-          path: req.path,
-          method: req.method,
-          pattern: foundPattern,
-          timestamp: new Date().toISOString(),
-        });
+        logger.warn(
+          {
+            ip: req.ip,
+            userAgent: req.get("User-Agent"),
+            path: req.path,
+            method: req.method,
+            pattern: foundPattern,
+            timestamp: new Date().toISOString(),
+          },
+          "Suspicious input detected",
+        );
       }
     }
 
@@ -330,7 +334,7 @@ export const sanitizeInput = (
       } catch (err) {
         // Ignore errors if query is immutable
         if (process.env.NODE_ENV !== "test") {
-          console.warn("Failed to sanitize query parameters:", err);
+          logger.warn({ err }, "Failed to sanitize query parameters");
         }
       }
     }
@@ -346,7 +350,7 @@ export const sanitizeInput = (
       } catch (err) {
         // Ignore errors if params is immutable
         if (process.env.NODE_ENV !== "test") {
-          console.warn("Failed to sanitize params:", err);
+          logger.warn({ err }, "Failed to sanitize params");
         }
       }
     }
@@ -355,7 +359,7 @@ export const sanitizeInput = (
   } catch (error) {
     // Only log errors in non-test environments
     if (process.env.NODE_ENV !== "test") {
-      console.error("Input sanitization error:", error);
+      logger.error({ err: error }, "Input sanitization error");
     }
     res.status(400).json({
       error: {

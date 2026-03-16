@@ -171,25 +171,17 @@ export class VaultController {
       }
 
       const { id } = req.params;
-      console.log(
-        `[VaultController] Deleting entry ${id} for user ${req.user.userId}`,
-      );
 
       const deleted = await VaultService.deleteEntry(req.user.userId, id);
 
       if (!deleted) {
-        console.log(
-          `[VaultController] Entry ${id} not found or could not be deleted`,
-        );
         throw new NotFoundError("Vault entry");
       }
 
       await UserService.logActivity(req.user.userId, "SECRET_DELETED", req.ip);
 
-      console.log(`[VaultController] Entry ${id} deleted successfully`);
       res.json({ message: "Vault entry deleted successfully" });
     } catch (error) {
-      console.error(`[VaultController] Error deleting entry:`, error);
       next(error);
     }
   }

@@ -74,3 +74,5 @@ jobs:
       - run: npm run test
         env:
           NODE_ENV: test
+      - name: Check crypto package coverage
+        run: npm run test:coverage -w @handoverkey/crypto

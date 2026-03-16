@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { logger } from "../config/logger";
 
 export interface EmailConfig {
   host: string;
@@ -59,14 +60,6 @@ export class EmailService {
     const user = process.env.SMTP_USER || "";
     const pass = process.env.SMTP_PASS || "";
 
-    console.log("[EmailService] SMTP Config:", {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE,
-      user,
-      passLength: pass.length,
-    });
-
     const smtpConfig: SMTPTransport.Options = {
       host: process.env.SMTP_HOST || "smtp.gmail.com",
       port: parseInt(process.env.SMTP_PORT || "587"),
@@ -109,9 +102,12 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`Successor verification email sent to ${email}`);
+      logger.info(`Successor verification email sent to ${email}`);
     } catch (error) {
-      console.error("Failed to send successor verification email:", error);
+      logger.error(
+        { err: error },
+        "Failed to send successor verification email",
+      );
       throw new Error("Failed to send successor verification email");
     }
   }
@@ -139,9 +135,9 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`User verification email sent to ${email}`);
+      logger.info(`User verification email sent to ${email}`);
     } catch (error) {
-      console.error("Failed to send user verification email:", error);
+      logger.error({ err: error }, "Failed to send user verification email");
       throw new Error("Failed to send user verification email");
     }
   }
@@ -166,9 +162,9 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`Password reset email sent to ${email}`);
+      logger.info(`Password reset email sent to ${email}`);
     } catch (error) {
-      console.error("Failed to send password reset email:", error);
+      logger.error({ err: error }, "Failed to send password reset email");
       throw new Error("Failed to send password reset email");
     }
   }
@@ -194,9 +190,12 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`Account deletion confirmation sent to ${email}`);
+      logger.info(`Account deletion confirmation sent to ${email}`);
     } catch (error) {
-      console.error("Failed to send account deletion confirmation:", error);
+      logger.error(
+        { err: error },
+        "Failed to send account deletion confirmation",
+      );
       throw new Error("Failed to send account deletion confirmation");
     }
   }
@@ -222,11 +221,11 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`Account deletion notification sent to successor ${email}`);
+      logger.info(`Account deletion notification sent to successor ${email}`);
     } catch (error) {
-      console.error(
-        "Failed to send account deletion notification to successor:",
-        error,
+      logger.error(
+        { err: error },
+        "Failed to send account deletion notification to successor",
       );
       throw new Error(
         "Failed to send account deletion notification to successor",
@@ -267,11 +266,11 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(
+      logger.info(
         `Contact form email sent from ${fromEmail} to info@handoverkey.com`,
       );
     } catch (error) {
-      console.error("Failed to send contact form email:", error);
+      logger.error({ err: error }, "Failed to send contact form email");
       throw new Error("Failed to send contact form email");
     }
   }
@@ -289,9 +288,9 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`Email sent to ${to}: ${subject}`);
+      logger.info(`Email sent to ${to}: ${subject}`);
     } catch (error) {
-      console.error(`Failed to send email to ${to}:`, error);
+      logger.error({ err: error }, `Failed to send email to ${to}`);
       throw error;
     }
   }

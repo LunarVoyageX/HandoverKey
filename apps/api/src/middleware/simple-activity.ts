@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import { UserService } from "../services/user-service";
 import { AuthenticatedRequest } from "./auth";
+import { logger } from "../config/logger";
 
 export class SimpleActivityMiddleware {
   /**
@@ -37,7 +38,7 @@ export class SimpleActivityMiddleware {
                 req.ip,
               );
             } catch (error) {
-              console.error("Failed to record activity:", error);
+              logger.error({ err: error }, "Failed to record activity");
             }
           });
         }
@@ -45,7 +46,7 @@ export class SimpleActivityMiddleware {
         next();
       } catch (error) {
         if (process.env.NODE_ENV !== "test") {
-          console.error("Activity middleware error:", error);
+          logger.error({ err: error }, "Activity middleware error");
         }
         next();
       }
@@ -69,7 +70,7 @@ export class SimpleActivityMiddleware {
       });
     } catch (error) {
       if (process.env.NODE_ENV !== "test") {
-        console.error("Manual check-in error:", error);
+        logger.error({ err: error }, "Manual check-in error");
       }
       res.status(500).json({ error: "Failed to record check-in" });
     }

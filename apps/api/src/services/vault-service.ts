@@ -5,6 +5,7 @@ import {
 } from "@handoverkey/database";
 import { EncryptedData } from "@handoverkey/shared";
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "../config/logger";
 
 export interface VaultFilters {
   category?: string;
@@ -120,11 +121,7 @@ export class VaultService {
       await vaultRepo.delete(entryId, userId);
       return true;
     } catch (error) {
-      console.error(
-        "[VaultService] Failed to delete entry %s:",
-        entryId,
-        error,
-      );
+      logger.error({ err: error, entryId }, "Failed to delete vault entry");
       return false;
     }
   }

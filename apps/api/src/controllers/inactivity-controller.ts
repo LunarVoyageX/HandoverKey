@@ -1,117 +1,104 @@
-import { Response } from "express";
+import { Response, NextFunction } from "express";
 import {
   InactivityService,
   InactivitySettings,
 } from "../services/inactivity-service";
 import { UserService } from "../services/user-service";
 import { AuthenticatedRequest } from "../middleware/auth";
+import { AuthenticationError } from "../errors";
 
 export class InactivityController {
-  /**
-   * Get user's inactivity settings
-   */
   static async getSettings(
     req: AuthenticatedRequest,
     res: Response,
+    next: NextFunction,
   ): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
-        res.status(401).json({ error: "User not authenticated" });
-        return;
+      if (!req.user?.userId) {
+        throw new AuthenticationError("Not authenticated");
       }
 
-      const settings = await InactivityService.getSettings(userId);
+      const settings = await InactivityService.getSettings(req.user.userId);
       res.json(settings);
     } catch (error) {
-      console.error("Error getting inactivity settings:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error);
     }
   }
 
-  /**
-   * Update user's inactivity settings
-   */
   static async updateSettings(
     req: AuthenticatedRequest,
     res: Response,
+    next: NextFunction,
   ): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
-        res.status(401).json({ error: "User not authenticated" });
-        return;
+      if (!req.user?.userId) {
+        throw new AuthenticationError("Not authenticated");
       }
 
       const updates = req.body as Partial<InactivitySettings>;
-      const settings = await InactivityService.updateSettings(userId, updates);
+      const settings = await InactivityService.updateSettings(
+        req.user.userId,
+        updates,
+      );
 
-      // Log the activity
-      await UserService.logActivity(userId, "SETTINGS_UPDATED", req.ip);
+      await UserService.logActivity(
+        req.user.userId,
+        "SETTINGS_UPDATED",
+        req.ip,
+      );
 
       res.json({
         message: "Settings updated successfully",
         settings,
       });
     } catch (error) {
-      console.error("Error updating settings:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error);
     }
   }
 
-  /**
-   * Pause the dead man's switch
-   */
   static async pauseSwitch(
     req: AuthenticatedRequest,
     res: Response,
+    next: NextFunction,
   ): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
-        res.status(401).json({ error: "User not authenticated" });
-        return;
+      if (!req.user?.userId) {
+        throw new AuthenticationError("Not authenticated");
       }
 
       const { pauseUntil } = req.body;
       const pauseDate = pauseUntil ? new Date(pauseUntil) : undefined;
 
-      await InactivityService.pauseSwitch(userId, pauseDate);
-      await UserService.logActivity(userId, "SWITCH_PAUSED", req.ip);
+      await InactivityService.pauseSwitch(req.user.userId, pauseDate);
+      await UserService.logActivity(req.user.userId, "SWITCH_PAUSED", req.ip);
 
       res.json({
         message: "Dead man's switch paused successfully",
         pausedUntil: pauseDate,
       });
     } catch (error) {
-      console.error("Error pausing switch:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error);
     }
   }
 
-  /**
-   * Resume the dead man's switch
-   */
   static async resumeSwitch(
     req: AuthenticatedRequest,
     res: Response,
+    next: NextFunction,
   ): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
-        res.status(401).json({ error: "User not authenticated" });
-        return;
+      if (!req.user?.userId) {
+        throw new AuthenticationError("Not authenticated");
       }
 
-      await InactivityService.resumeSwitch(userId);
-      await UserService.logActivity(userId, "SWITCH_RESUMED", req.ip);
+      await InactivityService.resumeSwitch(req.user.userId);
+      await UserService.logActivity(req.user.userId, "SWITCH_RESUMED", req.ip);
 
       res.json({
         message: "Dead man's switch resumed successfully",
       });
     } catch (error) {
-      console.error("Error resuming switch:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error);
     }
   }
 }

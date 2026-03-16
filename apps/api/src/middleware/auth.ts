@@ -2,9 +2,28 @@ import { Request, Response, NextFunction } from "express";
 import { JWTManager, JWTPayload } from "../auth/jwt";
 import { SessionService } from "../services/session-service";
 import { AuthenticationError } from "../errors";
+import { logger } from "../config/logger";
 
 export interface AuthenticatedRequest extends Request {
   user?: JWTPayload;
+}
+
+function extractToken(req: AuthenticatedRequest): string | null {
+  const authHeader = req.headers.authorization;
+  if (
+    authHeader &&
+    typeof authHeader === "string" &&
+    authHeader.startsWith("Bearer ")
+  ) {
+    const token = authHeader.substring(7).trim();
+    if (token.length > 0) return token;
+  }
+
+  if (req.cookies?.accessToken) {
+    return req.cookies.accessToken;
+  }
+
+  return null;
 }
 
 export const authenticateJWT = (
@@ -13,23 +32,9 @@ export const authenticateJWT = (
   next: NextFunction,
 ): void => {
   try {
-    // Secure token extraction - validate header format strictly
-    const authHeader = req.headers.authorization;
+    const token = extractToken(req);
 
-    // Prevent bypass attempts with malformed headers
-    if (!authHeader || typeof authHeader !== "string") {
-      throw new AuthenticationError("No token provided");
-    }
-
-    // Strict Bearer token format validation - prevent bypass with case variations
-    if (!authHeader.startsWith("Bearer ")) {
-      throw new AuthenticationError("No token provided");
-    }
-
-    const token = authHeader.substring(7).trim();
-
-    // Validate token is not empty after extraction
-    if (!token || token.length === 0) {
+    if (!token) {
       throw new AuthenticationError("No token provided");
     }
 
@@ -54,10 +59,9 @@ export const authenticateJWT = (
     req.user = decoded;
     next();
   } catch (error) {
-    // Log security events but don't leak information
-    console.warn(
-      "Authentication failed:",
-      error instanceof Error ? error.message : "Unknown error",
+    logger.warn(
+      { err: error instanceof Error ? error.message : "Unknown error" },
+      "Authentication failed",
     );
 
     // Pass to error handler
@@ -84,7 +88,7 @@ export const requireAuth = async (
   } catch (error) {
     // Only log errors in non-test environments
     if (process.env.NODE_ENV !== "test") {
-      console.error("Authentication validation error:", error);
+      logger.error({ err: error }, "Authentication validation error");
     }
 
     // Pass to error handler
@@ -102,51 +106,36 @@ export const optionalAuth = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = extractToken(req);
 
-    // Only process if header exists and is properly formatted
-    if (
-      authHeader &&
-      typeof authHeader === "string" &&
-      authHeader.startsWith("Bearer ")
-    ) {
-      const token = authHeader.substring(7).trim();
+    if (token) {
+      try {
+        const decoded = JWTManager.verifyToken(token);
 
-      // Only proceed if token is not empty
-      if (token && token.length > 0) {
-        try {
-          // Use verifyToken which includes expiration check
-          const decoded = JWTManager.verifyToken(token);
-
-          // Validate decoded payload - prevent bypass with incomplete payloads
-          if (
-            decoded &&
-            typeof decoded === "object" &&
-            decoded.userId &&
-            typeof decoded.userId === "string" &&
-            decoded.email &&
-            typeof decoded.email === "string" &&
-            decoded.sessionId &&
-            typeof decoded.sessionId === "string"
-          ) {
-            // Use server-side session validation instead of trusting user-controlled data
-            req.user = decoded;
-            const isAuthenticated = await SessionService.isAuthenticated(req);
-            if (!isAuthenticated) {
-              req.user = undefined; // Clear invalid session
-            }
+        if (
+          decoded &&
+          typeof decoded === "object" &&
+          decoded.userId &&
+          typeof decoded.userId === "string" &&
+          decoded.email &&
+          typeof decoded.email === "string" &&
+          decoded.sessionId &&
+          typeof decoded.sessionId === "string"
+        ) {
+          req.user = decoded;
+          const isAuthenticated = await SessionService.isAuthenticated(req);
+          if (!isAuthenticated) {
+            req.user = undefined;
           }
-        } catch {
-          // Invalid token - silently ignore for optional auth
-          console.warn("Optional auth failed for token");
         }
+      } catch {
+        // Invalid token - silently ignore for optional auth
       }
     }
   } catch (error) {
-    // Log unexpected errors but continue
-    console.warn(
-      "Optional auth error:",
-      error instanceof Error ? error.message : "Unknown error",
+    logger.warn(
+      { err: error instanceof Error ? error.message : "Unknown error" },
+      "Optional auth error",
     );
   }
   next();

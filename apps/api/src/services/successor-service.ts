@@ -2,6 +2,7 @@ import { getDatabaseClient, SuccessorRepository } from "@handoverkey/database";
 import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 import { ConflictError, NotFoundError } from "../errors";
+import { logger } from "../config/logger";
 
 export interface AddSuccessorData {
   email: string;
@@ -71,7 +72,7 @@ export class SuccessorService {
         verificationToken,
       );
     } catch (error) {
-      console.error("Failed to send verification email:", error);
+      logger.error({ err: error }, "Failed to send verification email");
       // Don't fail the successor creation if email fails
     }
 
@@ -304,7 +305,7 @@ export class SuccessorService {
         verificationToken,
       );
     } catch (error) {
-      console.error("Failed to send verification email:", error);
+      logger.error({ err: error }, "Failed to send verification email");
       // If email fails, we should probably let the user know, but for now we'll just log it
       // and allow them to retry via the resend endpoint
       throw new Error("Failed to send verification email");

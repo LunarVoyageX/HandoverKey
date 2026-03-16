@@ -4,6 +4,7 @@ import {
   InactivitySettingsRepository,
 } from "@handoverkey/database";
 import { HandoverProcessStatus } from "@handoverkey/shared/src/types/dead-mans-switch";
+import { logger } from "../config/logger";
 
 export interface InactivitySettings {
   userId: string;
@@ -28,7 +29,7 @@ export class InactivityService {
    * Checks all users for inactivity and initiates handover if needed
    */
   static async checkAllUsers(): Promise<void> {
-    console.log("Starting inactivity check for all users...");
+    logger.info("Starting inactivity check for all users...");
 
     const userRepo = this.getUserRepository();
     const settingsRepo = this.getInactivitySettingsRepository();
@@ -36,7 +37,7 @@ export class InactivityService {
     // Get all active inactivity settings
     const allSettings = await settingsRepo.findAllActive();
 
-    console.log(`Checking ${allSettings.length} users for inactivity...`);
+    logger.info(`Checking ${allSettings.length} users for inactivity...`);
 
     for (const settings of allSettings) {
       const user = await userRepo.findById(settings.user_id);
@@ -58,7 +59,7 @@ export class InactivityService {
     // Also check for grace period expirations
     await this.monitorActiveHandovers();
 
-    console.log("Inactivity check completed");
+    logger.info("Inactivity check completed");
   }
 
   /**
@@ -77,7 +78,7 @@ export class InactivityService {
           process.status === HandoverProcessStatus.GRACE_PERIOD &&
           new Date(process.gracePeriodEnds) <= new Date()
         ) {
-          console.log(
+          logger.info(
             `Processing expired grace period for handover ${process.id}`,
           );
           await orchestrator.processGracePeriodExpiration(process.id);
@@ -85,7 +86,7 @@ export class InactivityService {
         // We could also handle other states here
       }
     } catch (error) {
-      console.error("Failed to monitor active handovers:", error);
+      logger.error({ err: error }, "Failed to monitor active handovers");
     }
   }
 
@@ -110,18 +111,18 @@ export class InactivityService {
     thresholdDate.setDate(thresholdDate.getDate() - thresholdDays);
 
     if (lastActivity && new Date(lastActivity) < thresholdDate) {
-      console.log(`User ${user.email} is inactive. Initiating handover...`);
+      logger.info(`User ${user.email} is inactive. Initiating handover...`);
 
       try {
         const { HandoverOrchestrator } =
           await import("./handover-orchestrator");
         const orchestrator = new HandoverOrchestrator();
         await orchestrator.initiateHandover(user.id);
-        console.log(`Handover initiated for user ${user.email}`);
+        logger.info(`Handover initiated for user ${user.email}`);
       } catch (error) {
-        console.error(
-          `Failed to initiate handover for user ${user.email}:`,
-          error,
+        logger.error(
+          { err: error },
+          `Failed to initiate handover for user ${user.email}`,
         );
       }
     }

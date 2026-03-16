@@ -15,9 +15,9 @@ export interface HandoverProcess {
   createdAt: Date;
 }
 
-export class HandoverService {
-  private static readonly GRACE_PERIOD_DAYS = 7;
+const GRACE_PERIOD_HOURS = parseInt(process.env.GRACE_PERIOD_HOURS || "48", 10);
 
+export class HandoverService {
   private static getHandoverProcessRepository(): HandoverProcessRepository {
     const dbClient = getDatabaseClient();
     return new HandoverProcessRepository(dbClient.getKysely());
@@ -35,13 +35,12 @@ export class HandoverService {
     // Check if there's already an active handover process
     const existingHandover = await this.getActiveHandover(userId);
     if (existingHandover) {
-      console.log(`Handover already active for user ${userId}`);
       return existingHandover;
     }
 
     const now = new Date();
     const gracePeriodEnds = new Date(
-      now.getTime() + this.GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000,
+      now.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000,
     );
 
     const handoverRepo = this.getHandoverProcessRepository();

@@ -127,14 +127,14 @@ If you're looking to make your first contribution, look for issues labeled `good
 To run tests for a specific package:
 
 ```bash
-# Web application tests (184 tests)
+# Web application tests
 npm test --workspace=@handoverkey/web
 
-# API tests (187 tests)
+# API tests
 npm test --workspace=@handoverkey/api
 
-# Core encryption tests (52 tests)
-npm test --workspace=@handoverkey/core
+# Crypto package tests (with coverage)
+npm run test:coverage --workspace=@handoverkey/crypto
 
 # All other packages
 npm test --workspace=@handoverkey/database
@@ -146,8 +146,6 @@ To run all tests across the entire monorepo:
 ```bash
 npm test
 ```
-
-**Current Test Status**: 423+ tests passing across all packages.
 
 Ensure all tests pass before submitting a pull request. New features should include comprehensive test coverage.
 
@@ -171,20 +169,26 @@ The project is a monorepo managed with [Turborepo](https://turbo.build/).
 ```
 handoverkey/
 ├── apps/
-│   └── web/                 # React web application (production-ready)
+│   ├── api/                 # Express REST API (Node.js backend)
+│   │   ├── src/
+│   │   │   ├── controllers/ # HTTP request handlers
+│   │   │   ├── services/    # Business logic
+│   │   │   ├── routes/      # Route definitions
+│   │   │   ├── middleware/   # Auth, validation, error handling
+│   │   │   ├── validation/  # Zod schemas
+│   │   │   └── __tests__/   # Integration tests
+│   └── web/                 # React SPA (Vite + Tailwind)
 │       ├── src/
 │       │   ├── components/  # Reusable UI components
 │       │   ├── pages/       # Application pages
-│       │   ├── services/    # API and encryption services
-│       │   └── __tests__/   # Test files (184 tests)
+│       │   ├── services/    # API client and encryption
+│       │   └── __tests__/   # Unit and integration tests
 ├── packages/
-│   ├── core/                # Core encryption and business logic
-│   ├── api/                 # Backend API server with dead man's switch
-│   ├── database/            # Database schemas and migrations
-│   └── shared/              # Shared types and utilities
-├── docs/                    # Documentation (architecture, requirements, etc.)
-├── scripts/                 # Build and deployment scripts
-└── tests/                   # End-to-end tests
+│   ├── crypto/              # AES-256-GCM, PBKDF2, Shamir's Secret Sharing
+│   ├── database/            # Kysely repositories and migrations
+│   └── shared/              # Shared types, constants, validation
+├── docs/                    # Architecture, security, API reference
+└── scripts/                 # Development scripts
 ```
 
 ## 5. Security Policy

@@ -15,6 +15,7 @@ import {
   ReminderType,
   SystemStatusType,
 } from "@handoverkey/shared/src/types/dead-mans-switch";
+import { logger } from "../config/logger";
 
 export class InactivityMonitorService implements InactivityMonitor {
   private static instance: InactivityMonitorService;
@@ -63,18 +64,18 @@ export class InactivityMonitorService implements InactivityMonitor {
    */
   start(): void {
     if (this.isRunning) {
-      console.log("InactivityMonitor is already running");
+      logger.info("InactivityMonitor is already running");
       return;
     }
 
-    console.log("Starting InactivityMonitor service...");
+    logger.info("Starting InactivityMonitor service...");
     this.isRunning = true;
 
     // Run initial check
     this.checkAllUsers().catch((error) => {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error("Initial inactivity check failed:", error);
+        logger.error({ err: error }, "Initial inactivity check failed");
       }
     });
 
@@ -83,12 +84,12 @@ export class InactivityMonitorService implements InactivityMonitor {
       this.checkAllUsers().catch((error) => {
         // Only log errors in non-test environments
         if (process.env.NODE_ENV !== "test") {
-          console.error("Periodic inactivity check failed:", error);
+          logger.error({ err: error }, "Periodic inactivity check failed");
         }
       });
     }, this.CHECK_INTERVAL_MS);
 
-    console.log(
+    logger.info(
       `InactivityMonitor started with ${this.CHECK_INTERVAL_MS / 1000}s interval`,
     );
   }
@@ -98,11 +99,11 @@ export class InactivityMonitorService implements InactivityMonitor {
    */
   stop(): void {
     if (!this.isRunning) {
-      console.log("InactivityMonitor is not running");
+      logger.info("InactivityMonitor is not running");
       return;
     }
 
-    console.log("Stopping InactivityMonitor service...");
+    logger.info("Stopping InactivityMonitor service...");
     this.isRunning = false;
 
     if (this.intervalId) {
@@ -110,7 +111,7 @@ export class InactivityMonitorService implements InactivityMonitor {
       this.intervalId = null;
     }
 
-    console.log("InactivityMonitor stopped");
+    logger.info("InactivityMonitor stopped");
   }
 
   /**
@@ -143,7 +144,10 @@ export class InactivityMonitorService implements InactivityMonitor {
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error(`Failed to check inactivity for user ${userId}:`, error);
+        logger.error(
+          { err: error },
+          `Failed to check inactivity for user ${userId}`,
+        );
       }
       // Continue processing other users even if one fails
     }
@@ -154,11 +158,11 @@ export class InactivityMonitorService implements InactivityMonitor {
    */
   async checkAllUsers(): Promise<void> {
     try {
-      console.log("Running inactivity check for all users...");
+      logger.info("Running inactivity check for all users...");
 
       // Get all active users (users with inactivity settings)
       const users = await this.getActiveUsers();
-      console.log(`Checking inactivity for ${users.length} users`);
+      logger.info(`Checking inactivity for ${users.length} users`);
 
       // Process users in batches to avoid overwhelming the system
       const batchSize = 50;
@@ -175,11 +179,14 @@ export class InactivityMonitorService implements InactivityMonitor {
         }
       }
 
-      console.log("Completed inactivity check for all users");
+      logger.info("Completed inactivity check for all users");
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error("Failed to check inactivity for all users:", error);
+        logger.error(
+          { err: error },
+          "Failed to check inactivity for all users",
+        );
       }
     }
   }
@@ -190,11 +197,11 @@ export class InactivityMonitorService implements InactivityMonitor {
   async pauseSystemTracking(reason: string): Promise<void> {
     try {
       await this.updateSystemStatus(SystemStatusType.MAINTENANCE, reason);
-      console.log(`System tracking paused: ${reason}`);
+      logger.info(`System tracking paused: ${reason}`);
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error("Failed to pause system tracking:", error);
+        logger.error({ err: error }, "Failed to pause system tracking");
       }
       throw error;
     }
@@ -209,11 +216,11 @@ export class InactivityMonitorService implements InactivityMonitor {
         SystemStatusType.OPERATIONAL,
         "System resumed",
       );
-      console.log("System tracking resumed");
+      logger.info("System tracking resumed");
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error("Failed to resume system tracking:", error);
+        logger.error({ err: error }, "Failed to resume system tracking");
       }
       throw error;
     }
@@ -240,7 +247,7 @@ export class InactivityMonitorService implements InactivityMonitor {
         handoverStatus !== HandoverStatus.HANDOVER_ACTIVE
       ) {
         await this.handoverOrchestrator.initiateHandover(userId);
-        console.log(
+        logger.info(
           `Handover initiated for user ${userId} (${thresholdPercentage.toFixed(1)}% inactive)`,
         );
       }
@@ -269,7 +276,7 @@ export class InactivityMonitorService implements InactivityMonitor {
 
     // Log significant changes
     if (thresholdPercentage >= 75) {
-      console.log(
+      logger.info(
         `User ${userId}: ${thresholdPercentage.toFixed(1)}% inactive, status: ${handoverStatus}`,
       );
     }
@@ -299,17 +306,17 @@ export class InactivityMonitorService implements InactivityMonitor {
       );
 
       if (result.status === "sent" || result.status === "delivered") {
-        console.log(`Sent ${reminderType} reminder to user ${userId}`);
+        logger.info(`Sent ${reminderType} reminder to user ${userId}`);
       } else {
-        console.error(
-          `Failed to send ${reminderType} reminder to user ${userId}:`,
-          result.errorMessage,
+        logger.error(
+          { err: result.errorMessage },
+          `Failed to send ${reminderType} reminder to user ${userId}`,
         );
       }
     } catch (error) {
-      console.error(
-        `Error sending ${reminderType} reminder to user ${userId}:`,
-        error,
+      logger.error(
+        { err: error },
+        `Error sending ${reminderType} reminder to user ${userId}`,
       );
     }
   }

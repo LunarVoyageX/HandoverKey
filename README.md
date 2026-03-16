@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/handoverkey/handoverkey/releases)
-[![Tests](https://img.shields.io/badge/Tests-227%20Passing-brightgreen.svg)](https://github.com/handoverkey/handoverkey/actions)
+[![CI](https://github.com/HandoverKey/HandoverKey/actions/workflows/pr.yml/badge.svg)](https://github.com/HandoverKey/HandoverKey/actions/workflows/pr.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
@@ -101,11 +101,12 @@ graph TD
     ```
 
 3.  **Environment Setup**
-    Copy the example environment file and configure your secrets.
+    Copy the example environment files and configure your secrets.
 
     ```bash
-    cp env.example .env
-    # Edit .env with your local configuration
+    cp apps/api/.env.example apps/api/.env
+    cp apps/web/.env.example apps/web/.env
+    # Edit .env files with your local configuration (JWT_SECRET is required)
     ```
 
 4.  **Start Infrastructure**

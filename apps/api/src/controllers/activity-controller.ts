@@ -1,6 +1,7 @@
-import { Response } from "express";
+import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { getDatabaseClient, ActivityRepository } from "@handoverkey/database";
+import { AuthenticationError } from "../errors";
 
 export class ActivityController {
   private static getRepository(): ActivityRepository {
@@ -8,18 +9,14 @@ export class ActivityController {
     return new ActivityRepository(dbClient.getKysely());
   }
 
-  /**
-   * Get recent activity logs for the authenticated user
-   */
   static async getRecentActivity(
     req: AuthenticatedRequest,
     res: Response,
+    next: NextFunction,
   ): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
-        res.status(401).json({ error: "User not authenticated" });
-        return;
+      if (!req.user?.userId) {
+        throw new AuthenticationError("Not authenticated");
       }
 
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
@@ -28,7 +25,11 @@ export class ActivityController {
         : 0;
 
       const repository = ActivityController.getRepository();
-      const activities = await repository.findByUserId(userId, limit, offset);
+      const activities = await repository.findByUserId(
+        req.user.userId,
+        limit,
+        offset,
+      );
 
       res.json({
         data: activities,
@@ -38,8 +39,7 @@ export class ActivityController {
         },
       });
     } catch (error) {
-      console.error("Error fetching activity logs:", error);
-      res.status(500).json({ error: "Internal server error" });
+      next(error);
     }
   }
 }

@@ -61,8 +61,8 @@ export class AuthController {
               req.ip,
             );
           }
-        } catch (logError) {
-          console.error("Failed to log registration error:", logError);
+        } catch {
+          // Activity logging should not block the error response
         }
       }
 
@@ -157,6 +157,14 @@ export class AuthController {
 
       res.cookie("accessToken", accessToken, cookieOptions);
 
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict" as const,
+        path: "/api/v1/auth/refresh",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
       res.json({
         message: "Login successful",
         user: {
@@ -166,10 +174,6 @@ export class AuthController {
           twoFactorEnabled: user.twoFactorEnabled,
           lastActivity: user.lastActivity,
           salt: Buffer.from(user.salt).toString("base64"),
-        },
-        tokens: {
-          accessToken,
-          refreshToken,
         },
       });
     } catch (error) {
@@ -219,7 +223,6 @@ export class AuthController {
           if (logError instanceof AuthenticationError) {
             throw logError;
           }
-          console.error("Failed to log login error:", logError);
         }
       }
 
@@ -248,8 +251,8 @@ export class AuthController {
       // Log logout (req.user is validated by SessionService)
       await UserService.logActivity(req.user!.userId, "USER_LOGOUT", req.ip);
 
-      // Clear the cookie
       res.clearCookie("accessToken");
+      res.clearCookie("refreshToken", { path: "/api/v1/auth/refresh" });
 
       res.json({ message: "Logout successful" });
     } catch (error) {
@@ -263,7 +266,7 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { refreshToken } = req.body;
+      const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
       if (!refreshToken) {
         throw new AuthenticationError("Refresh token is required");
@@ -276,7 +279,6 @@ export class AuthController {
         throw new AuthenticationError("Invalid refresh token");
       }
 
-      // Generate new tokens with session tracking
       const { token: newAccessToken } = await JWTManager.generateAccessToken(
         user.id,
         user.email,
@@ -290,22 +292,22 @@ export class AuthController {
         user.email,
       );
 
-      // Set secure cookie
-      const cookieOptions = {
+      res.cookie("accessToken", newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict" as const,
-        maxAge: 60 * 60 * 1000, // 1 hour
-      };
-
-      res.cookie("accessToken", newAccessToken, cookieOptions);
-
-      res.json({
-        tokens: {
-          accessToken: newAccessToken,
-          refreshToken: newRefreshToken,
-        },
+        maxAge: 60 * 60 * 1000,
       });
+
+      res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict" as const,
+        path: "/api/v1/auth/refresh",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      res.json({ message: "Token refreshed successfully" });
     } catch (error) {
       next(error);
     }
@@ -391,23 +393,15 @@ export class AuthController {
         // Fire and forget - don't await to keep response fast
         emailService
           .sendAccountDeletionConfirmation(user.email, user.name || "User")
-          .catch((err: Error) =>
-            console.error("Failed to send deletion email:", err),
-          );
+          .catch(() => {});
 
-        // Send notification emails to verified successors
         verifiedSuccessors.forEach((successor) => {
           emailService
             .sendAccountDeletionToSuccessors(
               successor.email,
               user.name || user.email,
             )
-            .catch((err: Error) =>
-              console.error(
-                `Failed to send deletion email to successor ${successor.email}:`,
-                err,
-              ),
-            );
+            .catch(() => {});
         });
       }
 

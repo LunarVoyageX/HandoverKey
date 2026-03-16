@@ -2,180 +2,120 @@
 
 ## 1. Introduction
 
-This document details the security model of HandoverKey, a zero-knowledge, end-to-end encrypted digital legacy platform. Our primary goal is to ensure that user data remains private and inaccessible to anyone, including the HandoverKey team, at all times.
+This document describes the **implemented** security model of HandoverKey. Features listed in the [Roadmap](#9-security-roadmap) section are planned but not yet implemented.
 
 ## 2. Core Security Principles
 
-### 2.1 Zero-Knowledge
+### 2.1 Zero-Knowledge Architecture
 
-- **Definition**: The server never has access to plaintext user data. All sensitive information is encrypted client-side before being transmitted or stored.
-- **Implementation**:
-  - **Client-Side Encryption**: All user-provided data (passwords, documents, notes) is encrypted on the user's device using AES-256-GCM.
-  - **Key Derivation**: Master encryption keys are derived from the user's password using PBKDF2 with a high iteration count and a unique salt.
-  - **No Server-Side Decryption**: The server stores only encrypted blobs and cannot decrypt them.
+- All sensitive user data (passwords, documents, notes) is encrypted **client-side** using AES-256-GCM before transmission to the server.
+- The server stores only encrypted blobs and cannot decrypt them.
+- Master encryption keys are derived from the user's password using PBKDF2 with 100,000+ iterations and a unique salt per user.
+- The master key **never** leaves the client device.
 
-### 2.2 End-to-End Encryption (E2EE)
+### 2.2 Key Separation
 
-- **Definition**: Data is encrypted on the sender's device and can only be decrypted by the intended recipient's device.
-- **Implementation**:
-  - **User to Server**: Data is encrypted client-side before upload.
-  - **Server to Successor**: Encrypted data is transmitted to successors, who then decrypt it on their device using their derived key shares.
-
-### 2.3 Least Privilege
-
-- **Definition**: Every module, process, and user is granted only the minimum permissions necessary to perform its function.
-- **Implementation**:
-  - **Microservices**: Each service (Auth, Vault, Handover) has distinct, limited access to resources.
-  - **Database Access**: Services connect to the database with specific, restricted user roles.
-  - **API Keys**: Limited scope API keys for third-party integrations.
-
-### 2.4 Defense in Depth
-
-- **Definition**: Multiple layers of security controls are placed throughout the system to provide redundancy in case one control fails.
-- **Implementation**:
-  - **Network**: Firewalls, WAF, DDoS protection.
-  - **Application**: Input validation, secure coding practices, rate limiting.
-  - **Data**: Client-side encryption, database encryption at rest, regular backups.
-  - **Operational**: Access controls, audit logging, security monitoring.
+- **Authentication Key**: Derived from the password with a lower iteration count, used only to prove identity to the server. The server stores a bcrypt hash of this key.
+- **Master Encryption Key**: Derived from the password with a different salt and higher iteration count, used to encrypt/decrypt vault data. The server never sees this key.
+- Because the derivation parameters differ, compromising the server's auth key hash does not enable derivation of the master encryption key.
 
 ## 3. Encryption Architecture
 
-### 3.1 Key Management
+### 3.1 Data Encryption
 
-#### 3.1.1 Zero-Knowledge Authentication & Key Derivation
+- **Algorithm**: AES-256-GCM (via Web Crypto API in the browser)
+- **IV**: Unique cryptographically random IV per encryption operation
+- **Integrity**: GCM mode provides authenticated encryption (confidentiality + integrity)
+- **Implementation**: `packages/crypto/src/encryption.ts`
 
-We implement a strict separation between **Authentication** and **Encryption** to ensure the server never possesses the information needed to decrypt user data.
+### 3.2 Key Derivation
 
-1.  **Authentication Key (Auth Key)**
-    - **Purpose**: Used solely to prove identity to the server.
-    - **Derivation**: `PBKDF2(Password, Email, 10,000 iterations)`
-    - **Transmission**: The client sends `Auth Key` to the server.
-    - **Server Storage**: The server hashes the `Auth Key` (using bcrypt/Argon2) and stores the hash.
-    - **Security Property**: The server never sees the plaintext password. Even if the server is compromised, the attacker only gets a hash of the Auth Key, which cannot be used to derive the Master Key.
+- **Algorithm**: PBKDF2 with SHA-256
+- **Iterations**: 100,000+ for encryption key, 10,000 for auth key
+- **Salt**: Cryptographically random, unique per user, stored server-side
+- **Implementation**: `packages/crypto/src/encryption.ts`
 
-2.  **Master Encryption Key (Master Key)**
-    - **Purpose**: Used to encrypt/decrypt the user's vault.
-    - **Derivation**: `PBKDF2(Password, Encryption Salt, 100,000 iterations)`
-    - **Salt**: A cryptographically secure random salt is generated on the client during registration and stored on the server.
-    - **Transmission**: The Master Key **NEVER** leaves the client device.
-    - **Security Property**: Since the server does not know the Password (only the Auth Key), it cannot derive the Master Key, even though it holds the Encryption Salt.
+### 3.3 Shamir's Secret Sharing
 
-#### 3.1.2 Data Encryption Keys (DEKs)
+- The user's master key (or a derived handover key) is split into N shares with a threshold K.
+- Any K of N shares can reconstruct the key; fewer than K shares reveal nothing.
+- Each successor receives one encrypted share.
+- **Implementation**: `packages/crypto/src/shamir.ts`
 
-- **Process**: For each piece of data (e.g., a password entry, a document), a unique Data Encryption Key (DEK) is generated.
-- **Encryption**: The DEK is then encrypted using the user's master key.
-- **Storage**: The encrypted DEK is stored alongside the encrypted data. This allows for efficient re-encryption if the master key changes (e.g., password change) without re-encrypting all data.
+## 4. Authentication
 
-### 3.2 Data Encryption
+### 4.1 Password Handling
 
-- **Algorithm**: AES-256-GCM (Advanced Encryption Standard with Galois/Counter Mode)
-- **Why AES-GCM**: Provides both confidentiality (encryption) and authenticity (integrity and authentication) of the data.
-- **Initialization Vector (IV)**: A unique, cryptographically random IV is generated for each encryption operation. The IV is non-secret and transmitted alongside the ciphertext.
-- **Associated Data**: Optional, but recommended for binding ciphertext to specific contexts (e.g., user ID, timestamp) to prevent tampering.
+- Passwords are hashed using **bcrypt** (configurable rounds, default 12) on the server.
+- The client sends a PBKDF2-derived auth key, not the raw password.
 
-### 3.3 Shamir's Secret Sharing (SSS)
+### 4.2 Session Management
 
-- **Purpose**: To enable multi-party handover without any single successor having full control or knowledge of the master key.
-- **Process**:
-  1. The user's master key (or a key derived from it specifically for handover) is split into `N` shares.
-  2. A threshold `K` is set, meaning any `K` out of `N` shares are required to reconstruct the original key.
-  3. Each successor receives one share.
-- **Implementation**: A robust, audited SSS library will be used. The shares themselves are encrypted with the successor's public key (if available) or a temporary key exchanged securely.
+- **JWT access tokens**: Short-lived (default 1 hour), used for API authentication.
+- **Refresh tokens**: Longer-lived (default 7 days), used to obtain new access tokens.
+- **Server-side session tracking**: Each JWT is associated with a database session record. Token validity is checked against the session table on each request.
+- Sessions can be individually or bulk-invalidated by the user.
 
-## 4. Authentication and Access Control
+### 4.3 Account Lockout
 
-### 4.1 User Authentication
+- Failed login attempts are tracked per user.
+- After a configurable number of failures, the account is temporarily locked with exponential backoff.
+- Lockout status is stored server-side and can be cleared by an admin.
 
-- **Password Hashing**: User passwords are never stored in plaintext. Instead, they are hashed using a strong, slow hashing algorithm (e.g., Argon2, bcrypt) with a unique salt for each user.
-- **Multi-Factor Authentication (MFA)**:
-  - **TOTP (Time-based One-Time Password)**: Users can enable TOTP using authenticator apps.
-  - **WebAuthn (FIDO2)**: Support for hardware security keys (e.g., YubiKey, Ledger) for strong, phishing-resistant authentication.
-- **Session Management**:
-  - **JWT (JSON Web Tokens)**: Used for stateless authentication. Tokens are short-lived and refreshed securely.
-  - **Refresh Tokens**: Long-lived refresh tokens are stored securely (e.g., HTTP-only cookies) and used to obtain new access tokens.
-- **Rate Limiting**: Implemented at the API Gateway and individual service levels to prevent brute-force attacks and DDoS.
+### 4.4 Rate Limiting
 
-### 4.2 Authorization
+- Auth endpoints: 5 requests per 15-minute window
+- Validation endpoints: 20 requests per 5-minute window
+- General API: 100 requests per 15-minute window
+- Implemented via `express-rate-limit` backed by Redis.
 
-- **Role-Based Access Control (RBAC)**: Users are assigned roles (e.g., `user`, `admin`, `successor`) with specific permissions.
-- **Granular Permissions**: Access to vault entries is tied to the user ID and encryption keys. Successors only gain access after the dead man's switch is triggered and they provide their key shares.
+## 5. Input Validation and Sanitization
 
-## 5. Data Security
+- Request bodies are validated using **Zod** schemas (`apps/api/src/validation/schemas/`).
+- Input is sanitized against XSS using DOMPurify (`isomorphic-dompurify`).
+- Content-Type validation middleware rejects non-JSON requests on API endpoints.
+- Request IDs are attached to all requests for audit trail correlation.
 
-### 5.1 Data at Rest
+## 6. Error Handling
 
-- **Database Encryption**: PostgreSQL data at rest will be encrypted using native database encryption features (e.g., `pgcrypto` for specific columns, or transparent data encryption at the volume level).
-- **Object Storage**: Encrypted blobs (vault entries, files) stored in object storage (e.g., AWS S3) will utilize server-side encryption with customer-provided keys (SSE-C) or KMS-managed keys (SSE-KMS).
+- Custom error hierarchy (`AppError`, `AuthenticationError`, `ValidationError`, etc.) ensures consistent error responses.
+- Production error responses never expose stack traces or internal details.
+- Structured logging via Pino with PII redaction (authorization headers, passwords, tokens are redacted from logs).
 
-### 5.2 Data in Transit
+## 7. Infrastructure Security
 
-- **TLS 1.3**: All communication between clients and servers, and between microservices, will be encrypted using TLS 1.3.
-- **Strict HSTS**: HTTP Strict Transport Security (HSTS) will be enforced to prevent downgrade attacks.
-
-### 5.3 Data Integrity
-
-- **Hashing**: Cryptographic hashes (e.g., SHA-256) are used to verify the integrity of data, especially for audit logs and file uploads.
-- **Digital Signatures**: Used for critical operations (e.g., handover confirmation by successors) to ensure authenticity and non-repudiation.
-
-## 6. Operational Security
-
-### 6.1 Secure Development Lifecycle (SDL)
-
-- **Threat Modeling**: Regular threat modeling sessions to identify and mitigate potential vulnerabilities.
-- **Code Reviews**: All code changes undergo peer review with a focus on security.
-- **Static Application Security Testing (SAST)**: Automated tools to identify common vulnerabilities in source code.
-- **Dynamic Application Security Testing (DAST)**: Automated tools to test the running application for vulnerabilities.
-
-### 6.2 Infrastructure Security
-
-- **Cloud Security**: Adherence to cloud provider (AWS/GCP) security best practices.
-- **Network Segmentation**: Microservices deployed in isolated network segments.
-- **Vulnerability Management**: Regular scanning and patching of servers and dependencies.
-- **Secrets Management**: Environment variables and sensitive configurations managed securely (e.g., Kubernetes Secrets, AWS Secrets Manager).
-
-### 6.3 Monitoring and Logging
-
-- **Comprehensive Audit Logs**: All security-relevant events (logins, data access, handover triggers) are logged with immutable timestamps and cryptographic hashes.
-- **Real-time Monitoring**: Security Information and Event Management (SIEM) system to detect and alert on suspicious activities.
-- **Intrusion Detection/Prevention Systems (IDS/IPS)**: Network and host-based systems to identify and block malicious traffic.
-
-### 6.4 Incident Response
-
-- **Incident Response Plan**: A documented plan for identifying, containing, eradicating, recovering from, and post-analyzing security incidents.
-- **Regular Drills**: Periodic testing of the incident response plan.
-
-## 7. Compliance and Audits
-
-### 7.1 Regulatory Compliance
-
-- **GDPR (General Data Protection Regulation)**: Compliance with data privacy and protection regulations for EU citizens.
-- **CCPA (California Consumer Privacy Act)**: Compliance with privacy regulations for California residents.
-- **HIPAA (Health Insurance Portability and Accountability Act)**: (If applicable, for health-related data)
-
-### 7.2 Certifications and Audits
-
-- **SOC 2 Type II**: Annual independent audit of security controls.
-- **Penetration Testing**: Regular third-party penetration tests to identify and remediate vulnerabilities.
-- **Bug Bounty Program**: Encouraging security researchers to find and report vulnerabilities.
+- **Database**: PostgreSQL with connection pooling (Kysely). Query retry logic with exponential backoff for transient failures.
+- **Cache/Queue**: Redis for session caching, rate limiting, and BullMQ job queues.
+- **Docker**: Multi-stage builds for minimal production images.
+- **Dependencies**: Dependabot monitors for vulnerable dependencies weekly.
 
 ## 8. Dead Man's Switch Security
 
-### 8.1 Inactivity Detection
+- User activity is recorded via check-ins (login, manual check-in, API activity).
+- Inactivity thresholds are user-configurable.
+- When the threshold is exceeded, a grace period begins before handover is initiated.
+- Successors must verify their identity (email verification) before receiving vault access.
+- All handover events are logged for audit purposes.
 
-- **Secure Check-ins**: User activity (logins, manual check-ins) is securely recorded and cryptographically signed to prevent tampering.
-- **Decentralized Verification**: (Future consideration) Explore blockchain or decentralized ledger technologies for immutable activity logs.
+## 9. Security Roadmap
 
-### 8.2 Handover Process
+The following features are **planned but not yet implemented**:
 
-- **Multi-Party Confirmation**: For multi-party handover, all required successors must provide their key shares and confirm the handover.
-- **Successor Verification**: Successors are verified through email, and optionally through MFA, before they can access their key shares or the encrypted data.
-- **Audit Trail**: Every step of the handover process is meticulously logged and auditable.
+- **Multi-Factor Authentication (TOTP)**: Authenticator app support for login. (Stub exists in auth flow, verification not implemented.)
+- **WebAuthn/FIDO2**: Hardware security key support (YubiKey, etc.).
+- **Role-Based Access Control**: Currently admin routes require an email allowlist; a proper role system is planned.
+- **HSTS / CSP Headers**: HTTP security headers for the web application.
+- **Argon2 Migration**: Migrating from bcrypt to Argon2id for password hashing.
+- **Encrypted Audit Logs**: Cryptographic signing of activity logs.
+- **SOC 2 / Penetration Testing**: Third-party security audits.
 
-## 9. Disclaimer
+## 10. Reporting Vulnerabilities
 
-While HandoverKey employs state-of-the-art security measures, no system is entirely immune to all forms of attack. Users are responsible for choosing strong, unique passwords and enabling multi-factor authentication. HandoverKey is designed to be a secure digital legacy platform but should not be considered a substitute for legal estate planning.
+**Do not open GitHub issues for security vulnerabilities.**
+
+Please email the maintainers directly or refer to our [Security Policy](../SECURITY.md).
 
 ---
 
-**Last Updated**: Nov 19, 2025
-**Version**: 1.0
+**Last Updated**: March 2026
+**Version**: 2.0

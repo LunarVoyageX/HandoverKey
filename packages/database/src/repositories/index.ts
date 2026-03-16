@@ -2,7 +2,6 @@ export * from "./user-repository";
 export * from "./vault-repository";
 export * from "./session-repository";
 export * from "./activity-repository";
-export * from "./activity-records-repository";
 export * from "./inactivity-settings-repository";
 export * from "./handover-process-repository";
 export * from "./successor-repository";

@@ -10,10 +10,11 @@ import {
   ReminderType,
 } from "@handoverkey/shared/src/types/dead-mans-switch";
 import { NotificationService } from "./notification-service";
+import { logger } from "../config/logger";
+
+const GRACE_PERIOD_HOURS = parseInt(process.env.GRACE_PERIOD_HOURS || "48", 10);
 
 export class HandoverOrchestrator implements IHandoverOrchestrator {
-  private static readonly GRACE_PERIOD_HOURS = 48;
-
   private static getHandoverProcessRepository(): HandoverProcessRepository {
     const dbClient = getDatabaseClient();
     return new HandoverProcessRepository(dbClient.getKysely());
@@ -32,18 +33,16 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
       // Check if there's already an active handover process
       const existingHandover = await this.getActiveHandover(userId);
       if (existingHandover) {
-        console.log(`Handover already active for user ${userId}`);
         return existingHandover;
       }
 
       const now = new Date();
       const gracePeriodEnds = new Date(
-        now.getTime() +
-          HandoverOrchestrator.GRACE_PERIOD_HOURS * 60 * 60 * 1000,
+        now.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000,
       );
 
       const metadata = {
-        gracePeriodHours: HandoverOrchestrator.GRACE_PERIOD_HOURS,
+        gracePeriodHours: GRACE_PERIOD_HOURS,
         initiatedBy: "inactivity_monitor",
         reason: "inactivity_threshold_exceeded",
       };
@@ -59,7 +58,7 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
 
       const handoverProcess = this.mapDbToHandoverProcess(dbProcess);
 
-      console.log(
+      logger.info(
         `Handover process initiated for user ${userId}, grace period ends: ${gracePeriodEnds.toISOString()}`,
       );
 
@@ -74,7 +73,10 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error(`Failed to initiate handover for user ${userId}:`, error);
+        logger.error(
+          { err: error },
+          `Failed to initiate handover for user ${userId}`,
+        );
       }
       throw error;
     }
@@ -89,7 +91,7 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
       const activeProcess = await handoverRepo.findActiveByUserId(userId);
 
       if (!activeProcess) {
-        console.log(`No active handover process found for user ${userId}`);
+        logger.info(`No active handover process found for user ${userId}`);
         return;
       }
 
@@ -99,7 +101,7 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
         cancellation_reason: reason,
       });
 
-      console.log(`Handover process cancelled for user ${userId}: ${reason}`);
+      logger.info(`Handover process cancelled for user ${userId}: ${reason}`);
 
       // Send cancellation notifications to successors.
       // Note: Ideally we should only notify successors who were actually alerted,
@@ -124,16 +126,19 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
           );
         }
       } catch (notifyError) {
-        console.error(
-          "Failed to send cancellation notifications:",
-          notifyError,
+        logger.error(
+          { err: notifyError },
+          "Failed to send cancellation notifications",
         );
         // Don't fail the cancellation process itself if notification fails
       }
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error(`Failed to cancel handover for user ${userId}:`, error);
+        logger.error(
+          { err: error },
+          `Failed to cancel handover for user ${userId}`,
+        );
       }
       throw error;
     }
@@ -150,7 +155,7 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
     try {
       // TODO: Implement successor response processing
       // This will handle successor verification and consent
-      console.log(
+      logger.info(
         `Processing successor response for handover ${handoverId}, successor ${successorId}`,
       );
 
@@ -163,9 +168,9 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error(
-          `Failed to process successor response for handover ${handoverId}:`,
-          error,
+        logger.error(
+          { err: error },
+          `Failed to process successor response for handover ${handoverId}`,
         );
       }
       throw error;
@@ -181,9 +186,9 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error(
-          `Failed to get handover status for user ${userId}:`,
-          error,
+        logger.error(
+          { err: error },
+          `Failed to get handover status for user ${userId}`,
         );
       }
       return null;
@@ -199,7 +204,7 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
       const process = await handoverRepo.findById(handoverId);
 
       if (!process || process.status !== HandoverProcessStatus.GRACE_PERIOD) {
-        console.log(
+        logger.info(
           `Handover ${handoverId} is not in grace period or doesn't exist`,
         );
         return;
@@ -209,7 +214,7 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
         status: HandoverProcessStatus.AWAITING_SUCCESSORS,
       });
 
-      console.log(
+      logger.info(
         `Grace period expired for handover ${handoverId}, notifying successors`,
       );
 
@@ -229,9 +234,9 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error(
-          `Failed to process grace period expiration for handover ${handoverId}:`,
-          error,
+        logger.error(
+          { err: error },
+          `Failed to process grace period expiration for handover ${handoverId}`,
         );
       }
       throw error;
@@ -279,7 +284,10 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error("Failed to get handovers needing attention:", error);
+        logger.error(
+          { err: error },
+          "Failed to get handovers needing attention",
+        );
       }
       return [];
     }

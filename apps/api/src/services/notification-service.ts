@@ -16,6 +16,7 @@ import {
 } from "@handoverkey/shared/src/types/dead-mans-switch";
 import { createHash, randomBytes } from "crypto";
 import { emailService } from "./email-service";
+import { logger } from "../config/logger";
 
 export class NotificationService implements INotificationService {
   private static getUserRepository(): UserRepository {
@@ -101,9 +102,9 @@ export class NotificationService implements INotificationService {
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error(
-          `Failed to send ${reminderType} reminder to user ${userId}:`,
-          error,
+        logger.error(
+          { err: error },
+          `Failed to send ${reminderType} reminder to user ${userId}`,
         );
       }
 
@@ -179,9 +180,9 @@ export class NotificationService implements INotificationService {
       } catch (error) {
         // Only log errors in non-test environments
         if (process.env.NODE_ENV !== "test") {
-          console.error(
-            `Failed to send handover alert to successor ${successor.email}:`,
-            error,
+          logger.error(
+            { err: error },
+            `Failed to send handover alert to successor ${successor.email}`,
           );
         }
 
@@ -249,9 +250,9 @@ export class NotificationService implements INotificationService {
         });
       } catch (error) {
         if (process.env.NODE_ENV !== "test") {
-          console.error(
-            `Failed to send handover cancellation to successor ${successor.email}:`,
-            error,
+          logger.error(
+            { err: error },
+            `Failed to send handover cancellation to successor ${successor.email}`,
           );
         }
 
@@ -336,7 +337,7 @@ export class NotificationService implements INotificationService {
     } catch (error) {
       // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
-        console.error("Error validating check-in token:", error);
+        logger.error({ err: error }, "Error validating check-in token");
       }
       return {
         isValid: false,
@@ -378,7 +379,7 @@ export class NotificationService implements INotificationService {
         status: DeliveryStatus.SENT,
       };
     } catch (error) {
-      console.error("Failed to send notification email:", error);
+      logger.error({ err: error }, "Failed to send notification email");
       return {
         id: `failed-${Date.now()}`,
         status: DeliveryStatus.FAILED,

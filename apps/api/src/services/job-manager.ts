@@ -1,4 +1,5 @@
 import { InactivityMonitorService } from "./inactivity-monitor";
+import { logger } from "../config/logger";
 
 export class JobManager {
   private static instance: JobManager;
@@ -21,17 +22,17 @@ export class JobManager {
    */
   start(): void {
     if (this.isStarted) {
-      console.log("JobManager is already started");
+      logger.info("JobManager is already started");
       return;
     }
 
-    console.log("Starting JobManager...");
+    logger.info("Starting JobManager...");
 
     // Start the inactivity monitor
     this.inactivityMonitor.start();
 
     this.isStarted = true;
-    console.log("JobManager started successfully");
+    logger.info("JobManager started successfully");
   }
 
   /**
@@ -39,17 +40,17 @@ export class JobManager {
    */
   stop(): void {
     if (!this.isStarted) {
-      console.log("JobManager is not started");
+      logger.info("JobManager is not started");
       return;
     }
 
-    console.log("Stopping JobManager...");
+    logger.info("Stopping JobManager...");
 
     // Stop the inactivity monitor
     this.inactivityMonitor.stop();
 
     this.isStarted = false;
-    console.log("JobManager stopped successfully");
+    logger.info("JobManager stopped successfully");
   }
 
   /**
@@ -82,7 +83,7 @@ export class JobManager {
    * Manually trigger inactivity check for all users
    */
   async triggerInactivityCheck(): Promise<void> {
-    console.log("Manually triggering inactivity check...");
+    logger.info("Manually triggering inactivity check...");
     await this.inactivityMonitor.checkAllUsers();
   }
 
@@ -90,7 +91,7 @@ export class JobManager {
    * Manually trigger inactivity check for a specific user
    */
   async triggerUserInactivityCheck(userId: string): Promise<void> {
-    console.log(`Manually triggering inactivity check for user ${userId}...`);
+    logger.info(`Manually triggering inactivity check for user ${userId}...`);
     await this.inactivityMonitor.checkUserInactivity(userId);
   }
 }

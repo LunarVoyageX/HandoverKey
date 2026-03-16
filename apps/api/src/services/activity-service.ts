@@ -1,7 +1,7 @@
 import { createHmac } from "crypto";
 import {
   getDatabaseClient,
-  ActivityRecordsRepository,
+  ActivityRepository,
   InactivitySettingsRepository,
   HandoverProcessRepository,
   UserRepository,
@@ -20,9 +20,9 @@ export class ActivityService implements ActivityTracker {
     process.env.ACTIVITY_HMAC_SECRET || "default-secret-change-in-production";
   private static readonly SIGNATURE_ALGORITHM = "sha256";
 
-  private static getActivityRecordsRepository(): ActivityRecordsRepository {
+  private static getActivityRepository(): ActivityRepository {
     const dbClient = getDatabaseClient();
-    return new ActivityRecordsRepository(dbClient.getKysely());
+    return new ActivityRepository(dbClient.getKysely());
   }
 
   private static getInactivitySettingsRepository(): InactivitySettingsRepository {
@@ -65,7 +65,7 @@ export class ActivityService implements ActivityTracker {
     // Generate HMAC signature for integrity
     const signature = this.generateActivitySignature(activityData);
 
-    const activityRepo = ActivityService.getActivityRecordsRepository();
+    const activityRepo = ActivityService.getActivityRepository();
     await activityRepo.create({
       user_id: userId,
       activity_type: activityType,
@@ -88,7 +88,7 @@ export class ActivityService implements ActivityTracker {
    * Gets the most recent activity for a user across all client types
    */
   async getLastActivity(userId: string): Promise<ActivityRecord | null> {
-    const activityRepo = ActivityService.getActivityRecordsRepository();
+    const activityRepo = ActivityService.getActivityRepository();
     const dbRecord = await activityRepo.findLastActivity(userId);
 
     if (!dbRecord) {
@@ -229,19 +229,17 @@ export class ActivityService implements ActivityTracker {
     endDate?: Date,
     activityTypes?: ActivityType[],
   ): Promise<{ activities: ActivityRecord[]; total: number }> {
-    const activityRepo = ActivityService.getActivityRecordsRepository();
+    const activityRepo = ActivityService.getActivityRepository();
 
-    let dbRecords;
-    if (startDate && endDate) {
-      dbRecords = await activityRepo.findByDateRange(
-        userId,
-        startDate,
-        endDate,
-        activityTypes,
-      );
-    } else {
-      dbRecords = await activityRepo.findByUserId(userId, limit, offset);
-    }
+    const dbRecords =
+      startDate && endDate
+        ? await activityRepo.findByDateRange(
+            userId,
+            startDate,
+            endDate,
+            activityTypes as string[] | undefined,
+          )
+        : await activityRepo.findByUserId(userId, limit, offset);
 
     const activities = dbRecords.map((record) =>
       this.mapDbRecordToActivityRecord(record),

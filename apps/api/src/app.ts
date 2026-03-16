@@ -3,7 +3,12 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
+import { validateEnv } from "./config/env";
 import { getDatabaseClient } from "@handoverkey/database";
+
+if (process.env.NODE_ENV !== "test") {
+  validateEnv();
+}
 
 const app = express();
 app.set("trust proxy", 1);
@@ -71,12 +76,22 @@ if (process.env.NODE_ENV !== "test") {
 // Request ID middleware (must be first)
 app.use(requestIdMiddleware);
 
-// CORS middleware - explicit, before any auth or other middleware
-// CORS middleware - explicit, before any auth or other middleware
+const ALLOWED_ORIGINS = (
+  process.env.CORS_ORIGINS ||
+  process.env.FRONTEND_URL ||
+  "http://localhost:5173"
+)
+  .split(",")
+  .map((o) => o.trim());
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      callback(null, true);
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
@@ -103,11 +118,11 @@ app.use(metricsMiddleware);
 app.use(rateLimiter as unknown as express.RequestHandler);
 
 // Body parsing middleware
-app.use(express.json({ limit: "50mb" }) as express.RequestHandler);
+app.use(express.json({ limit: "1mb" }) as express.RequestHandler);
 app.use(
   express.urlencoded({
     extended: true,
-    limit: "50mb",
+    limit: "1mb",
   }) as express.RequestHandler,
 );
 app.use(cookieParser() as unknown as express.RequestHandler);

@@ -109,11 +109,10 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe("Auth flows", () => {
-  it("logs in and stores token", async () => {
+  it("logs in and sets user state (cookie-based auth)", async () => {
     (api.post as vi.Mock).mockResolvedValue({
       data: {
         user: { id: "user-1", email: "test@example.com", salt: "mock-salt" },
-        tokens: { accessToken: "token-123", refreshToken: "refresh-123" },
       },
     });
 
@@ -131,7 +130,7 @@ describe("Auth flows", () => {
     });
 
     await waitFor(() => {
-      expect(localStorage.getItem("token")).toBe("token-123");
+      expect(api.post).toHaveBeenCalledWith("/auth/login", expect.any(Object));
     });
   });
 
