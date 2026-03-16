@@ -15,8 +15,9 @@ COPY packages/crypto/package.json ./packages/crypto/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/database/package.json ./packages/database/
 
-# Install dependencies
-RUN npm install
+# Install ALL dependencies (including devDependencies for TypeScript build)
+# --include=dev is needed because Coolify may inject NODE_ENV=production
+RUN npm install --include=dev
 
 # Copy source code
 COPY apps/api ./apps/api

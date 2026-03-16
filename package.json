@@ -19,7 +19,7 @@
     "docker:down": "docker-compose down",
     "db:migrate": "cd apps/api && npm run migrate",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
