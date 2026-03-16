@@ -12,6 +12,22 @@ import {
   EmailVerificationRequiredError,
 } from "../errors";
 
+function getCookieDomain(): string | undefined {
+  return process.env.COOKIE_DOMAIN || undefined;
+}
+
+function cookieOpts(maxAgeMs: number, path?: string) {
+  const isProd = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: (isProd ? "none" : "strict") as "none" | "strict",
+    ...(isProd && { domain: getCookieDomain() }),
+    ...(path && { path }),
+    maxAge: maxAgeMs,
+  };
+}
+
 export class AuthController {
   static async register(
     req: Request,
@@ -147,23 +163,12 @@ export class AuthController {
       );
       const refreshToken = JWTManager.generateRefreshToken(user.id, user.email);
 
-      // Set secure cookie options
-      const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict" as const,
-        maxAge: 60 * 60 * 1000, // 1 hour
-      };
-
-      res.cookie("accessToken", accessToken, cookieOptions);
-
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict" as const,
-        path: "/api/v1/auth/refresh",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      res.cookie("accessToken", accessToken, cookieOpts(60 * 60 * 1000));
+      res.cookie(
+        "refreshToken",
+        refreshToken,
+        cookieOpts(7 * 24 * 60 * 60 * 1000, "/api/v1/auth/refresh"),
+      );
 
       res.json({
         message: "Login successful",
@@ -251,8 +256,8 @@ export class AuthController {
       // Log logout (req.user is validated by SessionService)
       await UserService.logActivity(req.user!.userId, "USER_LOGOUT", req.ip);
 
-      res.clearCookie("accessToken");
-      res.clearCookie("refreshToken", { path: "/api/v1/auth/refresh" });
+      res.clearCookie("accessToken", cookieOpts(0));
+      res.clearCookie("refreshToken", cookieOpts(0, "/api/v1/auth/refresh"));
 
       res.json({ message: "Logout successful" });
     } catch (error) {
@@ -292,20 +297,12 @@ export class AuthController {
         user.email,
       );
 
-      res.cookie("accessToken", newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict" as const,
-        maxAge: 60 * 60 * 1000,
-      });
-
-      res.cookie("refreshToken", newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict" as const,
-        path: "/api/v1/auth/refresh",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie("accessToken", newAccessToken, cookieOpts(60 * 60 * 1000));
+      res.cookie(
+        "refreshToken",
+        newRefreshToken,
+        cookieOpts(7 * 24 * 60 * 60 * 1000, "/api/v1/auth/refresh"),
+      );
 
       res.json({ message: "Token refreshed successfully" });
     } catch (error) {
@@ -405,7 +402,7 @@ export class AuthController {
         });
       }
 
-      res.clearCookie("accessToken");
+      res.clearCookie("accessToken", cookieOpts(0));
       res.json({ message: "Account deleted successfully" });
     } catch (error) {
       next(error);
