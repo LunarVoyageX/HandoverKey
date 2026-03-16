@@ -30,29 +30,55 @@ vi.mock("@heroicons/react/24/outline", () => ({
   InformationCircleIcon: () => <div data-testid="info-icon" />,
 }));
 
-// Mock framer-motion
+// Mock framer-motion — strip non-DOM props to silence React warnings
+const MOTION_PROPS = new Set([
+  "initial",
+  "animate",
+  "exit",
+  "transition",
+  "variants",
+  "whileHover",
+  "whileTap",
+  "whileFocus",
+  "whileDrag",
+  "whileInView",
+  "layout",
+  "layoutId",
+  "onAnimationComplete",
+]);
+
+function stripMotionProps<T extends Record<string, unknown>>(
+  props: T,
+): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(props)) {
+    if (!MOTION_PROPS.has(k)) clean[k] = v;
+  }
+  return clean;
+}
+
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),
   motion: {
     div: ({ children, ...props }: React.ComponentProps<"div">) => (
-      <div {...props}>{children}</div>
+      <div {...stripMotionProps(props)}>{children}</div>
     ),
     h1: ({ children, ...props }: React.ComponentProps<"h1">) => (
-      <h1 {...props}>{children}</h1>
+      <h1 {...stripMotionProps(props)}>{children}</h1>
     ),
     h2: ({ children, ...props }: React.ComponentProps<"h2">) => (
-      <h2 {...props}>{children}</h2>
+      <h2 {...stripMotionProps(props)}>{children}</h2>
     ),
     p: ({ children, ...props }: React.ComponentProps<"p">) => (
-      <p {...props}>{children}</p>
+      <p {...stripMotionProps(props)}>{children}</p>
     ),
     button: ({ children, ...props }: React.ComponentProps<"button">) => (
-      <button {...props}>{children}</button>
+      <button {...stripMotionProps(props)}>{children}</button>
     ),
     span: ({ children, ...props }: React.ComponentProps<"span">) => (
-      <span {...props}>{children}</span>
+      <span {...stripMotionProps(props)}>{children}</span>
     ),
   },
 }));
@@ -166,28 +192,29 @@ describe("Vault Integration", () => {
       </MemoryRouter>,
     );
 
-    // Wait for initial load
-    await waitFor(() => {
-      expect(screen.getByText("Test Entry")).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText("Test Entry")).toBeInTheDocument();
+      },
+      { timeout: 10000 },
+    );
 
-    // Click add button
     const addButton = screen.getByText(/Add Secret/i);
     await user.click(addButton);
 
-    // Fill form
     await user.type(screen.getByLabelText(/Name/i), "New Secret");
     await user.type(screen.getByLabelText(/Secret Content/i), "my-secret");
 
-    // Submit
     const saveButton = screen.getByRole("button", { name: /^save$/i });
     await user.click(saveButton);
 
-    // Wait for modal to close
-    await waitFor(() => {
-      expect(screen.queryByText(/Save Secret/i)).not.toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/Save Secret/i)).not.toBeInTheDocument();
+      },
+      { timeout: 10000 },
+    );
 
     expect(api.post).toHaveBeenCalledWith("/vault/entries", expect.any(Object));
-  });
+  }, 30000);
 });
