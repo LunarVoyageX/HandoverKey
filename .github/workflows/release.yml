@@ -1,57 +1,16 @@
-name: PR Pipeline
+name: Release
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    tags:
+      - "v*"
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 jobs:
-  lint:
-    name: Lint & Format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - run: npm ci
-
-      - name: Check formatting
-        run: npx prettier --check "**/*.{ts,tsx,js,jsx,json,md}"
-
-      - name: Lint
-        run: npm run lint
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - name: Cache Turbo
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-turbo-
-
-      - run: npm ci
-      - run: npm run build
-
-  test:
-    name: Test
-    needs: build
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
 
     services:
@@ -99,14 +58,8 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-      - name: Cache Turbo
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-turbo-
-
       - run: npm ci
+      - run: npm run lint
       - run: npm run build
 
       - name: Run DB migrations
@@ -115,5 +68,31 @@ jobs:
       - name: Run tests
         run: npm run test
 
-      - name: Crypto coverage
-        run: npm run test:coverage -w @handoverkey/crypto
+  docker:
+    name: Docker Build
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t handoverkey/api:${{ github.ref_name }} .
+
+      - name: Build Web image
+        run: docker build -f apps/web/Dockerfile -t handoverkey/web:${{ github.ref_name }} .
+
+  release:
+    name: GitHub Release
+    needs: [validate, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

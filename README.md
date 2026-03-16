@@ -4,13 +4,16 @@
 
 **Zero-Knowledge Digital Legacy Platform & Dead Man's Switch**
 
+[![CI](https://github.com/HandoverKey/HandoverKey/actions/workflows/ci.yml/badge.svg)](https://github.com/HandoverKey/HandoverKey/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/handoverkey/handoverkey/releases)
-[![CI](https://github.com/HandoverKey/HandoverKey/actions/workflows/pr.yml/badge.svg)](https://github.com/HandoverKey/HandoverKey/actions/workflows/pr.yml)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/handoverkey/handoverkey/releases)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+[![Code Style: Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Security Policy](https://img.shields.io/badge/security-policy-blueviolet.svg)](SECURITY.md)
 
-[Features](#key-features) • [Architecture](#architecture) • [Getting Started](#getting-started) • [Documentation](#documentation) • [Contributing](#contributing)
+[Features](#key-features) • [Quick Start](#quick-start) • [Architecture](#architecture) • [Documentation](#documentation) • [Contributing](#contributing)
 
 </div>
 
@@ -74,6 +77,20 @@ graph TD
         Shared["<b>packages/shared</b><br/>Shared Utils<br/><i>Types, Constants</i>"]
     end
 ```
+
+---
+
+## Quick Start
+
+Get running in 60 seconds with Docker:
+
+```bash
+git clone https://github.com/handoverkey/handoverkey.git && cd handoverkey
+cp apps/api/.env.example apps/api/.env    # then set JWT_SECRET
+npm install && npm run docker:up && npm run db:migrate && npm run build && npm run dev
+```
+
+Web App: `http://localhost:5173` | API: `http://localhost:3001`
 
 ---
 
@@ -180,7 +197,9 @@ Please email security@handoverkey.com (placeholder) or refer to our [Security Po
 
 - [**Architecture Guide**](docs/architecture.md): System design, component interaction, and data flow.
 - [**API Reference**](docs/api.md): Endpoints, request/response schemas, and authentication.
-- [**Deployment**](docs/deployment.md): Docker, Kubernetes, and cloud deployment strategies.
+- [**Testing Guide**](docs/testing.md): Test strategy, running tests, and writing new tests.
+- [**Deployment**](docs/deployment.md): Docker and cloud deployment strategies.
+- [**Security Model**](docs/security.md): Zero-knowledge architecture and encryption details.
 - [**Contributing**](CONTRIBUTING.md): Guidelines for code style, PRs, and development workflow.
 
 ---
@@ -200,6 +219,18 @@ Contributions are what make the open-source community such an amazing place to l
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## Troubleshooting
+
+| Problem                               | Solution                                                                                              |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Port 5432/6379 already in use         | Stop conflicting services: `lsof -i :5432` then `kill <PID>`, or change ports in `docker-compose.yml` |
+| `npm install` fails on native modules | Ensure you have Node.js >= 22: `node -v`                                                              |
+| Docker containers won't start         | Check Docker is running: `docker info`. On Mac, open Docker Desktop first                             |
+| Database migration errors             | Ensure PostgreSQL is healthy: `npm run docker:up` then wait a few seconds before `npm run db:migrate` |
+| Tests fail with SMTP timeout          | Ensure `NODE_ENV=test` is set (uses JSON transport instead of real SMTP)                              |
 
 ---
 

@@ -1,145 +1,132 @@
 # Testing Guide
 
-Simple testing approach for HandoverKey MVP.
+Comprehensive testing strategy for HandoverKey.
 
 ## Philosophy
 
-- **Security First**: rigorous testing of encryption, authentication, and authorization
+- **Security First**: Rigorous testing of encryption, authentication, and authorization
 - **Test what matters**: Core functionality and critical user paths
-- **Reliability**: Integration tests for database and queue interactions
-- **Fast feedback**: Unit tests should run quickly, integration tests should be reliable
+- **Reliability**: Integration tests with real PostgreSQL and Redis
+- **Fast feedback**: Tests run in under 15 seconds locally
 
 ## Running Tests
 
 ```bash
-# Run all tests
-npm run test
+# Run all tests across the monorepo
+npm test
 
-# Run tests for specific package
-cd packages/api && npm test
-cd apps/web && npm test
-cd packages/shared && npm test
+# Run tests for a specific workspace
+npm test --workspace=@handoverkey/api
+npm test --workspace=@handoverkey/web
+npm test --workspace=@handoverkey/crypto
+npm test --workspace=@handoverkey/database
 
-# Lint code
+# Run with coverage
+npm run test:coverage --workspace=@handoverkey/crypto
+
+# Lint and format
 npm run lint
+npm run format
+```
+
+### Integration Tests (API)
+
+API integration tests require PostgreSQL and Redis. Start them first:
+
+```bash
+npm run docker:up
+```
+
+Then run with `NODE_ENV=test` to use the JSON email transport (avoids SMTP timeouts):
+
+```bash
+NODE_ENV=test npm test --workspace=@handoverkey/api
 ```
 
 ## Test Structure
 
-### API Tests (`packages/api/src/**/*.test.ts`)
+### API Tests (`apps/api/src/**/*.test.ts`)
 
-- Basic validation functions
-- Core business logic
-- Simple integration tests
+| File                           | Coverage                                                                           |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| `auth.test.ts`                 | Registration, login rejection (mocked)                                             |
+| `auth-full.test.ts`            | Profile, logout, refresh, resend verification, forgot password, delete account     |
+| `vault-and-successors.test.ts` | Vault CRUD with successor management                                               |
+| `vault-crud.test.ts`           | Create, get-by-id, update, soft-delete vault entries                               |
+| `handover-flow.test.ts`        | Encrypted shares, handover initiation/cancellation, grace period, successor access |
+| `sessions-activity.test.ts`    | Session listing, invalidation, activity logs, check-in, inactivity settings        |
+| `errors.test.ts`               | Custom error class hierarchy                                                       |
+| `error-handler.test.ts`        | Global error handler middleware                                                    |
+| `middleware.test.ts`           | Zod validation and input sanitization                                              |
+| `validation.test.ts`           | Email and UUID validators                                                          |
 
 ### Web Tests (`apps/web/src/**/*.test.{ts,tsx}`)
 
-- Encryption/decryption functionality
-- Critical React components
-- User interaction flows
+- App rendering and navigation
+- Auth flow (login, register) with cookie-based auth
+- Vault flow (fetch entries, add new entry)
 
-### Shared Tests (`packages/shared/src/**/*.test.ts`)
+### Package Tests
 
-- Utility functions
-- Type validation
-- Common helpers
+- **`packages/crypto`**: AES-256-GCM encrypt/decrypt, PBKDF2 key derivation, Shamir's Secret Sharing
+- **`packages/database`**: Error hierarchy, `DatabaseClient` singleton behavior
+- **`packages/shared`**: Utility functions and type validation
 
-## What We Test
+## Test Environment
 
-### Essential Tests
-
-- **Encryption/Decryption**: Core security functionality
-- **Validation**: Email, UUID, input validation
-- **Authentication**: Login/logout flows
-- **Critical Components**: Main user interfaces
-
-### What We Don't Test (Yet)
-
-- Edge cases and error scenarios
-- Performance and load testing
-- Complex integration scenarios
-- Security penetration testing
-- Browser compatibility testing
-
-## Writing Tests
-
-### Simple Test Example
-
-```typescript
-// Good: Simple, focused test
-describe("validateEmail", () => {
-  it("should validate correct emails", () => {
-    expect(validateEmail("test@example.com")).toBe(true);
-    expect(validateEmail("invalid")).toBe(false);
-  });
-});
-```
-
-### Avoid Over-Engineering
-
-```typescript
-// Bad: Over-engineered test
-describe("validateEmail - ReDoS Prevention", () => {
-  it("should handle malicious ReDoS patterns without hanging", () => {
-    const maliciousInputs = ["a@" + "a".repeat(1000) + ".com"];
-    // ... complex performance testing
-  });
-});
-
-// Good: Simple validation test
-describe("validateEmail", () => {
-  it("should validate basic email formats", () => {
-    expect(validateEmail("user@domain.com")).toBe(true);
-    expect(validateEmail("invalid")).toBe(false);
-  });
-});
-```
-
-## Test Guidelines
-
-### Do
-
-- Test the happy path first
-- Test obvious failure cases
-- Keep tests simple and readable
-- Focus on business logic
-
-### Don't
-
-- Test implementation details
-- Write complex mocks unless necessary
-- Test third-party libraries
-- Over-test edge cases in MVP
+- `NODE_ENV=test` enables JSON email transport (no real SMTP connections)
+- Rate limiters are relaxed in non-production environments
+- Integration tests create a fresh `handoverkey_test` database via the global setup script
+- Each test file manages its own database connection pool and Redis client
 
 ## CI/CD
 
-Simple GitHub Actions workflow:
+GitHub Actions runs the full test suite on every PR and push to `main`:
 
-1. Install dependencies
-2. Start Services (PostgreSQL, Redis)
-3. Run linting
-4. Build all packages
-5. Run tests
+1. **Lint & Format** (parallel) -- ESLint + Prettier check
+2. **Build** (parallel) -- TypeScript compilation for all packages
+3. **Test** (after build) -- Full test suite with PostgreSQL 16 and Redis 7 service containers
 
-We use GitHub Actions service containers to provide ephemeral database and cache instances for integration testing.
+## Writing Tests
 
-## Adding Tests
+### Integration Test Pattern
 
-When adding new features:
+```typescript
+import request from "supertest";
+import app, { appInit } from "../../app";
+import { getDatabaseClient } from "@handoverkey/database";
+import { SessionService } from "../../services/session-service";
+import { initializeRedis, closeRedis } from "../../config/redis";
 
-1. **Start simple**: Test the main functionality
-2. **Add failure cases**: Test obvious error conditions
-3. **Keep it focused**: One test per behavior
-4. **Avoid complexity**: No complex setup or teardown
+describe("Feature Integration", () => {
+  beforeAll(async () => {
+    const dbClient = getDatabaseClient();
+    await dbClient.initialize({
+      /* test DB config */
+    });
+    SessionService.initialize(dbClient);
+    await initializeRedis();
+    await appInit;
+  });
 
-## Future Testing
+  afterAll(async () => {
+    await closeRedis();
+    await getDatabaseClient().close();
+  });
 
-After MVP, we can add:
+  it("should do something", async () => {
+    const res = await request(app)
+      .post("/api/v1/endpoint")
+      .send({ key: "value" });
+    expect(res.status).toBe(200);
+  });
+});
+```
 
-- Integration tests with real database
-- E2E tests with Playwright
-- Performance testing
-- Security testing
-- Cross-browser testing
+### Guidelines
 
-For now, keep it simple and ship the MVP! 🚀
+- Test the happy path first, then obvious failure cases
+- Use `registerVerifyLogin()` helpers to avoid duplicating auth boilerplate
+- Always send `.send({})` on POST requests to set Content-Type
+- Extract tokens from `Set-Cookie` headers (httpOnly cookie auth)
+- Keep tests focused: one behavior per test

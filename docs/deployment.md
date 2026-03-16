@@ -31,43 +31,35 @@ This guide provides instructions for deploying the HandoverKey project. It cover
 3. **Prepare environment variables:**
 
    ```bash
-   cp .env.example .env
-   # Edit .env if necessary (e.g., change database credentials)
+   cp apps/api/.env.example apps/api/.env
+   cp apps/web/.env.example apps/web/.env
+   # Edit the .env files with your local configuration (JWT_SECRET is required)
    ```
 
 4. **Start Docker services (PostgreSQL, Redis):**
 
    ```bash
-   docker-compose up -d
+   npm run docker:up
    ```
 
-   This will start the PostgreSQL database and Redis cache in Docker containers.
+   This will start PostgreSQL 16 and Redis 7 in Docker containers.
 
 5. **Run database migrations:**
 
    ```bash
-   # Navigate to the database package
-   cd packages/database
-   # Run migrations (assuming a migration script exists, e.g., using TypeORM or Knex)
-   npm run migrate
-   # Or if using a custom script:
-   node dist/migrate.js
-   cd ../..
+   npm run db:migrate
    ```
 
-   _Note: The exact migration command depends on the database ORM/migration tool used in `packages/database`._
-
-6. **Start all application services:**
+6. **Build and start all services:**
 
    ```bash
-   chmod +x scripts/dev.sh
-   ./scripts/dev.sh
+   npm run build
+   npm run dev
    ```
 
-   This script will typically build and start the `api`, `web`, `mobile` (development server), and `cli` (if applicable) services.
-
-7. **Access the web application:**
-   Open your browser and navigate to `http://localhost:3000` (or the port configured in `apps/web/vite.config.ts`).
+7. **Access the application:**
+   - Web App: `http://localhost:5173`
+   - API: `http://localhost:3001`
 
 ### 2.3 Stopping Services
 
@@ -101,13 +93,10 @@ A staging environment mirrors the production environment and is used for testing
 
      ```bash
      # API service (Node.js backend)
-     docker build -t your-registry/handoverkey-api:latest -f packages/api/Dockerfile .
+     docker build -t your-registry/handoverkey-api:latest -f apps/api/Dockerfile .
 
      # Web application (React frontend)
      docker build -t your-registry/handoverkey-web:latest -f apps/web/Dockerfile .
-
-     # Core services
-     docker build -t your-registry/handoverkey-core:latest -f packages/core/Dockerfile .
      ```
 
 2. **Push Images to Registry:**
@@ -184,5 +173,5 @@ Production deployment requires robust infrastructure, security, and monitoring.
 
 ---
 
-**Last Updated**: Nov 19, 2025
-**Version**: 1.0
+**Last Updated**: March 2026
+**Version**: 1.1

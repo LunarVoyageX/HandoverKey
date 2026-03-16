@@ -96,31 +96,29 @@ If you're looking to make your first contribution, look for issues labeled `good
 3.  **Set up environment variables:**
 
     ```bash
-    cp .env.example .env
-    # You might need to adjust values in .env for your local setup
+    cp apps/api/.env.example apps/api/.env
+    cp apps/web/.env.example apps/web/.env
+    # Edit the .env files with your local configuration (JWT_SECRET is required)
     ```
 
 4.  **Start local services (PostgreSQL, Redis):**
 
     ```bash
-    docker-compose up -d
+    npm run docker:up
     ```
 
 5.  **Run database migrations:**
 
     ```bash
-    # Navigate to the database package
-    cd packages/database
-    npm run migrate # Or the specific migration command for your ORM
-    cd ../..
+    npm run db:migrate
     ```
 
-6.  **Start all development services:**
+6.  **Build all packages and start development servers:**
     ```bash
-    chmod +x scripts/dev.sh
-    ./scripts/dev.sh
+    npm run build
+    npm run dev
     ```
-    This script will typically start the API server, web application, etc.
+    This starts the API server at `http://localhost:3001` and the web app at `http://localhost:5173`.
 
 ### 3.3 Running Tests
 
