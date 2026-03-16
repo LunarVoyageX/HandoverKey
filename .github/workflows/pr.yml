@@ -88,6 +88,7 @@ jobs:
       REDIS_HOST: localhost
       REDIS_PORT: 6379
       JWT_SECRET: test-jwt-secret-for-ci-pipeline-do-not-use-in-production
+      JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-pipeline
       FRONTEND_URL: http://localhost:5173
       ENCRYPTION_KEY_SALT: test-encryption-salt-for-ci-only
 
