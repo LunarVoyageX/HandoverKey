@@ -8,7 +8,7 @@ import {
 } from "./encryption";
 import { deriveKey } from "./key-derivation";
 import { generateSalt } from "./utils";
-import { EncryptionError, DecryptionError, ValidationError } from "./errors";
+import { DecryptionError, ValidationError } from "./errors";
 
 describe("encrypt and decrypt", () => {
   let key: CryptoKey;
@@ -97,6 +97,50 @@ describe("encrypt and decrypt", () => {
     );
     await expect(encrypt("test", null as any)).rejects.toThrow(ValidationError);
   });
+
+  it("should throw ValidationError for empty Uint8Array data", async () => {
+    await expect(encrypt(new Uint8Array([]), key)).rejects.toThrow(
+      ValidationError,
+    );
+  });
+
+  it("should throw ValidationError for decrypt with invalid encrypted data", async () => {
+    await expect(decrypt(null as any, key)).rejects.toThrow(ValidationError);
+    await expect(decrypt("bad" as any, key)).rejects.toThrow(ValidationError);
+    await expect(
+      decrypt({ data: "not-uint8", iv: new Uint8Array(12) } as any, key),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      decrypt({ data: new Uint8Array([1]), iv: "not-uint8" } as any, key),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      decrypt(
+        {
+          data: new Uint8Array([]),
+          iv: new Uint8Array(12),
+          algorithm: "AES-GCM",
+        },
+        key,
+      ),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      decrypt(
+        {
+          data: new Uint8Array([1]),
+          iv: new Uint8Array([]),
+          algorithm: "AES-GCM",
+        },
+        key,
+      ),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("should throw ValidationError for decrypt with invalid key", async () => {
+    const encrypted = await encrypt("test", key);
+    await expect(decrypt(encrypted, null as any)).rejects.toThrow(
+      ValidationError,
+    );
+  });
 });
 
 describe("encryptFile and decryptFile", () => {
@@ -115,6 +159,28 @@ describe("encryptFile and decryptFile", () => {
     const decrypted = await decryptFile(encrypted, key);
 
     expect(decrypted).toEqual(fileData);
+  });
+
+  it("should throw ValidationError for invalid decryptFile inputs", async () => {
+    await expect(decryptFile(null as any, key)).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(
+      decryptFile({ data: "bad", iv: new Uint8Array(12) } as any, key),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      decryptFile({ data: new Uint8Array([1]), iv: "bad" } as any, key),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      decryptFile(
+        {
+          data: new Uint8Array([1]),
+          iv: new Uint8Array(12),
+          algorithm: "AES-GCM",
+        },
+        null as any,
+      ),
+    ).rejects.toThrow(ValidationError);
   });
 
   it("should handle large binary data", async () => {
