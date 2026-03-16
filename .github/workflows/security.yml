@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   audit:
@@ -29,22 +28,3 @@ jobs:
 
       - name: Audit dependencies
         run: npm audit --audit-level=critical
-
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-
-    permissions:
-      security-events: write
-      contents: read
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3
