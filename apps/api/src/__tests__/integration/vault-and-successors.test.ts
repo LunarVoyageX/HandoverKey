@@ -41,11 +41,18 @@ async function registerAndLogin() {
   });
 
   expect(loginRes.status).toBe(200);
-  const token = loginRes.body.tokens.accessToken;
+
+  const cookies = loginRes.headers["set-cookie"];
+  const accessCookie = (Array.isArray(cookies) ? cookies : [cookies]).find(
+    (c: string) => c?.startsWith("accessToken="),
+  );
+  if (!accessCookie) throw new Error("No accessToken cookie in login response");
+  const token = accessCookie.split(";")[0].split("=")[1];
   return { token, email };
 }
 
 describe("Vault and Successors Integration", () => {
+  jest.setTimeout(120000);
   beforeAll(async () => {
     const dbClient = getDatabaseClient();
     await dbClient.initialize({

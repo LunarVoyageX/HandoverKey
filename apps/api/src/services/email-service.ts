@@ -57,6 +57,13 @@ export class EmailService {
   constructor() {
     this.templateEngine = new TemplateEngine();
 
+    if (process.env.NODE_ENV === "test") {
+      this.transporter = nodemailer.createTransport({
+        jsonTransport: true,
+      });
+      return;
+    }
+
     const user = process.env.SMTP_USER || "";
     const pass = process.env.SMTP_PASS || "";
 

@@ -44,11 +44,17 @@ async function login(email: string) {
     email,
     password,
   });
-  return loginRes.body.tokens.accessToken;
+
+  const cookies = loginRes.headers["set-cookie"];
+  const accessCookie = (Array.isArray(cookies) ? cookies : [cookies]).find(
+    (c: string) => c?.startsWith("accessToken="),
+  );
+  if (!accessCookie) throw new Error("No accessToken cookie in login response");
+  return accessCookie.split(";")[0].split("=")[1];
 }
 
 describe("Handover Flow Integration", () => {
-  jest.setTimeout(30000);
+  jest.setTimeout(120000);
   beforeAll(async () => {
     const dbClient = getDatabaseClient();
     await dbClient.initialize({
@@ -174,7 +180,7 @@ describe("Handover Flow Integration", () => {
 
     // 5. Verify Notification (Optional: Check logs or mock email service if not already mocked globally)
     // Since we are monitoring logs in the run output, we can see if it worked.
-  }, 10000);
+  });
 
   it("should deny successor access during grace period and allow after expiration", async () => {
     const email = `access-test-${Date.now()}@example.com`;

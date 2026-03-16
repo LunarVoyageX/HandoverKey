@@ -14,7 +14,7 @@ export const rateLimiter = rateLimit({
 
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === "development" ? 1000 : 5, // limit each IP to 5 requests per windowMs (1000 in dev)
+  max: process.env.NODE_ENV === "production" ? 5 : 1000, // strict in production, relaxed in dev/test
   message: {
     error: "Too many authentication attempts, please try again later.",
   },
@@ -24,7 +24,7 @@ export const authRateLimiter = rateLimit({
 
 export const registerRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: process.env.NODE_ENV === "development" ? 1000 : 20, // limit each IP to 20 requests per windowMs (1000 in dev)
+  max: process.env.NODE_ENV === "production" ? 20 : 1000, // strict in production, relaxed in dev/test
   message: {
     error: "Too many accounts created from this IP, please try again later.",
   },
