@@ -1,6 +1,6 @@
-# HandoverKey
-
 <div align="center">
+
+# HandoverKey
 
 **Zero-Knowledge Digital Legacy Platform & Dead Man's Switch**
 
