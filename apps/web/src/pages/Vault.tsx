@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -26,6 +26,8 @@ interface VaultEntry {
   fileName?: string;
 }
 
+const MAX_VAULT_IMPORT_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
 const Vault: React.FC = () => {
   const { success, error: showError } = useToast();
   const [entries, setEntries] = useState<VaultEntry[]>([]);
@@ -34,6 +36,9 @@ const Vault: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<VaultEntry | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     fetchEntries();
@@ -149,6 +154,81 @@ const Vault: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleExportVault = async () => {
+    setExporting(true);
+    try {
+      const response = await api.get("/vault/export");
+      const payload = response.data;
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `handoverkey-vault-export-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      success("Vault export downloaded");
+    } catch {
+      showError("Failed to export vault");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (file.size > MAX_VAULT_IMPORT_FILE_SIZE_BYTES) {
+      showError("Import file is too large. Maximum supported size is 5 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const fileContent = await file.text();
+      const parsed = JSON.parse(fileContent) as
+        | { entries?: unknown; mode?: "merge" | "replace" }
+        | unknown[];
+
+      const entries = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed.entries)
+          ? parsed.entries
+          : null;
+
+      if (!entries) {
+        throw new Error("Invalid import file format");
+      }
+
+      await api.post("/vault/import", {
+        mode:
+          !Array.isArray(parsed) && parsed.mode === "replace"
+            ? "replace"
+            : "merge",
+        entries,
+      });
+
+      success("Vault import completed");
+      await fetchEntries();
+    } catch {
+      showError("Failed to import vault file");
+    } finally {
+      setImporting(false);
+      event.target.value = "";
+    }
+  };
+
   const filteredEntries = entries.filter(
     (entry) =>
       entry.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -168,6 +248,22 @@ const Vault: React.FC = () => {
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+          <button
+            type="button"
+            onClick={handleExportVault}
+            disabled={exporting}
+            className="btn btn-secondary mr-3"
+          >
+            {exporting ? "Exporting..." : "Export Vault"}
+          </button>
+          <button
+            type="button"
+            onClick={handleImportClick}
+            disabled={importing}
+            className="btn btn-secondary mr-3"
+          >
+            {importing ? "Importing..." : "Import Vault"}
+          </button>
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
@@ -286,6 +382,14 @@ const Vault: React.FC = () => {
         message="Are you sure you want to delete this secret? This action cannot be undone."
         confirmText="Delete"
         type="danger"
+      />
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        className="hidden"
+        onChange={handleImportFile}
       />
     </div>
   );

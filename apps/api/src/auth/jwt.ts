@@ -18,6 +18,9 @@ export class JWTManager {
   private static getJwtSecret(): string {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
+      if (process.env.NODE_ENV === "test") {
+        return "test-jwt-secret-please-change-in-production-32";
+      }
       throw new Error(
         "JWT_SECRET environment variable is required. Refusing to start with no secret.",
       );

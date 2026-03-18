@@ -22,10 +22,6 @@ const VerifySuccessor: React.FC = () => {
     }
 
     try {
-      // Extract successor ID from token or make a generic call
-      // Since the API expects POST /api/v1/successors/:id/verify with token in body
-      // We need to call a different endpoint or modify the API
-      // For now, let's call the verify endpoint with token as query param
       const response = await api.get(`/successors/verify?token=${token}`);
       setStatus("success");
       setMessage(
@@ -87,10 +83,10 @@ const VerifySuccessor: React.FC = () => {
               </h2>
               <p className="text-gray-600 mb-6">{message}</p>
               <Link
-                to="/login"
+                to={token ? `/successor-access?token=${token}` : "/"}
                 className="btn btn-primary inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg w-auto"
               >
-                Go to Login
+                Continue to Vault Access
               </Link>
             </div>
           )}
@@ -117,10 +113,10 @@ const VerifySuccessor: React.FC = () => {
               </h2>
               <p className="text-gray-600 mb-6">{message}</p>
               <Link
-                to="/login"
+                to="/"
                 className="btn btn-primary inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg w-auto"
               >
-                Go to Login
+                Go to Homepage
               </Link>
             </div>
           )}

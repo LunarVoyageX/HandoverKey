@@ -2,10 +2,12 @@ import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "./auth";
 import { AuthorizationError } from "../errors";
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
-  .split(",")
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
+function getAdminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 export const requireAdmin = (
   req: AuthenticatedRequest,
@@ -16,7 +18,9 @@ export const requireAdmin = (
     return next(new AuthorizationError("Admin access required"));
   }
 
-  if (ADMIN_EMAILS.length === 0) {
+  const adminEmails = getAdminEmails();
+
+  if (adminEmails.length === 0) {
     return next(
       new AuthorizationError(
         "No admin users configured. Set ADMIN_EMAILS env var.",
@@ -24,7 +28,7 @@ export const requireAdmin = (
     );
   }
 
-  if (!ADMIN_EMAILS.includes(req.user.email.toLowerCase())) {
+  if (!adminEmails.includes(req.user.email.toLowerCase())) {
     return next(new AuthorizationError("Admin access required"));
   }
 

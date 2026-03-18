@@ -89,6 +89,55 @@ export class VaultController {
     }
   }
 
+  static async exportEntries(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const exportPayload = await VaultService.exportUserVault(req.user.userId);
+      await UserService.logActivity(req.user.userId, "VAULT_EXPORTED", req.ip);
+
+      res.set(
+        "Content-Disposition",
+        `attachment; filename="handoverkey-vault-export-${new Date().toISOString().slice(0, 10)}.json"`,
+      );
+      res.json(exportPayload);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async importEntries(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const { mode, entries } = req.body;
+      const result = await VaultService.importUserVault(req.user.userId, {
+        mode,
+        entries,
+      });
+
+      await UserService.logActivity(req.user.userId, "VAULT_IMPORTED", req.ip);
+      res.json({
+        message: "Vault import completed",
+        ...result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getEntry(
     req: AuthenticatedRequest,
     res: Response,
@@ -221,7 +270,10 @@ export class VaultController {
       }
 
       // 3. Get encrypted entries
-      const entries = await VaultService.getSuccessorEntries(result.userId);
+      const entries = await VaultService.getSuccessorEntries(
+        result.userId,
+        result.successorId,
+      );
 
       // Log the access
       await UserService.logActivity(

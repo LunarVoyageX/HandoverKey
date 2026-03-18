@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HandoverKey Reminder</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: #f5f7fb;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #111827;
+    "
+  >
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding: 24px 12px">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              max-width: 600px;
+              background: #ffffff;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+            "
+          >
+            <tr>
+              <td
+                style="
+                  padding: 20px 24px;
+                  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+                  color: #ffffff;
+                  font-size: 20px;
+                  font-weight: 700;
+                "
+              >
+                {{heading}}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; line-height: 1.55; font-size: 15px">
+                <p style="margin: 0 0 16px 0">{{message}}</p>
+                <p style="margin: 0 0 16px 0">
+                  Use the secure check-in link to reset your inactivity timer:
+                </p>
+                <p style="margin: 0 0 20px 0">
+                  <a
+                    href="{{checkInLink}}"
+                    style="
+                      display: inline-block;
+                      padding: 10px 16px;
+                      border-radius: 8px;
+                      text-decoration: none;
+                      color: #ffffff;
+                      background: #2563eb;
+                      font-weight: 600;
+                    "
+                    >Check In Securely</a
+                  >
+                </p>
+                <p style="margin: 0">
+                  Or log in directly:
+                  <a href="{{dashboardLink}}" style="color: #2563eb">{{
+                    dashboardLink
+                  }}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  border-top: 1px solid #e5e7eb;
+                  padding: 16px 24px;
+                  font-size: 12px;
+                  color: #6b7280;
+                "
+              >
+                HandoverKey &copy; {{year}}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

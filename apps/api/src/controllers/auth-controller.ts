@@ -94,12 +94,13 @@ export class AuthController {
   ): Promise<void> {
     try {
       // Data is already validated and sanitized by Zod middleware
-      const { email, password, twoFactorCode } = req.body;
+      const { email, password, twoFactorCode, recoveryCode } = req.body;
 
       const login: UserLogin = {
         email,
         password,
         twoFactorCode,
+        recoveryCode,
       };
 
       // First, check if user exists to get userId for lockout check
@@ -134,14 +135,13 @@ export class AuthController {
 
       // Secure 2FA check
       if (user.twoFactorEnabled === true) {
-        // 2FA is required - code is already validated by Zod middleware
-        if (!twoFactorCode) {
-          throw new AuthenticationError("Two-factor authentication required");
-        }
-
-        // TODO: Add actual 2FA code verification here
-        // For now, we require the code to be present and properly formatted
-        // This should be implemented with proper TOTP verification
+        await UserService.verifyTwoFactorChallenge({
+          userId: user.id,
+          twoFactorSecret: user.twoFactorSecret,
+          twoFactorRecoveryCodes: user.twoFactorRecoveryCodes,
+          twoFactorCode,
+          recoveryCode,
+        });
       }
 
       // Clear failed login attempts on successful login
@@ -151,6 +151,15 @@ export class AuthController {
 
       // Log successful login
       await UserService.logActivity(user.id, "USER_LOGIN", req.ip);
+
+      // If the user checks in by logging in during grace period, cancel handover.
+      const { HandoverOrchestrator } =
+        await import("../services/handover-orchestrator");
+      const orchestrator = new HandoverOrchestrator();
+      await orchestrator.cancelHandover(
+        user.id,
+        "User activity detected: successful login",
+      );
 
       // Generate tokens with session tracking
       const { token: accessToken } = await JWTManager.generateAccessToken(
@@ -232,6 +241,94 @@ export class AuthController {
       }
 
       // Pass error to global error handler
+      next(error);
+    }
+  }
+
+  static async setupTwoFactor(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const isAuthenticated = await SessionService.isAuthenticated(req);
+      if (!isAuthenticated) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const setup = await UserService.createTwoFactorSetup(req.user!.userId);
+      await UserService.logActivity(
+        req.user!.userId,
+        "TWO_FACTOR_SETUP_INITIATED",
+        req.ip,
+      );
+
+      res.json({
+        message: "Two-factor setup generated. Verify a code to enable it.",
+        qrCodeDataUrl: setup.qrCodeDataUrl,
+        otpauthUrl: setup.otpauthUrl,
+        recoveryCodes: setup.recoveryCodes,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async enableTwoFactor(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const isAuthenticated = await SessionService.isAuthenticated(req);
+      if (!isAuthenticated) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const { token } = req.body;
+      await UserService.enableTwoFactor(req.user!.userId, token);
+      await UserService.logActivity(
+        req.user!.userId,
+        "TWO_FACTOR_ENABLED",
+        req.ip,
+      );
+
+      res.json({
+        message: "Two-factor authentication enabled successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async disableTwoFactor(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const isAuthenticated = await SessionService.isAuthenticated(req);
+      if (!isAuthenticated) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const { currentPassword, token, recoveryCode } = req.body;
+      await UserService.disableTwoFactor(
+        req.user!.userId,
+        currentPassword,
+        token,
+        recoveryCode,
+      );
+      await UserService.logActivity(
+        req.user!.userId,
+        "TWO_FACTOR_DISABLED",
+        req.ip,
+      );
+
+      res.json({
+        message: "Two-factor authentication disabled successfully",
+      });
+    } catch (error) {
       next(error);
     }
   }
@@ -339,6 +436,81 @@ export class AuthController {
           createdAt: user.createdAt,
           salt: Buffer.from(user.salt).toString("base64"),
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateProfile(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const isAuthenticated = await SessionService.isAuthenticated(req);
+      if (!isAuthenticated) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const { name } = req.body;
+      const updatedUser = await UserService.updateProfile(
+        req.user!.userId,
+        name,
+      );
+      await UserService.logActivity(
+        req.user!.userId,
+        "PROFILE_UPDATED",
+        req.ip,
+      );
+
+      res.json({
+        message: "Profile updated successfully",
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          twoFactorEnabled: updatedUser.twoFactorEnabled,
+          lastActivity: updatedUser.lastActivity,
+          createdAt: updatedUser.createdAt,
+          salt: Buffer.from(updatedUser.salt).toString("base64"),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async changePassword(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const isAuthenticated = await SessionService.isAuthenticated(req);
+      if (!isAuthenticated) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const { currentPassword, newPassword, newSalt, reEncryptedEntries } =
+        req.body;
+
+      await UserService.changePasswordAndReEncryptVault(
+        req.user!.userId,
+        currentPassword,
+        newPassword,
+        newSalt,
+        reEncryptedEntries,
+      );
+
+      // Invalidate all sessions after password change.
+      await SessionService.invalidateAllUserSessions(req.user!.userId);
+      res.clearCookie("accessToken", cookieOpts(0));
+      res.clearCookie("refreshToken", cookieOpts(0, "/api/v1/auth/refresh"));
+
+      res.json({
+        message:
+          "Password changed successfully. Please sign in again on this device.",
       });
     } catch (error) {
       next(error);

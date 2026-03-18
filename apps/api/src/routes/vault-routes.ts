@@ -9,6 +9,7 @@ import {
   UpdateVaultEntrySchema,
   VaultQuerySchema,
   VaultEntryIdSchema,
+  VaultImportSchema,
 } from "../validation/schemas";
 
 const router = Router();
@@ -32,6 +33,16 @@ router.get(
   "/entries",
   validateRequest(VaultQuerySchema, "query"),
   VaultController.getEntries,
+);
+
+// Export encrypted vault entries as a JSON backup payload
+router.get("/export", VaultController.exportEntries);
+
+// Import encrypted vault entries from a JSON payload
+router.post(
+  "/import",
+  validateRequest(VaultImportSchema, "body"),
+  VaultController.importEntries,
 );
 
 // Get single vault entry

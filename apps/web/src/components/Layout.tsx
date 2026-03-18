@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { Dialog, Transition } from "@headlessui/react";
 import {
@@ -8,23 +8,54 @@ import {
   LockClosedIcon,
   Cog6ToothIcon,
   UserGroupIcon,
+  ComputerDesktopIcon,
+  ClipboardDocumentListIcon,
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
+import { realtimeClient } from "../services/realtime";
 import clsx from "clsx";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
   { name: "Vault", href: "/vault", icon: LockClosedIcon },
   { name: "Successors", href: "/successors", icon: UserGroupIcon },
+  { name: "Activity", href: "/activity", icon: ClipboardDocumentListIcon },
+  { name: "Sessions", href: "/sessions", icon: ComputerDesktopIcon },
+  { name: "Admin", href: "/admin", icon: ShieldCheckIcon },
   { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
 ];
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { logout, user } = useAuth();
+  const { success } = useToast();
   const location = useLocation();
+
+  useEffect(() => {
+    const unsubReminder = realtimeClient.subscribe(
+      "notification.reminder_sent",
+      (payload) => {
+        const reminderType = String(payload.reminderType || "activity");
+        success(`Realtime alert: ${reminderType.replaceAll("_", " ")}`);
+      },
+    );
+
+    const unsubHandover = realtimeClient.subscribe(
+      "handover.status_changed",
+      (payload) => {
+        const status = String(payload.status || "updated").replaceAll("_", " ");
+        success(`Handover status updated: ${status}`);
+      },
+    );
+
+    return () => {
+      unsubReminder();
+      unsubHandover();
+    };
+  }, [success]);
 
   return (
     <>

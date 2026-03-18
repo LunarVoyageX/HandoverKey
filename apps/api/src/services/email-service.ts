@@ -301,6 +301,13 @@ export class EmailService {
       throw error;
     }
   }
+
+  renderTemplate(
+    templateName: string,
+    variables: Record<string, string>,
+  ): string {
+    return this.templateEngine.render(templateName, variables);
+  }
 }
 
 export const emailService = new EmailService();

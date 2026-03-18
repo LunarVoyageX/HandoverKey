@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
+import React from "react";
 import App from "../../App";
 
 // Mock Heroicons with all used components
@@ -16,6 +17,8 @@ vi.mock("@heroicons/react/24/outline", () => ({
   XMarkIcon: () => <div data-testid="xmark-icon" />,
   HomeIcon: () => <div data-testid="home-icon" />,
   Cog6ToothIcon: () => <div data-testid="cog-icon" />,
+  ComputerDesktopIcon: () => <div data-testid="desktop-icon" />,
+  ClipboardDocumentListIcon: () => <div data-testid="clipboard-icon" />,
   ArrowRightOnRectangleIcon: () => <div data-testid="logout-icon" />,
   ExclamationTriangleIcon: () => <div data-testid="warning-icon" />,
   DocumentIcon: () => <div data-testid="document-icon" />,

@@ -263,6 +263,7 @@ export interface NotificationService {
       name: string | null;
       email: string;
       encrypted_share?: string | null;
+      verification_token?: string | null;
     }[],
   ): Promise<NotificationResult[]>;
   generateCheckInLink(userId: string, expiresIn: number): Promise<string>;

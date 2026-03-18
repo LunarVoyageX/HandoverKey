@@ -157,3 +157,51 @@ export const VaultQuerySchema = z.object({
 export const VaultEntryIdSchema = z.object({
   id: z.string().uuid("Invalid vault entry ID"),
 });
+
+/**
+ * Schema for vault import payload
+ */
+export const VaultImportEntrySchema = z.object({
+  id: z.string().uuid("Invalid vault entry ID").optional(),
+  encryptedData: z
+    .string()
+    .min(1, "Encrypted data is required")
+    .max(52428800, "Encrypted data cannot exceed 50MB")
+    .regex(base64Regex, "Encrypted data must be valid base64"),
+  iv: z
+    .string()
+    .min(1, "IV is required")
+    .regex(base64Regex, "IV must be valid base64"),
+  salt: z
+    .string()
+    .min(1, "Salt must be valid base64")
+    .regex(base64Regex, "Salt must be valid base64")
+    .optional(),
+  algorithm: z
+    .literal("AES-GCM")
+    .or(z.literal("AES-256-GCM"))
+    .default("AES-GCM"),
+  category: z
+    .string()
+    .max(100, "Category must be less than 100 characters")
+    .trim()
+    .optional(),
+  tags: z
+    .array(
+      z
+        .string()
+        .min(1, "Tag cannot be empty")
+        .max(50, "Tag must be less than 50 characters")
+        .trim(),
+    )
+    .max(10, "Maximum 10 tags allowed")
+    .optional(),
+});
+
+export const VaultImportSchema = z.object({
+  mode: z.enum(["merge", "replace"]).default("merge"),
+  entries: z
+    .array(VaultImportEntrySchema)
+    .min(1, "At least one entry is required")
+    .max(5000, "Cannot import more than 5000 entries at once"),
+});

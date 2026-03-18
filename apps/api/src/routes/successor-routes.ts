@@ -8,6 +8,7 @@ import {
   VerifySuccessorSchema,
   SuccessorIdSchema,
   UpdateSharesSchema,
+  UpdateAssignedVaultEntriesSchema,
 } from "../validation/schemas";
 
 const router = Router();
@@ -41,6 +42,29 @@ router.post(
  * GET /api/v1/successors
  */
 router.get("/", SuccessorController.getSuccessors);
+
+/**
+ * Get assigned vault entries for a successor
+ * GET /api/v1/successors/:id/assigned-entries
+ */
+router.get(
+  "/:id/assigned-entries",
+  validateRequest(SuccessorIdSchema, "params"),
+  SuccessorController.getAssignedVaultEntries,
+);
+
+/**
+ * Update assigned vault entries for a successor
+ * PUT /api/v1/successors/:id/assigned-entries
+ */
+router.put(
+  "/:id/assigned-entries",
+  validateMultiple({
+    params: SuccessorIdSchema,
+    body: UpdateAssignedVaultEntriesSchema,
+  }),
+  SuccessorController.updateAssignedVaultEntries,
+);
 
 /**
  * Get a single successor

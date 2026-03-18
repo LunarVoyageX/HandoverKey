@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const base64Regex = /^[A-Za-z0-9+/]+=*$/;
+
 /**
  * Schema for user registration
  */
@@ -41,6 +43,13 @@ export const LoginSchema = z.object({
   twoFactorCode: z
     .string()
     .regex(/^\d{6}$/, "Two-factor code must be 6 digits")
+    .optional(),
+  recoveryCode: z
+    .string()
+    .regex(
+      /^[A-F0-9]{6}-[A-F0-9]{6}$/,
+      "Recovery code must be in format XXXXXX-XXXXXX",
+    )
     .optional(),
 });
 
@@ -102,4 +111,99 @@ export const PasswordChangeSchema = z
   .refine((data) => data.currentPassword !== data.newPassword, {
     message: "New password must be different from current password",
     path: ["newPassword"],
+  });
+
+/**
+ * Schema for profile update (authenticated user)
+ */
+export const UpdateProfileSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters long")
+    .max(100, "Name must be less than 100 characters")
+    .trim(),
+});
+
+/**
+ * Schema for vault entry re-encryption payload during password change
+ */
+const ReEncryptedVaultEntrySchema = z.object({
+  id: z.string().uuid("Invalid vault entry ID"),
+  encryptedData: z
+    .string()
+    .min(1, "Encrypted data is required")
+    .regex(base64Regex, "Encrypted data must be valid base64"),
+  iv: z
+    .string()
+    .min(1, "IV is required")
+    .regex(base64Regex, "IV must be valid base64")
+    .length(16, "IV must be 16 characters (12 bytes base64)"),
+  salt: z
+    .string()
+    .min(1, "Salt is required")
+    .regex(base64Regex, "Salt must be valid base64"),
+  algorithm: z.literal("AES-GCM").or(z.literal("AES-256-GCM")),
+  category: z.string().max(100).trim().optional(),
+  tags: z.array(z.string().max(50).trim()).max(10).optional(),
+});
+
+/**
+ * Schema for authenticated password change + vault re-encryption
+ */
+export const ChangePasswordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(12, "Current password is required")
+      .max(256),
+    newPassword: z.string().min(12, "New password is required").max(256),
+    confirmPassword: z.string().min(12, "Password confirmation is required"),
+    newSalt: z
+      .string()
+      .min(1, "New encryption salt is required")
+      .regex(base64Regex, "New salt must be valid base64"),
+    reEncryptedEntries: z.array(ReEncryptedVaultEntrySchema),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Password confirmation does not match new password",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from current password",
+    path: ["newPassword"],
+  });
+
+/**
+ * Schema for two-factor setup request
+ */
+export const TwoFactorSetupSchema = z.object({}).optional();
+
+/**
+ * Schema for two-factor enable request
+ */
+export const TwoFactorEnableSchema = z.object({
+  token: z.string().regex(/^\d{6}$/, "Two-factor code must be 6 digits"),
+});
+
+/**
+ * Schema for two-factor disable request
+ */
+export const TwoFactorDisableSchema = z
+  .object({
+    currentPassword: z.string().min(12, "Current password is required"),
+    token: z
+      .string()
+      .regex(/^\d{6}$/, "Two-factor code must be 6 digits")
+      .optional(),
+    recoveryCode: z
+      .string()
+      .regex(
+        /^[A-F0-9]{6}-[A-F0-9]{6}$/,
+        "Recovery code must be in format XXXXXX-XXXXXX",
+      )
+      .optional(),
+  })
+  .refine((data) => data.token || data.recoveryCode, {
+    message: "Either two-factor code or recovery code is required",
+    path: ["token"],
   });

@@ -53,6 +53,17 @@ export const UpdateSharesSchema = z.object({
 });
 
 /**
+ * Schema for assigning vault entries to a successor
+ */
+export const UpdateAssignedVaultEntriesSchema = z.object({
+  entryIds: z
+    .array(z.string().uuid("Invalid vault entry ID"))
+    .max(500, "Cannot assign more than 500 entries")
+    .default([]),
+  restrictToAssignedEntries: z.boolean().default(true),
+});
+
+/**
  * Schema for successor ID parameter
  */
 export const SuccessorIdSchema = z.object({

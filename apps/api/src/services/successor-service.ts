@@ -1,4 +1,9 @@
-import { getDatabaseClient, SuccessorRepository } from "@handoverkey/database";
+import {
+  getDatabaseClient,
+  SuccessorRepository,
+  VaultRepository,
+  SuccessorVaultEntryRepository,
+} from "@handoverkey/database";
 import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 import { ConflictError, NotFoundError } from "../errors";
@@ -24,13 +29,35 @@ export interface Successor {
   verified: boolean;
   handoverDelayDays: number;
   encryptedShare: string | null;
+  restrictToAssignedEntries: boolean;
+  assignedVaultEntryIds?: string[];
   createdAt: Date;
+}
+
+export interface SuccessorTokenVerificationResult {
+  success: boolean;
+  alreadyVerified: boolean;
+  userId?: string;
+  userName?: string;
+  handoverStatus?: string;
+  successorId?: string;
+  verificationToken?: string;
 }
 
 export class SuccessorService {
   private static getSuccessorRepository(): SuccessorRepository {
     const dbClient = getDatabaseClient();
     return new SuccessorRepository(dbClient.getKysely());
+  }
+
+  private static getVaultRepository(): VaultRepository {
+    const dbClient = getDatabaseClient();
+    return new VaultRepository(dbClient.getKysely());
+  }
+
+  private static getSuccessorVaultEntryRepository(): SuccessorVaultEntryRepository {
+    const dbClient = getDatabaseClient();
+    return new SuccessorVaultEntryRepository(dbClient.getKysely());
   }
 
   static async addSuccessor(
@@ -54,6 +81,7 @@ export class SuccessorService {
         verified: false,
         handover_delay_days: data.handoverDelayDays ?? 90,
         encrypted_share: data.encryptedShare ?? null,
+        restrict_to_assigned_entries: false,
       });
     } catch (error: unknown) {
       // Check for unique constraint violation (Postgres code 23505)
@@ -83,6 +111,7 @@ export class SuccessorService {
       verified: successor.verified,
       handoverDelayDays: successor.handover_delay_days,
       encryptedShare: successor.encrypted_share,
+      restrictToAssignedEntries: successor.restrict_to_assigned_entries,
       createdAt: successor.created_at,
     };
   }
@@ -98,6 +127,7 @@ export class SuccessorService {
       verified: s.verified,
       handoverDelayDays: s.handover_delay_days,
       encryptedShare: s.encrypted_share,
+      restrictToAssignedEntries: s.restrict_to_assigned_entries,
       createdAt: s.created_at,
     }));
   }
@@ -120,6 +150,7 @@ export class SuccessorService {
       verified: successor.verified,
       handoverDelayDays: successor.handover_delay_days,
       encryptedShare: successor.encrypted_share,
+      restrictToAssignedEntries: successor.restrict_to_assigned_entries,
       createdAt: successor.created_at,
     };
   }
@@ -137,12 +168,19 @@ export class SuccessorService {
       return null;
     }
 
-    const updateData: { name?: string; handover_delay_days?: number } = {};
+    const updateData: {
+      name?: string;
+      handover_delay_days?: number;
+      encrypted_share?: string | null;
+    } = {};
     if (data.name !== undefined) {
       updateData.name = data.name;
     }
     if (data.handoverDelayDays !== undefined) {
       updateData.handover_delay_days = data.handoverDelayDays;
+    }
+    if (data.encryptedShare !== undefined) {
+      updateData.encrypted_share = data.encryptedShare;
     }
 
     const successor = await successorRepo.update(successorId, updateData);
@@ -154,6 +192,7 @@ export class SuccessorService {
       verified: successor.verified,
       handoverDelayDays: successor.handover_delay_days,
       encryptedShare: successor.encrypted_share,
+      restrictToAssignedEntries: successor.restrict_to_assigned_entries,
       createdAt: successor.created_at,
     };
   }
@@ -222,15 +261,72 @@ export class SuccessorService {
     }
   }
 
-  static async verifySuccessorByToken(verificationToken: string): Promise<{
-    success: boolean;
-    alreadyVerified: boolean;
-    userId?: string;
-    userName?: string;
-    handoverStatus?: string;
+  static async updateAssignedVaultEntries(
+    userId: string,
+    successorId: string,
+    entryIds: string[],
+    restrictToAssignedEntries: boolean,
+  ): Promise<{
+    successorId: string;
+    entryIds: string[];
+    restrictToAssignedEntries: boolean;
   }> {
     const successorRepo = this.getSuccessorRepository();
-    const db = successorRepo["db"]; // Access the kysely instance
+    const vaultRepo = this.getVaultRepository();
+    const assignmentRepo = this.getSuccessorVaultEntryRepository();
+
+    const successor = await successorRepo.findById(successorId);
+    if (!successor || successor.user_id !== userId) {
+      throw new NotFoundError("Successor");
+    }
+
+    const uniqueEntryIds = [...new Set(entryIds)];
+    const existingEntries = await vaultRepo.findByIds(userId, uniqueEntryIds);
+    if (existingEntries.length !== uniqueEntryIds.length) {
+      throw new NotFoundError("Vault entry");
+    }
+
+    await assignmentRepo.replaceBySuccessorId(successorId, uniqueEntryIds);
+    await successorRepo.update(successorId, {
+      restrict_to_assigned_entries: restrictToAssignedEntries,
+    });
+
+    return {
+      successorId,
+      entryIds: uniqueEntryIds,
+      restrictToAssignedEntries,
+    };
+  }
+
+  static async getAssignedVaultEntries(
+    userId: string,
+    successorId: string,
+  ): Promise<{
+    successorId: string;
+    entryIds: string[];
+    restrictToAssignedEntries: boolean;
+  }> {
+    const successorRepo = this.getSuccessorRepository();
+    const assignmentRepo = this.getSuccessorVaultEntryRepository();
+
+    const successor = await successorRepo.findById(successorId);
+    if (!successor || successor.user_id !== userId) {
+      throw new NotFoundError("Successor");
+    }
+
+    const assignments = await assignmentRepo.findBySuccessorId(successorId);
+    return {
+      successorId,
+      entryIds: assignments.map((a) => a.vault_entry_id),
+      restrictToAssignedEntries: successor.restrict_to_assigned_entries,
+    };
+  }
+
+  static async verifySuccessorByToken(
+    verificationToken: string,
+  ): Promise<SuccessorTokenVerificationResult> {
+    const successorRepo = this.getSuccessorRepository();
+    const db = getDatabaseClient().getKysely();
 
     // Find successor by verification token
     const successor = await db
@@ -241,6 +337,7 @@ export class SuccessorService {
         "successors.id",
         "successors.user_id",
         "successors.verified",
+        "successors.verification_token",
         "users.name as user_name",
         "handover_processes.status as handover_status",
       ])
@@ -259,6 +356,8 @@ export class SuccessorService {
         userId: successor.user_id,
         userName: successor.user_name || undefined,
         handoverStatus: (successor.handover_status as string) || undefined,
+        successorId: successor.id,
+        verificationToken: successor.verification_token || undefined,
       };
     }
 
@@ -273,6 +372,8 @@ export class SuccessorService {
       userId: successor.user_id,
       userName: successor.user_name || undefined,
       handoverStatus: (successor.handover_status as string) || undefined,
+      successorId: successor.id,
+      verificationToken: successor.verification_token || undefined,
     };
   }
 

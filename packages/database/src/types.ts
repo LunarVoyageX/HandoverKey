@@ -17,6 +17,7 @@ export interface UsersTable {
   email_verified: ColumnType<boolean, boolean | undefined, boolean>;
   two_factor_enabled: ColumnType<boolean, boolean | undefined, boolean>;
   two_factor_secret: string | null;
+  two_factor_recovery_codes: string[] | null;
   last_login: ColumnType<
     Date | null,
     Date | string | null,
@@ -96,6 +97,11 @@ export interface SuccessorsTable {
   verification_token: string | null;
   verified: ColumnType<boolean, boolean | undefined, boolean>;
   encrypted_share: string | null;
+  restrict_to_assigned_entries: ColumnType<
+    boolean,
+    boolean | undefined,
+    boolean
+  >;
   handover_delay_days: ColumnType<number, number | undefined, number>;
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
@@ -103,6 +109,16 @@ export interface SuccessorsTable {
 export type Successor = Selectable<SuccessorsTable>;
 export type NewSuccessor = Insertable<SuccessorsTable>;
 export type SuccessorUpdate = Updateable<SuccessorsTable>;
+
+// Successor vault entry assignment table types
+export interface SuccessorVaultEntriesTable {
+  successor_id: string;
+  vault_entry_id: string;
+  created_at: ColumnType<Date, Date | string | undefined, Date | string>;
+}
+
+export type SuccessorVaultEntry = Selectable<SuccessorVaultEntriesTable>;
+export type NewSuccessorVaultEntry = Insertable<SuccessorVaultEntriesTable>;
 
 // Handover events table types
 export interface HandoverEventsTable {
@@ -287,6 +303,7 @@ export interface Database {
   inactivity_settings: InactivitySettingsTable;
   handover_processes: HandoverProcessesTable;
   successors: SuccessorsTable;
+  successor_vault_entries: SuccessorVaultEntriesTable;
   handover_events: HandoverEventsTable;
   checkin_tokens: CheckinTokensTable;
   notification_deliveries: NotificationDeliveriesTable;

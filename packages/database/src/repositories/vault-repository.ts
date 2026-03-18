@@ -64,6 +64,27 @@ export class VaultRepository {
     }
   }
 
+  async findByIds(userId: string, ids: string[]): Promise<VaultEntry[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    try {
+      return await this.db
+        .selectFrom("vault_entries")
+        .selectAll()
+        .where("user_id", "=", userId)
+        .where("id", "in", ids)
+        .orderBy("created_at", "desc")
+        .execute();
+    } catch (error) {
+      throw new QueryError(
+        `Failed to find vault entries by ids: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
   async create(data: NewVaultEntry): Promise<VaultEntry> {
     try {
       const entry = await this.db
@@ -132,6 +153,22 @@ export class VaultRepository {
       }
       throw new QueryError(
         `Failed to delete vault entry: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  async deleteByUserId(userId: string): Promise<number> {
+    try {
+      const result = await this.db
+        .deleteFrom("vault_entries")
+        .where("user_id", "=", userId)
+        .executeTakeFirst();
+
+      return Number(result.numDeletedRows);
+    } catch (error) {
+      throw new QueryError(
+        `Failed to delete vault entries by user: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error : undefined,
       );
     }

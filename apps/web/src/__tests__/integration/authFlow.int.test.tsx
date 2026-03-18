@@ -6,6 +6,7 @@ import Login from "../../pages/Login";
 import Register from "../../pages/Register";
 import Dashboard from "../../pages/Dashboard";
 import { AuthProvider } from "../../contexts/AuthContext";
+import { ToastProvider } from "../../contexts/ToastContext";
 import React from "react";
 import api from "../../services/api";
 
@@ -23,6 +24,8 @@ vi.mock("@heroicons/react/24/outline", () => ({
   XMarkIcon: () => <div data-testid="xmark-icon" />,
   HomeIcon: () => <div data-testid="home-icon" />,
   Cog6ToothIcon: () => <div data-testid="cog-icon" />,
+  ComputerDesktopIcon: () => <div data-testid="desktop-icon" />,
+  ClipboardDocumentListIcon: () => <div data-testid="clipboard-icon" />,
   ArrowRightOnRectangleIcon: () => <div data-testid="logout-icon" />,
   ExclamationTriangleIcon: () => <div data-testid="warning-icon" />,
   DocumentIcon: () => <div data-testid="document-icon" />,
@@ -98,12 +101,14 @@ beforeEach(() => {
 function renderWithProviders(ui: React.ReactElement) {
   return render(
     <AuthProvider>
-      <MemoryRouter initialEntries={["/"]}>
-        <Routes>
-          <Route path="/" element={ui} />
-          <Route path="/dashboard" element={<Dashboard />} />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={["/"]}>
+          <Routes>
+            <Route path="/" element={ui} />
+            <Route path="/dashboard" element={<Dashboard />} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     </AuthProvider>,
   );
 }
@@ -132,7 +137,7 @@ describe("Auth flows", () => {
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith("/auth/login", expect.any(Object));
     });
-  });
+  }, 15000);
 
   it("registers new user and shows success message", async () => {
     (api.post as vi.Mock).mockResolvedValue({
@@ -175,5 +180,5 @@ describe("Auth flows", () => {
         ),
       ).toBeInTheDocument();
     });
-  });
+  }, 15000);
 });

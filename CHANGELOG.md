@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-18
+
+### Security
+
+- **End-to-end TOTP 2FA**: Added full two-factor setup, enable/disable, challenge verification, and recovery code flows across API and web app
+- **Recovery code support**: Added persistence and service logic for one-time recovery codes, including schema/type updates
+- **Check-in hardening**: Added secure public check-in link validation/execution with token-based flow and improved activity safeguards
+- **Operational auth tightening**: Expanded authenticated profile/password/session pathways and aligned route validation with stricter request schemas
+
+### Added
+
+- **Realtime notifications**:
+  - Backend WebSocket service with authenticated, user-scoped broadcasts (`/ws`)
+  - Frontend realtime client with reconnect handling and auth lifecycle integration
+  - UI toast surfacing for reminder and handover status events
+- **Admin operations surface**:
+  - `GET /api/v1/admin/dashboard` for platform-level operational metrics
+  - `GET /api/v1/admin/users` for admin user lookup/search
+  - Expanded lockout/unlock admin workflows
+  - New `/admin` dashboard UI
+- **Audit and activity UX**:
+  - New `/activity` page for activity trail visibility
+  - Expanded activity APIs and check-in capabilities
+- **Vault portability**:
+  - `GET /api/v1/vault/export` for encrypted vault backup export
+  - `POST /api/v1/vault/import` for encrypted vault restore/import (`merge`/`replace`)
+- **Successor assignment controls**:
+  - Added per-successor vault entry assignment APIs
+  - Added `successor_vault_entries` repository and service/controller wiring
+  - Added UI for assigning/restricting successor access to specific entries
+- **Email template system**:
+  - Added HTML templates for inactivity reminders, handover alerts, and cancellation notices
+  - Added server-side template rendering support in email services
+- **Repository integration coverage**:
+  - New comprehensive database integration suite: `packages/database/src/__tests__/repositories.integration.test.ts`
+  - New shared `VaultManager` tests: `packages/shared/src/crypto/vault.test.ts`
+
+### Changed
+
+- **Handover orchestration**: Consolidated critical handover lifecycle behavior through orchestrator-backed service flows and improved status transitions
+- **Successor access behavior**: Enforced optional `restrict_to_assigned_entries` semantics during successor vault access
+- **Inactivity processing**: Improved activity-driven inactivity handling and check-in behavior for dead-man's-switch reliability
+- **Notification delivery UX**: Migrated key outbound notifications from plain text content to HTML template-backed rendering
+- **Frontend navigation and product surface**: Added routes and navigation for activity, admin, session, check-in, successor, and enhanced vault flows
+- **Web dev proxying**: Added Vite WebSocket proxy support for local realtime development
+
+### Testing
+
+- Expanded API integration coverage for admin operations, auth/2FA, sessions/activity, and vault/successor behavior
+- Expanded shared utility coverage for `validatePassword`, `sanitizeInput`, and `VaultManager`
+- Added repository-level integration tests against migrated schema paths
+- Stabilized flaky web auth integration timing with explicit test timeouts where needed
+
+### Breaking Changes
+
+- **Major semver bump**: Release version advanced from `1.x` to `2.0.0`
+- **Migration requirement**: Deployments must apply new DB migrations before serving traffic
+- **Realtime expectation**: Environments using live notifications must expose the `/ws` endpoint correctly
+- **Stricter successor controls**: Successor vault visibility is narrowed when assignment restrictions are enabled
+
 ## [1.1.0] - 2026-03-16
 
 ### Security

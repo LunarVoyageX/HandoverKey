@@ -71,12 +71,19 @@ export async function setMasterKey(
   saltBase64: string,
 ): Promise<void> {
   try {
-    const salt = Uint8Array.from(atob(saltBase64), (c) => c.charCodeAt(0));
-    cachedKey = await deriveKey(password, salt);
+    cachedKey = await deriveMasterKey(password, saltBase64);
   } catch (error) {
     console.error("Failed to derive master key", error);
     throw error;
   }
+}
+
+export async function deriveMasterKey(
+  password: string,
+  saltBase64: string,
+): Promise<CryptoKey> {
+  const salt = Uint8Array.from(atob(saltBase64), (c) => c.charCodeAt(0));
+  return deriveKey(password, salt);
 }
 
 export function clearMasterKey() {
@@ -118,7 +125,7 @@ async function deriveKey(
   const derivedBits = await window.crypto.subtle.deriveBits(
     {
       name: "PBKDF2",
-      salt: salt as BufferSource,
+      salt,
       iterations: PBKDF2_ITERATIONS,
       hash: "SHA-256",
     },
@@ -150,6 +157,13 @@ export function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
 
 export async function encryptData(data: unknown): Promise<EncryptedPayload> {
   const key = await getMasterKey();
+  return encryptDataWithKey(data, key);
+}
+
+export async function encryptDataWithKey(
+  data: unknown,
+  key: CryptoKey,
+): Promise<EncryptedPayload> {
   const iv = window.crypto.getRandomValues(new Uint8Array(IV_LENGTH));
   const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LENGTH)); // Not used for AES-GCM direct, but backend expects it
 

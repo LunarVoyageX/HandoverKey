@@ -1,9 +1,12 @@
 import {
   getDatabaseClient,
   HandoverProcessRepository,
-  SuccessorRepository,
 } from "@handoverkey/database";
-import { NotificationService } from "./notification-service";
+import {
+  HandoverProcessStatus,
+  type HandoverProcess as OrchestratedHandoverProcess,
+} from "@handoverkey/shared/src/types/dead-mans-switch";
+import { HandoverOrchestrator } from "./handover-orchestrator";
 
 export interface HandoverProcess {
   id: string;
@@ -14,61 +17,22 @@ export interface HandoverProcess {
   completedAt?: Date;
   createdAt: Date;
 }
-
-const GRACE_PERIOD_HOURS = parseInt(process.env.GRACE_PERIOD_HOURS || "48", 10);
-
 export class HandoverService {
   private static getHandoverProcessRepository(): HandoverProcessRepository {
     const dbClient = getDatabaseClient();
     return new HandoverProcessRepository(dbClient.getKysely());
   }
 
-  private static getSuccessorRepository(): SuccessorRepository {
-    const dbClient = getDatabaseClient();
-    return new SuccessorRepository(dbClient.getKysely());
+  private static getOrchestrator(): HandoverOrchestrator {
+    return new HandoverOrchestrator();
   }
 
   /**
    * Initiates the handover process for a user
    */
   static async initiateHandover(userId: string): Promise<HandoverProcess> {
-    // Check if there's already an active handover process
-    const existingHandover = await this.getActiveHandover(userId);
-    if (existingHandover) {
-      return existingHandover;
-    }
-
-    const now = new Date();
-    const gracePeriodEnds = new Date(
-      now.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000,
-    );
-
-    const handoverRepo = this.getHandoverProcessRepository();
-    const dbProcess = await handoverRepo.create({
-      user_id: userId,
-      status: "GRACE_PERIOD",
-      initiated_at: now,
-      grace_period_ends: gracePeriodEnds,
-    });
-
-    // Notify successors
-    const successorRepo = this.getSuccessorRepository();
-    const successors = await successorRepo.findByUserId(userId);
-
-    if (successors.length > 0) {
-      const notificationService = new NotificationService();
-      await notificationService.sendHandoverAlert(
-        userId,
-        successors.map((s) => ({
-          name: s.name,
-          email: s.email,
-          encrypted_share: s.encrypted_share,
-        })),
-        dbProcess.id,
-      );
-    }
-
-    return this.mapHandoverFromDb(dbProcess);
+    const process = await this.getOrchestrator().initiateHandover(userId);
+    return this.mapOrchestratedProcess(process);
   }
 
   /**
@@ -77,32 +41,20 @@ export class HandoverService {
   static async getActiveHandover(
     userId: string,
   ): Promise<HandoverProcess | null> {
-    const handoverRepo = this.getHandoverProcessRepository();
-    const dbProcess = await handoverRepo.findActiveByUserId(userId);
-
-    if (!dbProcess) {
-      return null;
-    }
-
-    return this.mapHandoverFromDb(dbProcess);
+    const process = await this.getOrchestrator().getHandoverStatus(userId);
+    return process ? this.mapOrchestratedProcess(process) : null;
   }
 
   /**
    * Cancels an active handover process
    */
   static async cancelHandover(userId: string): Promise<boolean> {
-    const handoverRepo = this.getHandoverProcessRepository();
-    const activeProcess = await handoverRepo.findActiveByUserId(userId);
-
-    if (!activeProcess) {
+    const active = await this.getActiveHandover(userId);
+    if (!active) {
       return false;
     }
 
-    await handoverRepo.update(activeProcess.id, {
-      status: "CANCELLED",
-      completed_at: new Date(),
-    });
-
+    await this.getOrchestrator().cancelHandover(userId, "Cancelled by user");
     return true;
   }
 
@@ -114,7 +66,7 @@ export class HandoverService {
 
     try {
       await handoverRepo.update(handoverId, {
-        status: "COMPLETED",
+        status: HandoverProcessStatus.COMPLETED,
         completed_at: new Date(),
       });
       return true;
@@ -140,7 +92,7 @@ export class HandoverService {
 
     try {
       await handoverRepo.update(handoverId, {
-        status: "PENDING_CONFIRMATION",
+        status: HandoverProcessStatus.VERIFICATION_PENDING,
       });
       return true;
     } catch {
@@ -157,18 +109,48 @@ export class HandoverService {
     completed_at?: Date | null;
     created_at: Date;
   }): HandoverProcess {
+    const status = String(row.status).toLowerCase();
+    const mappedStatus =
+      status === HandoverProcessStatus.GRACE_PERIOD
+        ? "GRACE_PERIOD"
+        : status === HandoverProcessStatus.CANCELLED
+          ? "CANCELLED"
+          : status === HandoverProcessStatus.COMPLETED
+            ? "COMPLETED"
+            : "PENDING_CONFIRMATION";
+
     return {
       id: row.id,
       userId: row.user_id,
-      status: row.status as
-        | "GRACE_PERIOD"
-        | "PENDING_CONFIRMATION"
-        | "COMPLETED"
-        | "CANCELLED",
+      status: mappedStatus,
       initiatedAt: row.initiated_at,
       gracePeriodEnds: row.grace_period_ends,
       completedAt: row.completed_at ?? undefined,
       createdAt: row.created_at,
+    };
+  }
+
+  private static mapOrchestratedProcess(
+    process: OrchestratedHandoverProcess,
+  ): HandoverProcess {
+    const status = String(process.status).toLowerCase();
+    const mappedStatus =
+      status === HandoverProcessStatus.GRACE_PERIOD
+        ? "GRACE_PERIOD"
+        : status === HandoverProcessStatus.CANCELLED
+          ? "CANCELLED"
+          : status === HandoverProcessStatus.COMPLETED
+            ? "COMPLETED"
+            : "PENDING_CONFIRMATION";
+
+    return {
+      id: process.id,
+      userId: process.userId,
+      status: mappedStatus,
+      initiatedAt: process.initiatedAt,
+      gracePeriodEnds: process.gracePeriodEnds,
+      completedAt: process.completedAt,
+      createdAt: process.createdAt,
     };
   }
 }

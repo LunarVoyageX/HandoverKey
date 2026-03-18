@@ -17,6 +17,7 @@ import {
 import { createHash, randomBytes } from "crypto";
 import { emailService } from "./email-service";
 import { logger } from "../config/logger";
+import { realtimeService } from "./realtime-service";
 
 export class NotificationService implements INotificationService {
   private static getUserRepository(): UserRepository {
@@ -77,7 +78,7 @@ export class NotificationService implements INotificationService {
       const result = await this.sendEmailNotification(
         user.email,
         content.subject,
-        content.body,
+        content.html,
       );
 
       // Record the notification delivery
@@ -88,6 +89,11 @@ export class NotificationService implements INotificationService {
         recipient: user.email,
         status: result.status,
         errorMessage: result.errorMessage,
+      });
+
+      realtimeService.broadcastToUser(userId, "notification.reminder_sent", {
+        reminderType,
+        recipient: user.email,
       });
 
       return {
@@ -139,6 +145,7 @@ export class NotificationService implements INotificationService {
       name: string | null;
       email: string;
       encrypted_share?: string | null;
+      verification_token?: string | null;
     }[],
     handoverProcessId?: string,
   ): Promise<NotificationResult[]> {
@@ -150,12 +157,13 @@ export class NotificationService implements INotificationService {
           successor.name || "Successor",
           successor.email,
           successor.encrypted_share,
+          successor.verification_token,
         );
 
         const result = await this.sendEmailNotification(
           successor.email,
           content.subject,
-          content.body,
+          content.html,
         );
 
         await this.recordNotificationDelivery({
@@ -211,6 +219,7 @@ export class NotificationService implements INotificationService {
       name: string | null;
       email: string;
       encrypted_share?: string | null;
+      verification_token?: string | null;
     }[],
     reason: string,
   ): Promise<NotificationResult[]> {
@@ -226,7 +235,7 @@ export class NotificationService implements INotificationService {
         const result = await this.sendEmailNotification(
           successor.email,
           content.subject,
-          content.body,
+          content.html,
         );
 
         // Record the notification delivery
@@ -367,11 +376,11 @@ export class NotificationService implements INotificationService {
   private async sendEmailNotification(
     to: string,
     subject: string,
-    body: string,
+    html: string,
   ): Promise<{ id: string; status: DeliveryStatus; errorMessage?: string }> {
     try {
       // Use the actual email service
-      await emailService.sendEmail(to, subject, body);
+      await emailService.sendEmail(to, subject, html);
 
       const randomId = randomBytes(6).toString("hex");
       return {
@@ -392,84 +401,55 @@ export class NotificationService implements INotificationService {
     reminderType: ReminderType,
     userEmail: string,
     checkInLink: string,
-  ): { subject: string; body: string } {
+  ): { subject: string; html: string } {
     const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const dashboardLink = `${baseUrl}/login`;
+    const year = new Date().getFullYear().toString();
+
+    const render = (heading: string, message: string) =>
+      emailService.renderTemplate("inactivity-reminder", {
+        heading,
+        message,
+        checkInLink,
+        dashboardLink,
+        year,
+      });
 
     switch (reminderType) {
       case ReminderType.FIRST_REMINDER:
         return {
           subject: "HandoverKey Activity Reminder - 75% Threshold Reached",
-          body: `
-Hello,
-
-This is a friendly reminder that your HandoverKey account has been inactive for a while. 
-You've reached 75% of your configured inactivity threshold.
-
-To reset your activity timer, you can either:
-1. Log into your HandoverKey account: ${baseUrl}/login
-2. Use this secure check-in link: ${checkInLink}
-
-If you don't take any action, you'll receive additional reminders as you approach your handover threshold.
-
-Best regards,
-The HandoverKey Team
-          `.trim(),
+          html: render(
+            "Friendly Activity Reminder",
+            `Your account (${userEmail}) reached 75% of the inactivity threshold. Check in now to keep your handover workflow paused.`,
+          ),
         };
 
       case ReminderType.SECOND_REMINDER:
         return {
           subject: "HandoverKey Activity Reminder - 85% Threshold Reached",
-          body: `
-Hello,
-
-Your HandoverKey account has been inactive for an extended period. 
-You've now reached 85% of your configured inactivity threshold.
-
-IMPORTANT: Please take action soon to prevent automatic handover of your digital assets.
-
-To reset your activity timer:
-1. Log into your HandoverKey account: ${baseUrl}/login
-2. Use this secure check-in link: ${checkInLink}
-
-Best regards,
-The HandoverKey Team
-          `.trim(),
+          html: render(
+            "Action Recommended",
+            `Your account (${userEmail}) reached 85% of the inactivity threshold. Please check in soon to avoid triggering handover safeguards.`,
+          ),
         };
 
       case ReminderType.FINAL_WARNING:
         return {
           subject: "URGENT: HandoverKey Final Warning - 95% Threshold Reached",
-          body: `
-URGENT NOTICE
-
-Your HandoverKey account has reached 95% of your inactivity threshold. 
-If you don't take action soon, the automatic handover process will begin.
-
-IMMEDIATE ACTION REQUIRED:
-1. Log into your HandoverKey account: ${baseUrl}/login
-2. Use this secure check-in link: ${checkInLink}
-
-If you're unable to access your account, please contact support immediately.
-
-Best regards,
-The HandoverKey Team
-          `.trim(),
+          html: render(
+            "Urgent Final Warning",
+            `Your account (${userEmail}) reached 95% of the inactivity threshold. Immediate check-in is required to prevent handover initiation.`,
+          ),
         };
 
       default:
         return {
           subject: "HandoverKey Activity Reminder",
-          body: `
-Hello,
-
-This is a reminder about your HandoverKey account activity.
-
-To reset your activity timer, please log in: ${baseUrl}/login
-Or use this secure check-in link: ${checkInLink}
-
-Best regards,
-The HandoverKey Team
-          `.trim(),
+          html: render(
+            "Account Activity Reminder",
+            `This is a reminder for your account (${userEmail}). Please check in to confirm activity.`,
+          ),
         };
     }
   }
@@ -478,75 +458,43 @@ The HandoverKey Team
     successorName: string,
     _successorEmail: string,
     encryptedShare?: string | null,
-  ): { subject: string; body: string } {
+    verificationToken?: string | null,
+  ): { subject: string; html: string } {
     const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const successorAccessLink = verificationToken
+      ? `${baseUrl}/successor-access?token=${verificationToken}`
+      : `${baseUrl}/verify-successor`;
     const shareSection = encryptedShare
-      ? `
-YOUR KEY SHARE:
-----------------------------------------
-${encryptedShare}
-----------------------------------------
+      ? `YOUR KEY SHARE:\n${encryptedShare}\n\nStore this securely.`
+      : "No key share was attached to this notification.";
 
-KEEP THIS SAFE. You will need this key share, combined with others, to unlock the digital vault.
-`
-      : `
-NOTE: No digital key share was found for this account. You may need to coordinate with the user's legal representatives or other successors.
-`;
-
-    // Security warning for email
     const securityWarning = encryptedShare
-      ? `
-IMPORTANT SECURITY WARNING:
-----------------------------------------
-You have received a sensitive cryptographic key share. While this single share cannot unlock the vault on its own, it is a critical component of the security system.
-Please ensure this email is deleted after you have safely stored the key share, or ensure your email account is secured with Two-Factor Authentication.
-----------------------------------------
-`
-      : "";
+      ? "Security warning: this share is sensitive. Store it in a secure channel."
+      : "If you expected a key share, contact support.";
 
     return {
       subject: "HandoverKey: Digital Asset Handover Initiated",
-      body: `
-Dear ${successorName},
-
-A HandoverKey user has designated you as a successor for their digital assets. 
-The handover process has been initiated due to prolonged inactivity.
-
-${shareSection}
-
-${securityWarning}
-
-Next steps:
-1. Visit HandoverKey: ${baseUrl}
-2. Follow the successor verification process
-3. Access the encrypted digital assets once verified
-
-If you believe this is an error or have questions, please contact HandoverKey support.
-
-Best regards,
-The HandoverKey Team
-      `.trim(),
+      html: emailService.renderTemplate("handover-alert", {
+        successorName,
+        successorAccessLink,
+        shareSection,
+        securitySection: securityWarning,
+        year: new Date().getFullYear().toString(),
+      }),
     };
   }
 
   private createHandoverCancellationContent(
     successorName: string,
     reason: string,
-  ): { subject: string; body: string } {
+  ): { subject: string; html: string } {
     return {
       subject: "HandoverKey: Digital Asset Handover CANCELLED",
-      body: `Dear ${successorName},
-
-The digital asset handover process that was previously initiated has been CANCELLED.
-
-Reason: ${reason}
-
-No action is required from you. The digital keys previously shared (if any) are no longer valid. If the vault was re-encrypted, the old shares cannot decrypt it. Otherwise, please disregard the shares as the user has regained control.
-
-If you have questions, please contact the user directly or HandoverKey support.
-
-Best regards,
-The HandoverKey Team`.trim(),
+      html: emailService.renderTemplate("handover-cancellation", {
+        successorName,
+        reason,
+        year: new Date().getFullYear().toString(),
+      }),
     };
   }
 

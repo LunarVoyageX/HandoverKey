@@ -3,6 +3,8 @@ import app, { appInit } from "../../app";
 import { getDatabaseClient } from "@handoverkey/database";
 import { SessionService } from "../../services/session-service";
 import { initializeRedis, closeRedis } from "../../config/redis";
+import { NotificationService } from "../../services/notification-service";
+import { URL } from "node:url";
 
 jest.setTimeout(30000);
 
@@ -148,5 +150,40 @@ describe("Sessions & Activity Integration", () => {
 
     expect(getRes.status).toBe(200);
     expect(getRes.body.thresholdDays).toBe(60);
+  });
+
+  it("should validate and process public check-in links", async () => {
+    const { userId } = await registerVerifyLogin("public-checkin");
+
+    const notificationService = new NotificationService();
+    const checkInLink = await notificationService.generateCheckInLink(
+      userId,
+      30 * 60 * 1000,
+    );
+    const checkInToken = new URL(checkInLink).searchParams.get("token");
+    expect(checkInToken).toBeTruthy();
+
+    const validateRes = await request(app).get(
+      `/api/v1/activity/check-in-link?token=${checkInToken}`,
+    );
+    expect(validateRes.status).toBe(200);
+    expect(validateRes.body.success).toBe(true);
+
+    const checkInRes = await request(app)
+      .post("/api/v1/activity/check-in-link")
+      .send({ token: checkInToken });
+    expect(checkInRes.status).toBe(200);
+    expect(checkInRes.body.success).toBe(true);
+
+    const db = getDatabaseClient().getKysely();
+    const activity = await db
+      .selectFrom("activity_records")
+      .select(["activity_type"])
+      .where("user_id", "=", userId)
+      .where("activity_type", "=", "MANUAL_CHECKIN")
+      .orderBy("created_at", "desc")
+      .executeTakeFirst();
+
+    expect(activity?.activity_type).toBe("MANUAL_CHECKIN");
   });
 });

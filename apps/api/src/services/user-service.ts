@@ -2,6 +2,8 @@ import {
   getDatabaseClient,
   UserRepository,
   ActivityRepository,
+  type Database,
+  type Transaction,
 } from "@handoverkey/database";
 import { PasswordUtils } from "../auth/password";
 import { User, UserRegistration, UserLogin } from "@handoverkey/shared";
@@ -15,7 +17,19 @@ import {
 import { getRedisClient } from "../config/redis";
 import { logger } from "../config/logger";
 import { emailService } from "./email-service";
+import { TwoFactorService } from "./two-factor-service";
+import { realtimeService } from "./realtime-service";
 import crypto from "crypto";
+
+export interface ReEncryptedVaultEntryInput {
+  id: string;
+  encryptedData: string;
+  iv: string;
+  salt: string;
+  algorithm: "AES-GCM" | "AES-256-GCM";
+  category?: string;
+  tags?: string[];
+}
 
 export class UserService {
   private static getUserRepository(): UserRepository {
@@ -166,6 +180,9 @@ export class UserService {
     if (updates.twoFactorSecret !== undefined) {
       dbUpdates.two_factor_secret = updates.twoFactorSecret;
     }
+    if (updates.twoFactorRecoveryCodes !== undefined) {
+      dbUpdates.two_factor_recovery_codes = updates.twoFactorRecoveryCodes;
+    }
 
     if (Object.keys(dbUpdates).length === 0) {
       throw new ValidationError("No valid fields to update");
@@ -173,6 +190,250 @@ export class UserService {
 
     const dbUser = await userRepo.update(userId, dbUpdates);
     return this.mapDbUserToUser(dbUser);
+  }
+
+  static async updateProfile(userId: string, name: string): Promise<User> {
+    const userRepo = this.getUserRepository();
+    const updatedUser = await userRepo.update(userId, {
+      name: name.trim(),
+    });
+    return this.mapDbUserToUser(updatedUser);
+  }
+
+  static async createTwoFactorSetup(userId: string): Promise<{
+    secret: string;
+    otpauthUrl: string;
+    qrCodeDataUrl: string;
+    recoveryCodes: string[];
+  }> {
+    const userRepo = this.getUserRepository();
+    const user = await userRepo.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    const setup = await TwoFactorService.generateSetupData(user.email);
+    const hashedRecoveryCodes = await Promise.all(
+      setup.recoveryCodes.map((code) => PasswordUtils.hashPassword(code)),
+    );
+
+    await userRepo.update(userId, {
+      two_factor_enabled: false,
+      two_factor_secret: setup.secret,
+      two_factor_recovery_codes: hashedRecoveryCodes,
+    });
+
+    return setup;
+  }
+
+  static async enableTwoFactor(userId: string, token: string): Promise<void> {
+    const userRepo = this.getUserRepository();
+    const user = await userRepo.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    if (!user.two_factor_secret) {
+      throw new ValidationError(
+        "Two-factor setup not initialized. Please run setup first.",
+      );
+    }
+
+    const isValid = TwoFactorService.verifyTotpCode(
+      user.two_factor_secret,
+      token,
+    );
+    if (!isValid) {
+      throw new AuthenticationError("Invalid two-factor code");
+    }
+
+    await userRepo.update(userId, {
+      two_factor_enabled: true,
+    });
+  }
+
+  static async disableTwoFactor(
+    userId: string,
+    currentPassword: string,
+    twoFactorCode?: string,
+    recoveryCode?: string,
+  ): Promise<void> {
+    const userRepo = this.getUserRepository();
+    const user = await userRepo.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    const isCurrentPasswordValid = await PasswordUtils.verifyPassword(
+      currentPassword,
+      user.password_hash,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new AuthenticationError("Current password is incorrect");
+    }
+
+    if (user.two_factor_enabled) {
+      await this.verifyTwoFactorChallenge({
+        userId,
+        twoFactorSecret: user.two_factor_secret,
+        twoFactorRecoveryCodes: user.two_factor_recovery_codes ?? undefined,
+        twoFactorCode,
+        recoveryCode,
+      });
+    }
+
+    await userRepo.update(userId, {
+      two_factor_enabled: false,
+      two_factor_secret: null,
+      two_factor_recovery_codes: null,
+    });
+  }
+
+  static async verifyTwoFactorChallenge(input: {
+    userId: string;
+    twoFactorSecret?: string | null;
+    twoFactorRecoveryCodes?: string[] | null;
+    twoFactorCode?: string;
+    recoveryCode?: string;
+  }): Promise<void> {
+    const {
+      twoFactorCode,
+      recoveryCode,
+      twoFactorSecret,
+      twoFactorRecoveryCodes,
+    } = input;
+
+    if (!twoFactorCode && !recoveryCode) {
+      throw new AuthenticationError("Two-factor authentication required");
+    }
+
+    if (twoFactorCode) {
+      if (!twoFactorSecret) {
+        throw new AuthenticationError("Two-factor secret is not configured");
+      }
+      const isValidCode = TwoFactorService.verifyTotpCode(
+        twoFactorSecret,
+        twoFactorCode,
+      );
+      if (!isValidCode) {
+        throw new AuthenticationError("Invalid two-factor code");
+      }
+      return;
+    }
+
+    if (!recoveryCode) {
+      throw new AuthenticationError("Recovery code is required");
+    }
+
+    const hashedCodes = twoFactorRecoveryCodes || [];
+    let matchedIndex = -1;
+    for (let index = 0; index < hashedCodes.length; index++) {
+      const isMatch = await PasswordUtils.verifyPassword(
+        recoveryCode,
+        hashedCodes[index],
+      );
+      if (isMatch) {
+        matchedIndex = index;
+        break;
+      }
+    }
+
+    if (matchedIndex === -1) {
+      throw new AuthenticationError("Invalid recovery code");
+    }
+
+    const nextRecoveryCodes = hashedCodes.filter((_, i) => i !== matchedIndex);
+    const userRepo = this.getUserRepository();
+    await userRepo.update(input.userId, {
+      two_factor_recovery_codes:
+        nextRecoveryCodes.length > 0 ? nextRecoveryCodes : null,
+    });
+  }
+
+  static async changePasswordAndReEncryptVault(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    newSaltBase64: string,
+    reEncryptedEntries: ReEncryptedVaultEntryInput[],
+  ): Promise<void> {
+    const userRepo = this.getUserRepository();
+    const user = await userRepo.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    const isCurrentPasswordValid = await PasswordUtils.verifyPassword(
+      currentPassword,
+      user.password_hash,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new AuthenticationError("Current password is incorrect");
+    }
+
+    const nextPasswordHash = await PasswordUtils.hashPassword(newPassword);
+    const nextSalt = Buffer.from(newSaltBase64, "base64");
+
+    const dbClient = getDatabaseClient();
+    const db = dbClient.getKysely();
+
+    await db.transaction().execute(async (trx: Transaction<Database>) => {
+      const existingEntries = await trx
+        .selectFrom("vault_entries")
+        .select(["id"])
+        .where("user_id", "=", userId)
+        .execute();
+
+      if (existingEntries.length !== reEncryptedEntries.length) {
+        throw new ValidationError(
+          "All vault entries must be re-encrypted before changing password",
+        );
+      }
+
+      const reEncryptedEntryMap = new Map(
+        reEncryptedEntries.map((entry) => [entry.id, entry]),
+      );
+
+      for (const existingEntry of existingEntries) {
+        const entryPayload = reEncryptedEntryMap.get(existingEntry.id);
+        if (!entryPayload) {
+          throw new ValidationError(
+            "Vault re-encryption payload is missing one or more entries",
+          );
+        }
+
+        await trx
+          .updateTable("vault_entries")
+          .set({
+            encrypted_data: Buffer.from(entryPayload.encryptedData, "base64"),
+            iv: Buffer.from(entryPayload.iv, "base64"),
+            salt: Buffer.from(entryPayload.salt, "base64"),
+            algorithm: entryPayload.algorithm,
+            category: entryPayload.category ?? null,
+            tags: entryPayload.tags ?? null,
+            updated_at: new Date(),
+          })
+          .where("id", "=", existingEntry.id)
+          .where("user_id", "=", userId)
+          .execute();
+      }
+
+      await trx
+        .updateTable("users")
+        .set({
+          password_hash: nextPasswordHash,
+          salt: nextSalt,
+          updated_at: new Date(),
+        })
+        .where("id", "=", userId)
+        .execute();
+    });
+
+    await this.logActivity(userId, "PASSWORD_CHANGED");
   }
 
   static async deleteUser(userId: string): Promise<void> {
@@ -195,6 +456,11 @@ export class UserService {
 
       // Also update user's last_activity
       await this.updateLastActivity(userId);
+
+      realtimeService.broadcastToUser(userId, "activity.recorded", {
+        activityType,
+        at: new Date().toISOString(),
+      });
     } catch (error) {
       // Log the error but don't throw - activity logging should not block critical operations
       logger.error({ err: error }, "Failed to log activity");
@@ -343,6 +609,7 @@ export class UserService {
     email_verified?: boolean | null;
     two_factor_enabled?: boolean | null;
     two_factor_secret?: string | null;
+    two_factor_recovery_codes?: string[] | null;
     last_login?: Date | null;
     failed_login_attempts?: number | null;
     locked_until?: Date | null;
@@ -360,6 +627,7 @@ export class UserService {
       emailVerified: dbUser.email_verified ?? false,
       twoFactorEnabled: dbUser.two_factor_enabled ?? false,
       twoFactorSecret: dbUser.two_factor_secret ?? undefined,
+      twoFactorRecoveryCodes: dbUser.two_factor_recovery_codes ?? undefined,
       lastActivity: dbUser.last_login ?? undefined,
       failedLoginAttempts: dbUser.failed_login_attempts ?? 0,
       lockedUntil: dbUser.locked_until ?? null,

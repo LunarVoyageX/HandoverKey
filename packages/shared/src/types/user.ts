@@ -8,6 +8,7 @@ export interface User {
   verificationToken?: string;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
+  twoFactorRecoveryCodes?: string[];
   lastActivity?: Date;
   failedLoginAttempts: number;
   lockedUntil?: Date | null;
@@ -27,6 +28,7 @@ export interface UserLogin {
   email: string;
   password: string;
   twoFactorCode?: string;
+  recoveryCode?: string;
 }
 
 export interface PasswordReset {

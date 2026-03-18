@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   ShieldCheckIcon,
@@ -7,6 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import api from "../services/api";
 import { Link } from "react-router-dom";
+import { useToast } from "../contexts/ToastContext";
 
 interface ActivityLog {
   id: string;
@@ -17,6 +18,7 @@ interface ActivityLog {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { success, error: showError } = useToast();
   const [stats, setStats] = useState([
     {
       name: "Total Secrets",
@@ -39,65 +41,79 @@ const Dashboard: React.FC = () => {
   ]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkingIn, setCheckingIn] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [vaultRes, successorsRes, activityRes] = await Promise.all([
+        api.get("/vault/entries"),
+        api.get("/successors"),
+        api.get("/activity?limit=5"),
+      ]);
+
+      // Vault returns array directly
+      const vaultCount = Array.isArray(vaultRes.data)
+        ? vaultRes.data.length
+        : 0;
+      // Successors returns { successors: [...] }
+      const successorCount = successorsRes.data.successors?.length || 0;
+
+      // Calculate days active from user account creation date
+      const daysActive = user?.createdAt
+        ? Math.floor(
+            (new Date().getTime() - new Date(user.createdAt).getTime()) /
+              (1000 * 3600 * 24),
+          )
+        : 0;
+
+      setStats([
+        {
+          name: "Total Secrets",
+          stat: vaultCount.toString(),
+          icon: ShieldCheckIcon,
+          color: "bg-blue-500",
+        },
+        {
+          name: "Successors",
+          stat: successorCount.toString(),
+          icon: UserGroupIcon,
+          color: "bg-green-500",
+        },
+        {
+          name: "Days Active",
+          stat: daysActive.toString(),
+          icon: ClockIcon,
+          color: "bg-purple-500",
+        },
+      ]);
+
+      // Activity returns { data: [...], pagination: {...} }
+      setActivities(activityRes.data.data || []);
+    } catch {
+      // Ignore error
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.createdAt]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [vaultRes, successorsRes, activityRes] = await Promise.all([
-          api.get("/vault/entries"),
-          api.get("/successors"),
-          api.get("/activity?limit=5"),
-        ]);
-
-        // Vault returns array directly
-        const vaultCount = Array.isArray(vaultRes.data)
-          ? vaultRes.data.length
-          : 0;
-        // Successors returns { successors: [...] }
-        const successorCount = successorsRes.data.successors?.length || 0;
-
-        // Calculate days active from user account creation date
-        const daysActive = user?.createdAt
-          ? Math.floor(
-              (new Date().getTime() - new Date(user.createdAt).getTime()) /
-                (1000 * 3600 * 24),
-            )
-          : 0;
-
-        setStats([
-          {
-            name: "Total Secrets",
-            stat: vaultCount.toString(),
-            icon: ShieldCheckIcon,
-            color: "bg-blue-500",
-          },
-          {
-            name: "Successors",
-            stat: successorCount.toString(),
-            icon: UserGroupIcon,
-            color: "bg-green-500",
-          },
-          {
-            name: "Days Active",
-            stat: daysActive.toString(),
-            icon: ClockIcon,
-            color: "bg-purple-500",
-          },
-        ]);
-
-        // Activity returns { data: [...], pagination: {...} }
-        setActivities(activityRes.data.data || []);
-      } catch {
-        // Ignore error
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (user) {
       fetchData();
     }
-  }, [user]);
+  }, [user, fetchData]);
+
+  const handleManualCheckIn = async () => {
+    setCheckingIn(true);
+    try {
+      await api.post("/activity/check-in", {});
+      success("Check-in recorded. Inactivity timer reset.");
+      await fetchData();
+    } catch {
+      showError("Failed to record check-in");
+    } finally {
+      setCheckingIn(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -128,6 +144,13 @@ const Dashboard: React.FC = () => {
           </h2>
         </div>
         <div className="mt-4 flex md:ml-4 md:mt-0">
+          <button
+            onClick={handleManualCheckIn}
+            disabled={checkingIn}
+            className="btn btn-secondary mr-3"
+          >
+            {checkingIn ? "Checking In..." : "Check In"}
+          </button>
           <Link to="/vault" className="btn btn-primary">
             Add Secret
           </Link>

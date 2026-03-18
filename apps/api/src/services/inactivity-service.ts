@@ -31,30 +31,11 @@ export class InactivityService {
   static async checkAllUsers(): Promise<void> {
     logger.info("Starting inactivity check for all users...");
 
-    const userRepo = this.getUserRepository();
-    const settingsRepo = this.getInactivitySettingsRepository();
-
-    // Get all active inactivity settings
-    const allSettings = await settingsRepo.findAllActive();
-
-    logger.info(`Checking ${allSettings.length} users for inactivity...`);
-
-    for (const settings of allSettings) {
-      const user = await userRepo.findById(settings.user_id);
-      if (!user) {
-        continue;
-      }
-
-      await this.checkUserInactivity({
-        id: user.id,
-        email: user.email,
-        last_activity: user.last_login ?? user.created_at,
-        created_at: user.created_at,
-        threshold_days: settings.threshold_days,
-        is_paused: settings.is_paused,
-        paused_until: settings.paused_until,
-      });
-    }
+    // Use the dedicated inactivity monitor to evaluate activity_records-based
+    // thresholds and reminder phases (75/85/95).
+    const { InactivityMonitorService } = await import("./inactivity-monitor");
+    const monitor = InactivityMonitorService.getInstance();
+    await monitor.checkAllUsers();
 
     // Also check for grace period expirations
     await this.monitorActiveHandovers();

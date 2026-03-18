@@ -26,19 +26,22 @@ import { logger } from "./config/logger";
 import { getMetrics, getMetricsContentType } from "./config/metrics";
 import authRoutes from "./routes/auth-routes";
 import vaultRoutes, { publicVaultRouter } from "./routes/vault-routes";
-import activityRoutes from "./routes/activity-routes";
+import activityRoutes, { publicActivityRouter } from "./routes/activity-routes";
 import inactivityRoutes from "./routes/inactivity-routes";
 import sessionRoutes from "./routes/session-routes";
 import successorRoutes, { verifyRouter } from "./routes/successor-routes";
 import adminRoutes from "./routes/admin-routes";
 import contactRoutes from "./routes/contact-routes";
 import { JobProcessor, JobScheduler } from "./jobs";
-import { closeAllQueues } from "./config/queue";
+import { closeAllQueues, getQueueHealth } from "./config/queue";
 import { SessionService } from "./services/session-service";
 import { initializeRedis, closeRedis, checkRedisHealth } from "./config/redis";
+import { JobManager } from "./services/job-manager";
+import { realtimeService } from "./services/realtime-service";
 
 // Initialize database connection
 const dbClient = getDatabaseClient();
+const jobManager = JobManager.getInstance();
 export let appInit: Promise<void> = Promise.resolve();
 
 if (process.env.NODE_ENV !== "test") {
@@ -65,6 +68,8 @@ if (process.env.NODE_ENV !== "test") {
       await JobProcessor.initialize();
       await JobScheduler.scheduleInactivityCheck();
       await JobScheduler.scheduleSessionCleanup();
+      await JobScheduler.scheduleArchiveLogs();
+      jobManager.start();
       logger.info("Job processors initialized and recurring jobs scheduled");
     })
     .catch((error) => {
@@ -134,10 +139,27 @@ app.use(sanitizeInput);
 // Health check endpoint
 app.get("/health", async (req, res) => {
   try {
-    const dbHealthy = await dbClient.healthCheck();
-    const redisHealthy = await checkRedisHealth();
+    const [dbHealthy, redisHealthy] = await Promise.all([
+      dbClient.healthCheck(),
+      checkRedisHealth(),
+    ]);
 
-    const allHealthy = dbHealthy && redisHealthy;
+    const queueNames = [
+      "inactivity",
+      "notifications",
+      "handover",
+      "maintenance",
+    ];
+    const queueHealthResults = await Promise.all(
+      queueNames.map((name) => getQueueHealth(name)),
+    );
+    const jobQueueHealthy = queueHealthResults.every(
+      (result) => result.healthy,
+    );
+    const managerHealth = await jobManager.getHealthStatus();
+
+    const allHealthy =
+      dbHealthy && redisHealthy && jobQueueHealthy && managerHealth.isHealthy;
 
     res.status(allHealthy ? 200 : 503).json({
       status: allHealthy ? "ok" : "degraded",
@@ -146,8 +168,20 @@ app.get("/health", async (req, res) => {
       checks: {
         database: dbHealthy ? "ok" : "failed",
         redis: redisHealthy ? "ok" : "failed",
-        jobQueue: "ok", // TODO: Add actual queue health check
+        jobQueue: jobQueueHealthy ? "ok" : "degraded",
+        inactivityMonitor: managerHealth.jobs.inactivityMonitor.isHealthy
+          ? "ok"
+          : "degraded",
       },
+      queueStats: queueNames.reduce<Record<string, unknown>>(
+        (acc, name, index) => {
+          acc[name] = queueHealthResults[index];
+          return acc;
+        },
+        {},
+      ),
+      backgroundJobs: managerHealth.jobs,
+      realtime: realtimeService.getStats(),
     });
   } catch {
     res.status(503).json({
@@ -175,6 +209,7 @@ app.get("/metrics", async (req, res) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/vault", publicVaultRouter);
 app.use("/api/v1/vault", vaultRoutes);
+app.use("/api/v1/activity", publicActivityRouter);
 app.use("/api/v1/activity", activityRoutes);
 app.use("/api/v1/inactivity", inactivityRoutes);
 app.use("/api/v1/sessions", sessionRoutes);
@@ -193,6 +228,9 @@ app.use(errorHandler);
 process.on("SIGTERM", async () => {
   logger.info("SIGTERM received, shutting down gracefully");
 
+  jobManager.stop();
+  realtimeService.close();
+
   // Close job processors and queues
   await JobProcessor.close();
   await closeAllQueues();
@@ -209,6 +247,9 @@ process.on("SIGTERM", async () => {
 
 process.on("SIGINT", async () => {
   logger.info("SIGINT received, shutting down gracefully");
+
+  jobManager.stop();
+  realtimeService.close();
 
   // Close job processors and queues
   await JobProcessor.close();

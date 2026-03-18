@@ -58,20 +58,27 @@ const SuccessorAccess: React.FC = () => {
     Array<VaultEntry & { decryptedData: any }>
   >([]);
 
+  const formatStatus = (value?: string) =>
+    value
+      ? value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+      : "Unknown";
+
   const verifyToken = useCallback(async () => {
     try {
       const response = await api.get(`/successors/verify?token=${token}`);
-      if (response.data.success) {
+      const isVerified = Boolean(response.data.success);
+      const handoverStatus = response.data.handoverStatus as string | undefined;
+
+      if (isVerified) {
         setMetadata({
           userName: response.data.userName,
-          handoverStatus: response.data.handoverStatus,
+          handoverStatus,
         });
 
-        const allowedStatuses = ["AWAITING_SUCCESSORS", "COMPLETED"];
-        if (
-          response.data.handoverStatus &&
-          allowedStatuses.includes(response.data.handoverStatus)
-        ) {
+        const allowedStatuses = ["awaiting_successors", "completed"];
+        const normalizedStatus = handoverStatus?.toLowerCase();
+
+        if (normalizedStatus && allowedStatuses.includes(normalizedStatus)) {
           setStatus("VERIFIED");
         } else {
           setStatus("ACCESS_DENIED");
@@ -216,7 +223,7 @@ const SuccessorAccess: React.FC = () => {
               {metadata.userName}'s vault is not yet open for successors. The
               handover process status is currently:{" "}
               <span className="font-semibold text-blue-600">
-                {metadata.handoverStatus}
+                {formatStatus(metadata.handoverStatus)}
               </span>
               .
             </p>

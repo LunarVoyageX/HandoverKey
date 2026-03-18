@@ -39,8 +39,11 @@ const VerifyEmail: React.FC = () => {
           navigate("/login");
         }, 3000);
       } catch (error: unknown) {
+        const apiError = error as {
+          response?: { data?: { message?: string } };
+        };
         const errorMessage =
-          error.response?.data?.message ||
+          apiError.response?.data?.message ||
           "Failed to verify email. The link may be expired or invalid.";
 
         // If token is expired/invalid, allow resending
@@ -82,8 +85,11 @@ const VerifyEmail: React.FC = () => {
         navigate("/login");
       }, 3000);
     } catch (error: unknown) {
+      const apiError = error as {
+        response?: { data?: { message?: string } };
+      };
       setMessage(
-        error.response?.data?.message ||
+        apiError.response?.data?.message ||
           "Failed to send verification email. Please try again.",
       );
     } finally {

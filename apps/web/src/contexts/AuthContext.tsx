@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "../services/api";
 import { clearMasterKey } from "../services/encryption";
+import { realtimeClient } from "../services/realtime";
 
 interface User {
   id: string;
   email: string;
   name?: string;
   createdAt?: string;
+  twoFactorEnabled?: boolean;
 }
 
 interface AuthContextType {
@@ -39,6 +41,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      realtimeClient.connect();
+      return;
+    }
+    realtimeClient.disconnect();
+  }, [user]);
+
   const login = (userData: User) => {
     setUser(userData);
   };
@@ -50,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Even if logout API fails, clear local state
     }
     setUser(null);
+    realtimeClient.disconnect();
     clearMasterKey();
   };
 

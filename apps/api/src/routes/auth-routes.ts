@@ -10,6 +10,11 @@ import {
   RefreshTokenSchema,
   PasswordResetRequestSchema,
   PasswordResetConfirmSchema,
+  UpdateProfileSchema,
+  ChangePasswordSchema,
+  TwoFactorSetupSchema,
+  TwoFactorEnableSchema,
+  TwoFactorDisableSchema,
 } from "../validation/schemas";
 
 const router = Router();
@@ -52,7 +57,11 @@ router.post(
 router.get("/verify-email", AuthController.verifyEmail);
 
 // Resend verification email endpoint
-router.post("/resend-verification", AuthController.resendVerificationEmail);
+router.post(
+  "/resend-verification",
+  validateRequest(PasswordResetRequestSchema, "body"),
+  AuthController.resendVerificationEmail,
+);
 
 // Logout endpoint (requires authentication)
 router.post("/logout", authenticateJWT, requireAuth, AuthController.logout);
@@ -72,6 +81,51 @@ router.get(
   requireAuth,
   SimpleActivityMiddleware.trackActivity("PROFILE_ACCESS"),
   AuthController.getProfile,
+);
+
+// Update profile (requires authentication)
+router.put(
+  "/profile",
+  authenticateJWT,
+  requireAuth,
+  validateRequest(UpdateProfileSchema, "body"),
+  AuthController.updateProfile,
+);
+
+// Change password and rotate vault encryption (requires authentication)
+router.put(
+  "/change-password",
+  authenticateJWT,
+  requireAuth,
+  validateRequest(ChangePasswordSchema, "body"),
+  AuthController.changePassword,
+);
+
+// Initialize two-factor setup (requires authentication)
+router.post(
+  "/2fa/setup",
+  authenticateJWT,
+  requireAuth,
+  validateRequest(TwoFactorSetupSchema, "body"),
+  AuthController.setupTwoFactor,
+);
+
+// Enable two-factor authentication (requires authentication)
+router.post(
+  "/2fa/enable",
+  authenticateJWT,
+  requireAuth,
+  validateRequest(TwoFactorEnableSchema, "body"),
+  AuthController.enableTwoFactor,
+);
+
+// Disable two-factor authentication (requires authentication)
+router.post(
+  "/2fa/disable",
+  authenticateJWT,
+  requireAuth,
+  validateRequest(TwoFactorDisableSchema, "body"),
+  AuthController.disableTwoFactor,
 );
 
 // Delete account endpoint (requires authentication)

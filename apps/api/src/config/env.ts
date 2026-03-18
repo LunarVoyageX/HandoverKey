@@ -8,6 +8,9 @@ const envSchema = z.object({
   DB_NAME: z.string().min(1),
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
+  ACTIVITY_HMAC_SECRET: z
+    .string()
+    .min(32, "ACTIVITY_HMAC_SECRET must be at least 32 characters"),
 
   // Optional with safe defaults
   NODE_ENV: z

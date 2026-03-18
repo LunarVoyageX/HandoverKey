@@ -245,8 +245,13 @@ export class SuccessorController {
       }
 
       res.json({
-        message:
-          "Successor verified successfully! You can now close this window.",
+        success: true,
+        alreadyVerified: result.alreadyVerified,
+        userName: result.userName,
+        handoverStatus: result.handoverStatus,
+        message: result.alreadyVerified
+          ? "Successor already verified. You can continue to successor access."
+          : "Successor verified successfully. You can now access the handover vault when available.",
       });
     } catch (error) {
       next(error);
@@ -274,6 +279,68 @@ export class SuccessorController {
       );
 
       res.json({ message: "Successor shares updated successfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAssignedVaultEntries(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const { id } = req.params;
+      const assignment = await SuccessorService.getAssignedVaultEntries(
+        req.user.userId,
+        id,
+      );
+
+      res.json({
+        successorId: assignment.successorId,
+        entryIds: assignment.entryIds,
+        restrictToAssignedEntries: assignment.restrictToAssignedEntries,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateAssignedVaultEntries(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new AuthenticationError("Not authenticated");
+      }
+
+      const { id } = req.params;
+      const { entryIds, restrictToAssignedEntries } = req.body;
+      const assignment = await SuccessorService.updateAssignedVaultEntries(
+        req.user.userId,
+        id,
+        entryIds,
+        restrictToAssignedEntries,
+      );
+
+      await UserService.logActivity(
+        req.user.userId,
+        "SUCCESSOR_ASSIGNMENTS_UPDATED",
+        req.ip,
+      );
+
+      res.json({
+        message: "Successor vault assignments updated successfully",
+        successorId: assignment.successorId,
+        entryIds: assignment.entryIds,
+        restrictToAssignedEntries: assignment.restrictToAssignedEntries,
+      });
     } catch (error) {
       next(error);
     }

@@ -10,6 +10,11 @@ export {
   PasswordResetRequestSchema,
   PasswordResetConfirmSchema,
   PasswordChangeSchema,
+  UpdateProfileSchema,
+  ChangePasswordSchema,
+  TwoFactorSetupSchema,
+  TwoFactorEnableSchema,
+  TwoFactorDisableSchema,
 } from "./auth.schemas";
 
 // Vault schemas
@@ -18,6 +23,7 @@ export {
   UpdateVaultEntrySchema,
   VaultQuerySchema,
   VaultEntryIdSchema,
+  VaultImportSchema,
 } from "./vault.schemas";
 
 // Inactivity schemas
@@ -35,10 +41,15 @@ export {
   VerifySuccessorSchema,
   SuccessorIdSchema,
   UpdateSharesSchema,
+  UpdateAssignedVaultEntriesSchema,
 } from "./successor.schemas";
 
 // Activity schemas
-export { CheckInSchema } from "./activity.schemas";
+export {
+  CheckInSchema,
+  CheckInTokenQuerySchema,
+  CheckInTokenSchema,
+} from "./activity.schemas";
 
 // Contact schemas
 export { ContactFormSchema } from "./contact.schemas";

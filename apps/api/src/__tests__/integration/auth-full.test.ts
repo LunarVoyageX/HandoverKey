@@ -3,6 +3,8 @@ import app, { appInit } from "../../app";
 import { getDatabaseClient } from "@handoverkey/database";
 import { SessionService } from "../../services/session-service";
 import { initializeRedis, closeRedis } from "../../config/redis";
+import crypto from "crypto";
+import { URL } from "node:url";
 
 jest.setTimeout(30000);
 
@@ -41,6 +43,48 @@ async function registerVerifyLogin(emailPrefix: string) {
   const token = accessCookie.split(";")[0].split("=")[1];
 
   return { email, password, userId: user.id, token, refreshCookie };
+}
+
+const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+function base32Decode(secret: string): Uint8Array {
+  const normalized = secret.toUpperCase().replace(/=+$/g, "");
+  let bits = 0;
+  let value = 0;
+  const bytes: number[] = [];
+
+  for (const char of normalized) {
+    const index = BASE32_ALPHABET.indexOf(char);
+    if (index === -1) {
+      throw new Error("Invalid base32 secret");
+    }
+    value = (value << 5) | index;
+    bits += 5;
+
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+
+  return new Uint8Array(bytes);
+}
+
+function generateTotp(secret: string): string {
+  const counter = Math.floor(Date.now() / 1000 / 30);
+  const hmac = crypto.createHmac("sha1", Buffer.from(base32Decode(secret)));
+  const counterBuffer = Buffer.alloc(8);
+  counterBuffer.writeBigUInt64BE(BigInt(counter));
+  hmac.update(counterBuffer);
+  const digest = hmac.digest();
+
+  const offset = digest[digest.length - 1] & 0x0f;
+  const binary =
+    ((digest[offset] & 0x7f) << 24) |
+    ((digest[offset + 1] & 0xff) << 16) |
+    ((digest[offset + 2] & 0xff) << 8) |
+    (digest[offset + 3] & 0xff);
+  return (binary % 1000000).toString().padStart(6, "0");
 }
 
 describe("Auth Full Flow Integration", () => {
@@ -147,5 +191,68 @@ describe("Auth Full Flow Integration", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.message).toContain("deleted");
+  });
+
+  it("should enable two-factor auth and require code for login", async () => {
+    const { email, password, token } = await registerVerifyLogin("2fa-enable");
+
+    const setupRes = await request(app)
+      .post("/api/v1/auth/2fa/setup")
+      .set("Authorization", `Bearer ${token}`)
+      .send({});
+
+    expect(setupRes.status).toBe(200);
+    expect(Array.isArray(setupRes.body.recoveryCodes)).toBe(true);
+    expect(setupRes.body.recoveryCodes.length).toBeGreaterThanOrEqual(8);
+
+    const setupUrl = new URL(setupRes.body.otpauthUrl);
+    const secret = setupUrl.searchParams.get("secret");
+    expect(secret).toBeTruthy();
+
+    const enableRes = await request(app)
+      .post("/api/v1/auth/2fa/enable")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ token: generateTotp(secret!) });
+    expect(enableRes.status).toBe(200);
+
+    const loginWithout2fa = await request(app)
+      .post("/api/v1/auth/login")
+      .send({ email, password });
+    expect(loginWithout2fa.status).toBe(401);
+
+    const loginWith2fa = await request(app)
+      .post("/api/v1/auth/login")
+      .send({ email, password, twoFactorCode: generateTotp(secret!) });
+    expect(loginWith2fa.status).toBe(200);
+  });
+
+  it("should allow recovery code login and consume used code", async () => {
+    const { email, password, token } =
+      await registerVerifyLogin("2fa-recovery");
+
+    const setupRes = await request(app)
+      .post("/api/v1/auth/2fa/setup")
+      .set("Authorization", `Bearer ${token}`)
+      .send({});
+    const recoveryCode = setupRes.body.recoveryCodes[0];
+    const setupUrl = new URL(setupRes.body.otpauthUrl);
+    const secret = setupUrl.searchParams.get("secret");
+    expect(secret).toBeTruthy();
+
+    const enableRes = await request(app)
+      .post("/api/v1/auth/2fa/enable")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ token: generateTotp(secret!) });
+    expect(enableRes.status).toBe(200);
+
+    const loginWithRecovery = await request(app)
+      .post("/api/v1/auth/login")
+      .send({ email, password, recoveryCode });
+    expect(loginWithRecovery.status).toBe(200);
+
+    const reusedRecoveryLogin = await request(app)
+      .post("/api/v1/auth/login")
+      .send({ email, password, recoveryCode });
+    expect(reusedRecoveryLogin.status).toBe(401);
   });
 });

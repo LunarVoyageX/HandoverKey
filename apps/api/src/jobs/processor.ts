@@ -17,11 +17,14 @@ import {
   JobResult,
   InactivityCheckJobData,
   SendReminderJobData,
+  SendWarningJobData,
   ExecuteHandoverJobData,
   CleanupSessionsJobData,
+  ArchiveLogsJobData,
 } from "./types";
 import { InactivityService } from "../services/inactivity-service";
 import { inactivityChecks } from "../config/metrics";
+import { getDatabaseClient, ActivityRepository } from "@handoverkey/database";
 
 /**
  * Job processor class
@@ -158,6 +161,12 @@ export class JobProcessor {
           );
           break;
 
+        case JobType.SEND_WARNING:
+          result = await this.processSendWarning(
+            job.data as SendWarningJobData,
+          );
+          break;
+
         case JobType.EXECUTE_HANDOVER:
           result = await this.processExecuteHandover(
             job.data as ExecuteHandoverJobData,
@@ -167,6 +176,12 @@ export class JobProcessor {
         case JobType.CLEANUP_SESSIONS:
           result = await this.processCleanupSessions(
             job.data as CleanupSessionsJobData,
+          );
+          break;
+
+        case JobType.ARCHIVE_LOGS:
+          result = await this.processArchiveLogs(
+            job.data as ArchiveLogsJobData,
           );
           break;
 
@@ -264,6 +279,43 @@ export class JobProcessor {
   }
 
   /**
+   * Process send warning job
+   */
+  private static async processSendWarning(
+    data: SendWarningJobData,
+  ): Promise<JobResult> {
+    logger.info(
+      {
+        userId: data.userId,
+        warningType: data.warningType,
+      },
+      "Sending warning notification",
+    );
+
+    const { NotificationService } =
+      await import("../services/notification-service");
+    const notificationService = new NotificationService();
+    const { ReminderType } =
+      await import("@handoverkey/shared/src/types/dead-mans-switch");
+
+    await notificationService.sendReminder(
+      data.userId,
+      data.warningType === "handover_pending"
+        ? ReminderType.FINAL_WARNING
+        : ReminderType.SECOND_REMINDER,
+    );
+
+    return {
+      success: true,
+      message: "Warning sent",
+      data: {
+        userId: data.userId,
+        warningType: data.warningType,
+      },
+    };
+  }
+
+  /**
    * Process execute handover job
    */
   private static async processExecuteHandover(
@@ -325,6 +377,34 @@ export class JobProcessor {
     return {
       success: true,
       message: "Sessions cleaned up",
+      data: {
+        olderThanDays,
+        deletedCount,
+      },
+    };
+  }
+
+  /**
+   * Process archive logs job
+   */
+  private static async processArchiveLogs(
+    data: ArchiveLogsJobData,
+  ): Promise<JobResult> {
+    const olderThanDays = data.olderThanDays;
+    const cutoffDate = new Date(
+      Date.now() - olderThanDays * 24 * 60 * 60 * 1000,
+    );
+
+    const dbClient = getDatabaseClient();
+    const activityRepo = new ActivityRepository(dbClient.getKysely());
+
+    // We currently retain archive semantics by deleting old records after
+    // retention threshold. Real cold-storage archiving can be added later.
+    const deletedCount = await activityRepo.deleteOlderThan(cutoffDate);
+
+    return {
+      success: true,
+      message: "Logs archived by retention policy",
       data: {
         olderThanDays,
         deletedCount,

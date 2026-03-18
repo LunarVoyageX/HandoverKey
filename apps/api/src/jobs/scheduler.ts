@@ -13,8 +13,10 @@ import {
   JobOptions,
   InactivityCheckJobData,
   SendReminderJobData,
+  SendWarningJobData,
   ExecuteHandoverJobData,
   CleanupSessionsJobData,
+  ArchiveLogsJobData,
 } from "./types";
 
 /**
@@ -96,6 +98,23 @@ export class JobScheduler {
   }
 
   /**
+   * Schedule warning notification
+   */
+  static async scheduleWarning(
+    data: SendWarningJobData,
+    options?: JobOptions,
+  ): Promise<Job> {
+    return this.scheduleJob(
+      JobType.SEND_WARNING,
+      {
+        ...data,
+        createdAt: new Date().toISOString(),
+      },
+      options,
+    );
+  }
+
+  /**
    * Schedule handover execution
    */
   static async scheduleHandover(
@@ -133,6 +152,29 @@ export class JobScheduler {
         ...options,
         repeat: options?.repeat || {
           pattern: "0 2 * * *", // Every day at 2 AM
+        },
+      },
+    );
+  }
+
+  /**
+   * Schedule activity log archival/retention cleanup
+   * Runs daily by default at 3 AM
+   */
+  static async scheduleArchiveLogs(
+    data: ArchiveLogsJobData = { olderThanDays: 365, logType: "activity" },
+    options?: JobOptions,
+  ): Promise<Job> {
+    return this.scheduleJob(
+      JobType.ARCHIVE_LOGS,
+      {
+        ...data,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        ...options,
+        repeat: options?.repeat || {
+          pattern: "0 3 * * *",
         },
       },
     );

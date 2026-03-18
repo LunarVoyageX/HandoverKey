@@ -16,8 +16,6 @@ import {
 } from "@handoverkey/shared/src/types/dead-mans-switch";
 
 export class ActivityService implements ActivityTracker {
-  private static readonly HMAC_SECRET =
-    process.env.ACTIVITY_HMAC_SECRET || "default-secret-change-in-production";
   private static readonly SIGNATURE_ALGORITHM = "sha256";
 
   private static getActivityRepository(): ActivityRepository {
@@ -262,10 +260,23 @@ export class ActivityService implements ActivityTracker {
     );
     return createHmac(
       ActivityService.SIGNATURE_ALGORITHM,
-      ActivityService.HMAC_SECRET,
+      ActivityService.getActivityHmacSecret(),
     )
       .update(dataString)
       .digest("hex");
+  }
+
+  private static getActivityHmacSecret(): string {
+    const secret = process.env.ACTIVITY_HMAC_SECRET;
+    if (!secret) {
+      if (process.env.NODE_ENV === "test") {
+        return "test-activity-hmac-secret-32-bytes-minimum";
+      }
+      throw new Error(
+        "ACTIVITY_HMAC_SECRET environment variable is required for activity integrity",
+      );
+    }
+    return secret;
   }
 
   private async getInactivitySettings(userId: string) {

@@ -9,6 +9,9 @@ import Spinner from "../components/Spinner";
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login, user } = useAuth();
@@ -27,6 +30,12 @@ const Login: React.FC = () => {
       const response = await api.post("/auth/login", {
         email,
         password: authKey,
+        twoFactorCode:
+          !useRecoveryCode && twoFactorCode ? twoFactorCode : undefined,
+        recoveryCode:
+          useRecoveryCode && recoveryCode
+            ? recoveryCode.toUpperCase().trim()
+            : undefined,
       });
 
       const { user: userData } = response.data;
@@ -156,6 +165,64 @@ const Login: React.FC = () => {
                   placeholder="••••••••"
                 />
               </div>
+            </div>
+
+            <div className="rounded-md border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Use recovery code
+                </label>
+                <input
+                  type="checkbox"
+                  checked={useRecoveryCode}
+                  onChange={(e) => setUseRecoveryCode(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                />
+              </div>
+              {!useRecoveryCode ? (
+                <div className="mt-3">
+                  <label
+                    htmlFor="two-factor-code"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Two-Factor Code (if enabled)
+                  </label>
+                  <input
+                    id="two-factor-code"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    value={twoFactorCode}
+                    onChange={(e) =>
+                      setTwoFactorCode(e.target.value.replace(/\D/g, ""))
+                    }
+                    className="input mt-1"
+                    placeholder="123456"
+                  />
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <label
+                    htmlFor="recovery-code"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Recovery Code
+                  </label>
+                  <input
+                    id="recovery-code"
+                    type="text"
+                    value={recoveryCode}
+                    onChange={(e) =>
+                      setRecoveryCode(
+                        e.target.value.toUpperCase().replace(/[^A-F0-9-]/g, ""),
+                      )
+                    }
+                    className="input mt-1 font-mono"
+                    placeholder="A1B2C3-D4E5F6"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
