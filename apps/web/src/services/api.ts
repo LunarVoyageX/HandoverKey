@@ -11,8 +11,12 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const requestUrl = String(error?.config?.url || "");
+    const isAuthProbeRequest = requestUrl.includes("/auth/profile");
+
     if (
       error.response?.status === 401 &&
+      !isAuthProbeRequest &&
       window.location.pathname !== "/login"
     ) {
       window.location.href = "/login";
