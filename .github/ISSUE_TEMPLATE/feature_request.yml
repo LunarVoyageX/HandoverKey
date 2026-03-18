@@ -37,9 +37,9 @@ body:
   - type: checkboxes
     id: scope
     attributes:
-      label: Scope
-      description: Does this fit the MVP scope?
+      label: Roadmap fit
+      description: How does this fit the current product and roadmap?
       options:
-        - label: This is essential for MVP
-        - label: This can wait until after MVP
-        - label: I'm not sure about the scope
+        - label: This improves the current shipped product surface
+        - label: This is a longer-term roadmap item
+        - label: I'm not sure where this fits yet

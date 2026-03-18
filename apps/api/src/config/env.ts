@@ -22,6 +22,7 @@ const envSchema = z.object({
   REDIS_PASSWORD: z.string().optional(),
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
   CORS_ORIGINS: z.string().optional(),
+  COOKIE_DOMAIN: z.string().optional(),
   JWT_EXPIRES_IN: z.string().default("1h"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).default(12),
@@ -32,10 +33,14 @@ const envSchema = z.object({
     .default("info"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_SECURE: z.enum(["true", "false"]).optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
   JOB_CONCURRENCY: z.coerce.number().int().positive().default(5),
+  ADMIN_EMAILS: z.string().optional(),
+  TWO_FACTOR_ISSUER: z.string().default("HandoverKey"),
+  GRACE_PERIOD_HOURS: z.coerce.number().int().positive().default(48),
 });
 
 export type Env = z.infer<typeof envSchema>;

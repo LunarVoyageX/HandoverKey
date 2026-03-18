@@ -1,121 +1,137 @@
-# HandoverKey - Security Model
+# HandoverKey Security Model
 
-## 1. Introduction
+This document describes the security controls that are implemented in the current
+repository. If a control is not shipped yet, it is listed under "Future Hardening" and
+not presented as active behavior.
 
-This document describes the **implemented** security model of HandoverKey. Features listed in the [Roadmap](#9-security-roadmap) section are planned but not yet implemented.
+## Security Principles
 
-## 2. Core Security Principles
+- keep vault plaintext on the client whenever possible
+- separate authentication from vault encryption concerns
+- fail fast on missing critical secrets
+- validate and sanitize all incoming data
+- keep auth, inactivity, and handover actions auditable
 
-### 2.1 Zero-Knowledge Architecture
+## Implemented Controls
 
-- All sensitive user data (passwords, documents, notes) is encrypted **client-side** using AES-256-GCM before transmission to the server.
-- The server stores only encrypted blobs and cannot decrypt them.
-- Master encryption keys are derived from the user's password using PBKDF2 with 100,000+ iterations and a unique salt per user.
-- The master key **never** leaves the client device.
+### Client-Side Vault Encryption
 
-### 2.2 Key Separation
+- Vault entries are encrypted in the client before they are sent to the API.
+- Encryption uses AES-256-GCM through the shared crypto package.
+- Key derivation uses PBKDF2 with SHA-256.
+- The server stores encrypted payloads, IVs, salts, metadata, and related records, but
+  does not need plaintext vault content for normal operation.
 
-- **Authentication Key**: Derived from the password with a lower iteration count, used only to prove identity to the server. The server stores a bcrypt hash of this key.
-- **Master Encryption Key**: Derived from the password with a different salt and higher iteration count, used to encrypt/decrypt vault data. The server never sees this key.
-- Because the derivation parameters differ, compromising the server's auth key hash does not enable derivation of the master encryption key.
+### Password And Auth Handling
 
-## 3. Encryption Architecture
+- Server-side password storage uses bcrypt.
+- Browser authentication uses httpOnly JWT cookies.
+- API clients may also authenticate with `Authorization: Bearer <token>`.
+- Protected routes validate both the token and the backing session record.
+- Refresh tokens are path-scoped to `/api/v1/auth/refresh`.
 
-### 3.1 Data Encryption
+### Session Management
 
-- **Algorithm**: AES-256-GCM (via Web Crypto API in the browser)
-- **IV**: Unique cryptographically random IV per encryption operation
-- **Integrity**: GCM mode provides authenticated encryption (confidentiality + integrity)
-- **Implementation**: `packages/crypto/src/encryption.ts`
+- Every login creates a tracked server-side session.
+- Users can view active sessions, revoke one session, or invalidate all other sessions.
+- Session cleanup runs as a background maintenance task.
 
-### 3.2 Key Derivation
+### Two-Factor Authentication
 
-- **Algorithm**: PBKDF2 with SHA-256
-- **Iterations**: 100,000+ for encryption key, 10,000 for auth key
-- **Salt**: Cryptographically random, unique per user, stored server-side
-- **Implementation**: `packages/crypto/src/encryption.ts`
+- TOTP 2FA is implemented.
+- Users can start setup, scan an otpauth QR code, enable 2FA, disable it later, and use
+  recovery codes if they lose the authenticator device.
+- The default issuer label is configurable through `TWO_FACTOR_ISSUER`.
 
-### 3.3 Shamir's Secret Sharing
+### Account Lockout
 
-- The user's master key (or a derived handover key) is split into N shares with a threshold K.
-- Any K of N shares can reconstruct the key; fewer than K shares reveal nothing.
-- Each successor receives one encrypted share.
-- **Implementation**: `packages/crypto/src/shamir.ts`
+- Failed login attempts are tracked.
+- After 5 failed attempts inside a 15-minute window, the account is locked for 15
+  minutes.
+- Lockout state is stored in Redis and mirrored to the user record.
+- Admin users can inspect and unlock locked accounts.
 
-## 4. Authentication
+### Rate Limiting
 
-### 4.1 Password Handling
+Current implementation uses `express-rate-limit` middleware:
 
-- Passwords are hashed using **bcrypt** (configurable rounds, default 12) on the server.
-- The client sends a PBKDF2-derived auth key, not the raw password.
+- general API limiter
+- stricter auth limiter
+- registration limiter
+- contact form limiter
 
-### 4.2 Session Management
+Important note:
 
-- **JWT access tokens**: Short-lived (default 1 hour), used for API authentication.
-- **Refresh tokens**: Longer-lived (default 7 days), used to obtain new access tokens.
-- **Server-side session tracking**: Each JWT is associated with a database session record. Token validity is checked against the session table on each request.
-- Sessions can be individually or bulk-invalidated by the user.
+- the current limiter uses in-process memory, not a distributed Redis-backed store
+- for multi-instance production deployments, pair this with an edge/WAF rate limiter or
+  upgrade to a shared store
 
-### 4.3 Account Lockout
+### Input Validation And Sanitization
 
-- Failed login attempts are tracked per user.
-- After a configurable number of failures, the account is temporarily locked with exponential backoff.
-- Lockout status is stored server-side and can be cleared by an admin.
+- Request schemas are validated with Zod.
+- Content type is checked for JSON mutation routes.
+- Input sanitization removes dangerous HTML/script patterns and strips suspicious
+  protocols and event handlers.
+- Prototype-pollution keys such as `__proto__`, `constructor`, and `prototype` are
+  explicitly rejected.
 
-### 4.4 Rate Limiting
+### Logging And Auditability
 
-- Auth endpoints: 5 requests per 15-minute window
-- Validation endpoints: 20 requests per 5-minute window
-- General API: 100 requests per 15-minute window
-- Implemented via `express-rate-limit` backed by Redis.
+- The API uses structured Pino logging.
+- Activity records are HMAC-signed with `ACTIVITY_HMAC_SECRET` for integrity checking.
+- Activity history is queryable through the authenticated activity endpoints.
+- Old records may be cleaned up by retention jobs, so these logs should be treated as
+  integrity-protected operational records, not immutable archival storage.
 
-## 5. Input Validation and Sanitization
+### Inactivity And Handover Protections
 
-- Request bodies are validated using **Zod** schemas (`apps/api/src/validation/schemas/`).
-- Input is sanitized against XSS using DOMPurify (`isomorphic-dompurify`).
-- Content-Type validation middleware rejects non-JSON requests on API endpoints.
-- Request IDs are attached to all requests for audit trail correlation.
+- User activity comes from both authenticated actions and explicit check-ins.
+- Manual check-in and secure emailed check-in links can reset inactivity state.
+- Active grace-period handovers are canceled when the user checks in again.
+- Successors must verify their identity before accessing successor flows.
+- Owners can restrict each successor to assigned vault entries only.
 
-## 6. Error Handling
+### Transport And Browser Security
 
-- Custom error hierarchy (`AppError`, `AuthenticationError`, `ValidationError`, etc.) ensures consistent error responses.
-- Production error responses never expose stack traces or internal details.
-- Structured logging via Pino with PII redaction (authorization headers, passwords, tokens are redacted from logs).
+- Production cookies are marked secure and configured for hosted browser usage.
+- CORS uses an explicit allowlist through `CORS_ORIGINS`.
+- The API does not rely on permissive wildcard origins.
 
-## 7. Infrastructure Security
+## Operational Security Notes
 
-- **Database**: PostgreSQL with connection pooling (Kysely). Query retry logic with exponential backoff for transient failures.
-- **Cache/Queue**: Redis for session caching, rate limiting, and BullMQ job queues.
-- **Docker**: Multi-stage builds for minimal production images.
-- **Dependencies**: Dependabot monitors for vulnerable dependencies weekly.
+- `JWT_SECRET` and `ACTIVITY_HMAC_SECRET` are required startup secrets.
+- PostgreSQL and Redis should run over trusted private networking or TLS-capable managed
+  services, depending on deployment.
+- SMTP credentials are sensitive and should come from a secrets manager or deployment
+  secret store.
+- Admin access is currently controlled by the `ADMIN_EMAILS` allowlist.
 
-## 8. Dead Man's Switch Security
+## Known Limitations
 
-- User activity is recorded via check-ins (login, manual check-in, API activity).
-- Inactivity thresholds are user-configurable.
-- When the threshold is exceeded, a grace period begins before handover is initiated.
-- Successors must verify their identity (email verification) before receiving vault access.
-- All handover events are logged for audit purposes.
+- Rate limiting is not yet backed by a distributed store.
+- Admin authorization is allowlist-based rather than a full role model.
+- The repository does not currently ship WebAuthn / passkeys.
+- CSP, HSTS, and other browser-facing security headers are expected to be enforced by
+  the frontend host or reverse proxy if needed for deployment.
 
-## 9. Security Roadmap
+## Future Hardening
 
-The following features are **planned but not yet implemented**:
+Likely future improvements include:
 
-- **Multi-Factor Authentication (TOTP)**: Authenticator app support for login. (Stub exists in auth flow, verification not implemented.)
-- **WebAuthn/FIDO2**: Hardware security key support (YubiKey, etc.).
-- **Role-Based Access Control**: Currently admin routes require an email allowlist; a proper role system is planned.
-- **HSTS / CSP Headers**: HTTP security headers for the web application.
-- **Argon2 Migration**: Migrating from bcrypt to Argon2id for password hashing.
-- **Encrypted Audit Logs**: Cryptographic signing of activity logs.
-- **SOC 2 / Penetration Testing**: Third-party security audits.
+- WebAuthn / passkey support
+- distributed rate limiting
+- richer role-based authorization
+- external security review / penetration testing
+- stronger deployment-level security header baselines
 
-## 10. Reporting Vulnerabilities
+## Reporting Vulnerabilities
 
-**Do not open GitHub issues for security vulnerabilities.**
+Do not open public issues for security problems.
 
-Please email the maintainers directly or refer to our [Security Policy](../SECURITY.md).
+Please follow [`../SECURITY.md`](../SECURITY.md) and email
+`security@handoverkey.com`.
 
 ---
 
-**Last Updated**: March 2026
-**Version**: 2.0
+**Last Updated**: 2026-03-18
+**Version**: 2.0.0

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability report
+    url: https://github.com/HandoverKey/HandoverKey/security/policy
+    about: Please report vulnerabilities privately instead of opening a public issue.
+  - name: Documentation index
+    url: https://github.com/HandoverKey/HandoverKey/blob/main/docs/README.md
+    about: Start here for API, architecture, deployment, testing, and security docs.

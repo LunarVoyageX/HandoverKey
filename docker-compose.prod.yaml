@@ -13,13 +13,13 @@ services:
 
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     ports:
       - "3011:3001"
     environment:
       NODE_ENV: production
-      PORT: 3001
+      API_PORT: 3001
       # Database connection - PROVIDE THESE IN YOUR PRODUCTION ENV
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT:-5432}
@@ -31,9 +31,23 @@ services:
       REDIS_PORT: 6379
       # App secrets
       JWT_SECRET: ${JWT_SECRET}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ACTIVITY_HMAC_SECRET: ${ACTIVITY_HMAC_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       # Web URL
       FRONTEND_URL: ${FRONTEND_URL:-https://handoverkey.com}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://handoverkey.com}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      JOB_CONCURRENCY: ${JOB_CONCURRENCY:-5}
+      TWO_FACTOR_ISSUER: ${TWO_FACTOR_ISSUER:-HandoverKey}
+      GRACE_PERIOD_HOURS: ${GRACE_PERIOD_HOURS:-48}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     depends_on:
       redis:
         condition: service_healthy
@@ -46,8 +60,9 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        # Pass API URL to build time
+        # Pass API and WebSocket URLs to build time
         VITE_API_URL: ${VITE_API_URL:-https://api.handoverkey.com/api/v1}
+        VITE_WS_URL: ${VITE_WS_URL:-wss://api.handoverkey.com/ws}
     ports:
       - "3010:3000"
     networks:

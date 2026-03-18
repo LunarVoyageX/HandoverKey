@@ -1,440 +1,266 @@
-# HandoverKey - API Reference
+# HandoverKey API Reference
 
-## 1. Introduction
+This document describes the current `v2.0.0` API surface implemented in
+`apps/api`.
 
-This document provides a comprehensive reference for the HandoverKey RESTful API. The API is designed to be secure, efficient, and easy to integrate with various client applications (web, mobile, CLI). All API interactions are secured with JWT authentication and TLS encryption.
+## Base URLs
 
-## 2. Base URL
+- Local development: `http://localhost:3001/api/v1`
+- Production example: `https://api.handoverkey.com/api/v1`
 
-`https://api.handoverkey.com/v1` (Production)
-`http://localhost:3000/api/v1` (Local Development)
+The web app uses `VITE_API_URL` in production. In local development, the Vite dev
+server proxies `/api` to the API server.
 
-## 3. Authentication
+## Authentication Model
 
-All API requests require a JSON Web Token (JWT) in the `Authorization` header.
+HandoverKey supports two auth patterns:
 
-```
-Authorization: Bearer <YOUR_JWT_TOKEN>
-```
+- **Browser clients** use httpOnly cookies set by the API (`accessToken`,
+  `refreshToken`).
+- **Programmatic clients** can also pass `Authorization: Bearer <token>`.
 
-### 3.1 Register User
+Protected endpoints validate both the JWT and the backing server-side session.
 
-`POST /auth/register`
+### Cookie behavior
 
-Registers a new user account.
+- `accessToken`: short-lived auth cookie
+- `refreshToken`: scoped to `/api/v1/auth/refresh`
+- production cookies are `secure` and `SameSite=None`
 
-**Request Body:**
+### Authentication flow
+
+1. `POST /auth/register`
+2. `GET /auth/verify-email?token=...`
+3. `POST /auth/login`
+4. API sets auth cookies and returns the authenticated user payload
+5. Browser calls `GET /auth/profile` to hydrate session state
+
+If TOTP is enabled, login accepts either a `twoFactorCode` or a `recoveryCode`.
+
+## Common Response Conventions
+
+- Successful responses usually return JSON payloads or `{ "message": "..." }`
+- Validation failures return `400`
+- Missing/invalid auth returns `401`
+- Not found resources return `404`
+- Controllers forward errors to a central error handler for consistent formatting
+
+## Core Route Groups
+
+### Auth
+
+Public:
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/forgot-password`
+- `POST /auth/reset-password`
+- `GET /auth/verify-email`
+- `POST /auth/resend-verification`
+- `POST /auth/refresh`
+
+Authenticated:
+
+- `POST /auth/logout`
+- `GET /auth/profile`
+- `PUT /auth/profile`
+- `PUT /auth/change-password`
+- `POST /auth/2fa/setup`
+- `POST /auth/2fa/enable`
+- `POST /auth/2fa/disable`
+- `DELETE /auth/delete-account`
+
+Example login request:
 
 ```json
 {
   "email": "user@example.com",
   "password": "StrongPassword123!",
-  "confirmPassword": "StrongPassword123!"
+  "twoFactorCode": "123456"
 }
 ```
 
-**Response:**
+Example login response body:
 
 ```json
 {
-  "message": "User registered successfully. Please verify your email."
-}
-```
-
-### 3.2 Login User
-
-`POST /auth/login`
-
-Authenticates a user and returns an access token and refresh token.
-
-**Request Body:**
-
-```json
-{
-  "email": "user@example.com",
-  "password": "StrongPassword123!"
-}
-```
-
-**Response:**
-
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1Ni...",
-  "refreshToken": "eyJhbGciOiJIUzI1Ni...",
-  "expiresIn": 3600
-}
-```
-
-### 3.3 Refresh Token
-
-`POST /auth/refresh`
-
-Obtains a new access token using a refresh token.
-
-**Request Body:**
-
-```json
-{
-  "refreshToken": "eyJhbGciOiJIUzI1Ni..."
-}
-```
-
-**Response:**
-
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1Ni...",
-  "expiresIn": 3600
-}
-```
-
-## 4. User Management
-
-### 4.1 Get User Profile
-
-`GET /users/profile`
-
-Retrieves the authenticated user's profile information.
-
-**Response:**
-
-```json
-{
-  "id": "uuid-user-id",
-  "email": "user@example.com",
-  "createdAt": "2023-01-01T12:00:00Z",
-  "lastLogin": "2023-07-26T10:30:00Z"
-}
-```
-
-### 4.2 Update User Profile
-
-`PUT /users/profile`
-
-Updates the authenticated user's profile information.
-
-**Request Body:**
-
-```json
-{
-  "email": "new_email@example.com",
-  "password": "NewStrongPassword456!"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Profile updated successfully."
-}
-```
-
-## 5. Vault Management
-
-### 5.1 Create Vault Entry
-
-`POST /vault/entries`
-
-Creates a new encrypted vault entry. The `encryptedData` must be AES-256-GCM encrypted client-side.
-
-**Request Body:**
-
-```json
-{
-  "encryptedData": "base64_encoded_encrypted_data",
-  "iv": "base64_encoded_iv",
-  "algorithm": "AES-GCM",
-  "category": "Passwords",
-  "tags": ["social", "login"]
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": "uuid-entry-id",
-  "message": "Vault entry created successfully."
-}
-```
-
-### 5.2 Get All Vault Entries
-
-`GET /vault/entries`
-
-Retrieves a list of all encrypted vault entries for the authenticated user.
-
-**Query Parameters:**
-
-- `category`: Filter by category (optional)
-- `tag`: Filter by tag (optional)
-- `search`: Search within encrypted data (server-side encrypted search, if implemented)
-
-**Response:**
-
-```json
-[
-  {
-    "id": "uuid-entry-id-1",
-    "encryptedData": "base64_encoded_encrypted_data_1",
-    "iv": "base64_encoded_iv_1",
-    "algorithm": "AES-GCM",
-    "category": "Passwords",
-    "tags": ["social", "login"],
-    "createdAt": "2023-01-01T12:00:00Z",
-    "updatedAt": "2023-01-01T12:00:00Z"
-  },
-  {
-    "id": "uuid-entry-id-2",
-    "encryptedData": "base64_encoded_encrypted_data_2",
-    "iv": "base64_encoded_iv_2",
-    "algorithm": "AES-GCM",
-    "category": "Documents",
-    "tags": ["legal"],
-    "createdAt": "2023-01-02T12:00:00Z",
-    "updatedAt": "2023-01-02T12:00:00Z"
+  "message": "Login successful",
+  "user": {
+    "id": "user-id",
+    "email": "user@example.com",
+    "name": "Alice",
+    "twoFactorEnabled": true,
+    "salt": "base64-salt"
   }
-]
-```
-
-### 5.3 Get Single Vault Entry
-
-`GET /vault/entries/:id`
-
-Retrieves a single encrypted vault entry by ID.
-
-**Response:**
-
-```json
-{
-  "id": "uuid-entry-id",
-  "encryptedData": "base64_encoded_encrypted_data",
-  "iv": "base64_encoded_iv",
-  "algorithm": "AES-GCM",
-  "category": "Passwords",
-  "tags": ["social", "login"],
-  "createdAt": "2023-01-01T12:00:00Z",
-  "updatedAt": "2023-01-01T12:00:00Z"
 }
 ```
 
-### 5.4 Update Vault Entry
+### Vault
 
-`PUT /vault/entries/:id`
+Authenticated:
 
-Updates an existing encrypted vault entry.
+- `POST /vault/entries`
+- `GET /vault/entries`
+- `GET /vault/entries/:id`
+- `PUT /vault/entries/:id`
+- `DELETE /vault/entries/:id`
+- `GET /vault/export`
+- `POST /vault/import`
 
-**Request Body:**
+Public:
 
-```json
-{
-  "encryptedData": "base64_encoded_updated_encrypted_data",
-  "iv": "base64_encoded_updated_iv",
-  "algorithm": "AES-GCM",
-  "category": "Updated Category",
-  "tags": ["new", "tags"]
-}
-```
+- `GET /vault/successor-access?token=...`
 
-**Response:**
+Notes:
 
-```json
-{
-  "message": "Vault entry updated successfully."
-}
-```
+- Vault entry payloads are already encrypted on the client.
+- Export/import moves encrypted vault material, not plaintext secrets.
+- Import supports `merge` and `replace` modes.
 
-### 5.5 Delete Vault Entry
-
-`DELETE /vault/entries/:id`
-
-Deletes a vault entry.
-
-**Response:**
+Example import request:
 
 ```json
 {
-  "message": "Vault entry deleted successfully."
+  "mode": "merge",
+  "entries": [
+    {
+      "id": "entry-id",
+      "encryptedData": "base64-ciphertext",
+      "iv": "base64-iv",
+      "salt": "base64-salt",
+      "algorithm": "AES-GCM",
+      "category": "documents",
+      "tags": ["finance"]
+    }
+  ]
 }
 ```
 
-## 6. Successor Management
+### Activity And Check-In
 
-### 6.1 Add Successor
+Authenticated:
 
-`POST /users/successors`
+- `GET /activity`
+- `POST /activity/check-in`
 
-Adds a new successor to the user's account.
+Public:
 
-**Request Body:**
+- `GET /activity/check-in-link?token=...`
+- `POST /activity/check-in-link`
 
-```json
-{
-  "email": "successor@example.com",
-  "name": "John Doe",
-  "handoverDelayDays": 90,
-  "requiredShares": 1 // For Shamir's Secret Sharing
-}
-```
+These routes drive audit log views, manual check-ins, and secure emailed check-in links.
 
-**Response:**
+### Inactivity Settings
 
-```json
-{
-  "id": "uuid-successor-id",
-  "message": "Successor added. Verification email sent."
-}
-```
+Authenticated:
 
-### 6.2 Get All Successors
+- `GET /inactivity/settings`
+- `PUT /inactivity/settings`
+- `POST /inactivity/pause`
+- `POST /inactivity/resume`
 
-`GET /users/successors`
+Settings control threshold days, pause state, notification methods, and handover behavior.
 
-Retrieves a list of all successors for the authenticated user.
+### Sessions
 
-**Response:**
+Authenticated:
 
-```json
-[
-  {
-    "id": "uuid-successor-id-1",
-    "email": "successor1@example.com",
-    "name": "John Doe",
-    "verified": true,
-    "handoverDelayDays": 90,
-    "createdAt": "2023-01-01T12:00:00Z"
-  },
-  {
-    "id": "uuid-successor-id-2",
-    "email": "successor2@example.com",
-    "name": "Jane Smith",
-    "verified": false,
-    "handoverDelayDays": 120,
-    "createdAt": "2023-01-02T12:00:00Z"
-  }
-]
-```
+- `GET /sessions`
+- `DELETE /sessions/:sessionId`
+- `POST /sessions/invalidate-others`
 
-### 6.3 Update Successor
+These endpoints back the web UI session-management page.
 
-`PUT /users/successors/:id`
+### Successors
 
-Updates an existing successor's information.
+Public:
 
-**Request Body:**
+- `GET /successors/verify?token=...`
 
-```json
-{
-  "name": "Jonathan Doe",
-  "handoverDelayDays": 60
-}
-```
+Authenticated:
 
-**Response:**
+- `PUT /successors/shares`
+- `POST /successors`
+- `GET /successors`
+- `GET /successors/:id`
+- `PUT /successors/:id`
+- `DELETE /successors/:id`
+- `POST /successors/:id/resend-verification`
+- `POST /successors/:id/verify`
+- `GET /successors/:id/assigned-entries`
+- `PUT /successors/:id/assigned-entries`
 
-```json
-{
-  "message": "Successor updated successfully."
-}
-```
+The assigned-entry routes allow the owner to restrict a successor to specific vault entries.
 
-### 6.4 Delete Successor
+### Admin
 
-`DELETE /users/successors/:id`
+Authenticated admin-only:
 
-Deletes a successor.
+- `GET /admin/dashboard`
+- `GET /admin/users`
+- `POST /admin/users/:userId/unlock`
+- `GET /admin/users/:userId/lockout-status`
 
-**Response:**
+Admin access is currently enforced via an `ADMIN_EMAILS` allowlist.
 
-```json
-{
-  "message": "Successor deleted successfully."
-}
-```
+### Contact
 
-## 7. Dead Man's Switch & Handover
+Public:
 
-### 7.1 Check-in
+- `POST /contact`
 
-`POST /handover/check-in`
+Used by the public contact form.
 
-Records a user activity to reset the dead man's switch timer.
+### Operational Endpoints
 
-**Response:**
+Public:
 
-```json
-{
-  "message": "Activity recorded. Dead man's switch timer reset."
-}
-```
+- `GET /health`
+- `GET /metrics`
 
-### 7.2 Get Handover Status
+`/health` includes database, Redis, queue, job-manager, and realtime status data.
 
-`GET /handover/status`
+## Realtime
 
-Retrieves the current status of the dead man's switch for the authenticated user.
+The API exposes an authenticated WebSocket endpoint at:
 
-**Response:**
+- `ws://localhost:3001/ws` (local)
+- `wss://api.handoverkey.com/ws` (production example)
 
-```json
-{
-  "lastActivity": "2023-07-26T10:30:00Z",
-  "inactivityThresholdDays": 90,
-  "daysUntilHandover": 89,
-  "handoverTriggered": false,
-  "remindersSent": 0
-}
-```
+Browser clients usually connect via:
 
-### 7.3 Get Audit Logs
+- `VITE_WS_URL`, if configured
+- otherwise the current host's `/ws` endpoint
 
-`GET /handover/audit-logs`
+Current user-targeted events include reminder notifications and handover status changes.
 
-Retrieves a list of audit logs related to handover events.
+## Environment Notes
 
-**Response:**
+Important API deployment variables include:
 
-```json
-[
-  {
-    "id": "uuid-log-id-1",
-    "eventType": "INACTIVITY_REMINDER_SENT",
-    "timestamp": "2023-07-20T10:00:00Z",
-    "metadata": { "reminderNumber": 1 }
-  },
-  {
-    "id": "uuid-log-id-2",
-    "eventType": "USER_CHECK_IN",
-    "timestamp": "2023-07-26T10:30:00Z",
-    "metadata": {}
-  }
-]
-```
+- `JWT_SECRET`
+- `ACTIVITY_HMAC_SECRET`
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
+- `FRONTEND_URL`
+- `CORS_ORIGINS`
+- `ADMIN_EMAILS`
+- `SMTP_*`
 
-## 8. Error Handling
+See:
 
-API errors are returned with appropriate HTTP status codes and a JSON error object.
+- `apps/api/.env.example`
+- `docs/deployment.md`
 
-**Example Error Response:**
+## Source Of Truth
 
-```json
-{
-  "error": "Invalid credentials",
-  "statusCode": 401
-}
-```
+For shipped behavior, prefer:
 
-## 9. Webhooks (Future)
-
-HandoverKey will support webhooks for real-time notifications on critical events (e.g., handover triggered, successor verified).
-
-## 10. GraphQL (Future)
-
-A GraphQL API will be provided for more flexible data querying.
+- route files in `apps/api/src/routes/`
+- validation schemas in `apps/api/src/validation/schemas/`
+- `CHANGELOG.md` for release-level feature changes
 
 ---
 
-**Last Updated**: Nov 19, 2025
-**Version**: 1.0
+**Last Updated**: 2026-03-18
+**Version**: 2.0.0

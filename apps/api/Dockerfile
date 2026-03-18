@@ -47,7 +47,7 @@ USER expressjs
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV API_PORT=3001
 EXPOSE 3001
 
 # Start the application using a script that runs migrations first

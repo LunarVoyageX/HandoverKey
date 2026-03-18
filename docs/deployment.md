@@ -1,177 +1,225 @@
-# HandoverKey - Deployment Guide
+# HandoverKey Deployment Guide
 
-## 1. Introduction
+This guide documents the deployment options that match the current repository.
 
-This guide provides instructions for deploying the HandoverKey project. It covers local development setup, staging environment deployment, and considerations for production.
+## Supported Deployment Shapes
 
-## 2. Local Development Setup
+HandoverKey currently supports two practical deployment patterns:
 
-### 2.1 Prerequisites
+1. **Local development** with Node.js plus Docker for PostgreSQL and Redis
+2. **Hosted/container deployment** with:
+   - a static or Node-served frontend
+   - a Node.js API service
+   - PostgreSQL
+   - Redis
+   - SMTP
 
-- Docker & Docker Compose
+The repository includes:
+
+- `docker-compose.yml`
+- `docker-compose.prod.yaml`
+- `apps/api/Dockerfile`
+- `apps/web/Dockerfile`
+- `apps/web/vercel.json`
+
+## Required Services
+
+### API runtime
+
 - Node.js 22+
-- npm (Node Package Manager)
-- Git
+- PostgreSQL
+- Redis
+- optional SMTP provider for transactional emails
 
-### 2.2 Steps
+### Web runtime
 
-1. **Clone the repository:**
+- static host or container capable of serving the Vite build
+- SPA rewrite support so client-side routes resolve to `index.html`
 
-   ```bash
-   git clone https://github.com/mahiuddinalkamal/handoverkey.git
-   cd handoverkey
-   ```
+## Local Development
 
-2. **Install Node.js dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Prepare environment variables:**
-
-   ```bash
-   cp apps/api/.env.example apps/api/.env
-   cp apps/web/.env.example apps/web/.env
-   # Edit the .env files with your local configuration (JWT_SECRET is required)
-   ```
-
-4. **Start Docker services (PostgreSQL, Redis):**
-
-   ```bash
-   npm run docker:up
-   ```
-
-   This will start PostgreSQL 16 and Redis 7 in Docker containers.
-
-5. **Run database migrations:**
-
-   ```bash
-   npm run db:migrate
-   ```
-
-6. **Build and start all services:**
-
-   ```bash
-   npm run build
-   npm run dev
-   ```
-
-7. **Access the application:**
-   - Web App: `http://localhost:5173`
-   - API: `http://localhost:3001`
-
-### 2.3 Stopping Services
-
-To stop all running Docker containers and Node.js processes:
-
-````bash
 ```bash
-# If running with docker-compose
-docker-compose down
+git clone https://github.com/HandoverKey/HandoverKey.git
+cd HandoverKey
+npm install
 
-# If running dev.sh, simply Ctrl+C in the terminal
-````
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 
-## 3. Staging Environment Deployment
+npm run docker:up
+npm run db:migrate
+npm run build
+npm run dev
+```
 
-A staging environment mirrors the production environment and is used for testing new features before release.
+Local endpoints:
 
-### 3.1 Prerequisites
+- Web: `http://localhost:5173`
+- API: `http://localhost:3001`
+- API base: `http://localhost:3001/api/v1`
+- WebSocket: `ws://localhost:3001/ws`
 
-- Cloud Provider Account (AWS, GCP, Azure)
-- Kubernetes Cluster (EKS, GKE, AKS)
-- Docker Registry (ECR, GCR, Docker Hub)
-- CI/CD Pipeline (GitHub Actions, GitLab CI, Jenkins)
-- Helm (for Kubernetes deployments)
+## Containerized Deployment
 
-### 3.2 Deployment Steps (Conceptual)
+### Development-oriented compose
 
-1. **Containerize Applications:**
-   - Ensure each microservice (`api`, `web`, etc.) has a `Dockerfile`.
-   - Build Docker images for each service:
+`docker-compose.yml` is intended for a full local stack:
 
-     ```bash
-     # API service (Node.js backend)
-     docker build -t your-registry/handoverkey-api:latest -f apps/api/Dockerfile .
+- PostgreSQL 16
+- Redis 7
+- API container
+- web container
 
-     # Web application (React frontend)
-     docker build -t your-registry/handoverkey-web:latest -f apps/web/Dockerfile .
-     ```
+Typical flow:
 
-2. **Push Images to Registry:**
+```bash
+docker compose up --build
+```
 
-   ```bash
-   docker push your-registry/api:latest
-   docker push your-registry/web:latest
-   # ...
-   ```
+If you use the containerized web app instead of Vite, the frontend is served from
+`http://localhost:3000`.
 
-3. **Kubernetes Deployment:**
-   - Use Helm charts or Kubernetes YAML manifests to define deployments, services, ingresses, and persistent volumes.
-   - Example Helm command:
-     ```bash
-     helm upgrade --install handoverkey-staging ./helm/handoverkey \
-       --namespace staging \
-       --set api.image.tag=latest \
-       --set web.image.tag=latest \
-       --set database.host=your-staging-db-endpoint \
-       --set redis.host=your-staging-redis-endpoint \
-       -f ./helm/handoverkey/values-staging.yaml
-     ```
-   - Ensure external database (PostgreSQL) and Redis instances are provisioned and configured.
+### Production-oriented compose
 
-4. **Configure Ingress/Load Balancer:**
-   - Set up an Ingress controller (e.g., NGINX Ingress) or a cloud load balancer to route external traffic to the Kubernetes services.
-   - Configure TLS certificates (e.g., using Cert-Manager).
+`docker-compose.prod.yaml` is a starting point for self-hosted deployments. You still
+need to provide real production secrets, a managed PostgreSQL instance or an external
+database service, SMTP credentials, TLS termination, and persistent backup strategy.
 
-5. **CI/CD Integration:**
-   - Automate the build, test, and deployment process using GitHub Actions or similar.
-   - On every push to `develop` branch, trigger a deployment to staging.
+Example:
 
-## 4. Production Environment Deployment
+```bash
+docker compose -f docker-compose.prod.yaml --env-file .env up --build -d
+```
 
-Production deployment requires robust infrastructure, security, and monitoring.
+## Environment Variables
 
-### 4.1 Key Considerations
+### API
 
-- **High Availability**: Deploy services across multiple availability zones/regions.
-- **Scalability**: Implement auto-scaling for microservices based on load.
-- **Security**:
-  - **Network**: VPCs, private subnets, security groups, WAF, DDoS protection.
-  - **Secrets Management**: Use dedicated secrets management services (e.g., AWS Secrets Manager, HashiCorp Vault).
-  - **TLS**: Enforce TLS 1.3 everywhere.
-  - **Regular Audits**: Conduct security audits and penetration tests.
-- **Monitoring & Logging**:
-  - **Centralized Logging**: ELK Stack (Elasticsearch, Logstash, Kibana) or cloud-native logging.
-  - **Metrics**: Prometheus + Grafana for application and infrastructure metrics.
-  - **Alerting**: Configure alerts for critical issues (e.g., high error rates, service downtime).
-  - **Tracing**: Distributed tracing (e.g., Jaeger, OpenTelemetry) for microservices.
-- **Backup & Disaster Recovery**:
-  - **Automated Backups**: Regular, encrypted backups of databases and persistent storage.
-  - **Point-in-Time Recovery**: For databases.
-  - **Disaster Recovery Plan**: Documented RTO/RPO and recovery procedures.
-- **Compliance**: Ensure adherence to relevant regulations (GDPR, CCPA, SOC 2).
+The current API contract is driven by `apps/api/.env.example` and runtime usage in
+`apps/api/src`.
 
-### 4.2 Recommended Production Stack
+Commonly required variables:
 
-- **Cloud Provider**: AWS, Google Cloud, or Azure
-- **Container Orchestration**: Kubernetes (EKS, GKE, AKS)
-- **Database**: Managed PostgreSQL (AWS RDS, Google Cloud SQL)
-- **Cache**: Managed Redis (AWS ElastiCache, Google Cloud Memorystore)
-- **Object Storage**: AWS S3, Google Cloud Storage (for encrypted files)
-- **Message Queue**: Managed RabbitMQ or Kafka (e.g., AWS MSK)
-- **CI/CD**: GitHub Actions, GitLab CI, Jenkins
-- **Monitoring**: Prometheus, Grafana, ELK Stack, Jaeger
-- **Security**: Cloud WAF, KMS, Secrets Manager
+```bash
+JWT_SECRET=
+ACTIVITY_HMAC_SECRET=
+DB_HOST=
+DB_PORT=5432
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+REDIS_HOST=
+REDIS_PORT=6379
+FRONTEND_URL=
+CORS_ORIGINS=
+```
 
-### 4.3 Deployment Strategy
+Common optional variables:
 
-- **Blue/Green Deployment**: Minimize downtime during updates.
-- **Canary Releases**: Gradually roll out new versions to a small subset of users.
-- **Automated Rollbacks**: Ability to quickly revert to a previous stable version if issues arise.
+```bash
+API_PORT=3001
+REDIS_PASSWORD=
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+COOKIE_DOMAIN=
+ADMIN_EMAILS=
+SMTP_HOST=
+SMTP_PORT=
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+TWO_FACTOR_ISSUER=HandoverKey
+GRACE_PERIOD_HOURS=48
+```
+
+Notes:
+
+- `JWT_SECRET` and `ACTIVITY_HMAC_SECRET` should both be long random secrets.
+- `FRONTEND_URL` and `CORS_ORIGINS` must match the actual web origin(s).
+- `ADMIN_EMAILS` is a comma-separated allowlist for admin routes.
+- SMTP is strongly recommended for email verification, reminders, successor workflows,
+  password resets, and contact forms.
+
+### Web
+
+The web app uses build-time Vite variables from `apps/web/.env.example`.
+
+```bash
+VITE_API_URL=
+VITE_WS_URL=
+```
+
+Typical values:
+
+- local with Vite proxy: leave `VITE_API_URL` empty
+- hosted split frontend/API:
+  - `VITE_API_URL=https://api.handoverkey.com/api/v1`
+  - `VITE_WS_URL=wss://api.handoverkey.com/ws`
+
+## Frontend Hosting Notes
+
+### SPA rewrites
+
+Any frontend host must rewrite non-asset routes to `index.html`. Without that, direct
+navigation to client-side routes such as `/login` will return 404 responses.
+
+The repository includes a Vercel-specific configuration in `apps/web/vercel.json`.
+
+### Cookie and CORS alignment
+
+If the web app and API run on different origins:
+
+- enable TLS everywhere
+- set `FRONTEND_URL`
+- set `CORS_ORIGINS`
+- keep browser cookie settings consistent with secure cross-site usage
+
+## Backend Hosting Notes
+
+### Health and monitoring
+
+Expose and monitor:
+
+- `GET /health`
+- `GET /metrics`
+- application logs
+- Redis and PostgreSQL health
+
+### WebSocket routing
+
+Reverse proxies or load balancers must forward upgrade requests for `/ws`.
+
+### Database migrations
+
+Run migrations before or during startup. The production API start command runs the
+migration bundle before launching the server.
+
+## Recommended Production Checklist
+
+- TLS enabled for both web and API origins
+- PostgreSQL backups and restore plan tested
+- Redis persistence or managed Redis configured appropriately
+- strong `JWT_SECRET` and `ACTIVITY_HMAC_SECRET`
+- SMTP credentials configured
+- `FRONTEND_URL` and `CORS_ORIGINS` verified
+- `VITE_API_URL` and `VITE_WS_URL` verified
+- `/health` and `/metrics` integrated with monitoring
+- SPA rewrites confirmed on the web host
+
+## What This Guide Does Not Assume
+
+This repository does not currently include:
+
+- Kubernetes manifests
+- Helm charts
+- Terraform modules
+- cloud-vendor-specific deployment automation
+
+You can deploy HandoverKey to those environments, but the documentation above focuses on
+what the repository actually ships today.
 
 ---
 
-**Last Updated**: March 2026
-**Version**: 1.1
+**Last Updated**: 2026-03-18
+**Version**: 2.0.0

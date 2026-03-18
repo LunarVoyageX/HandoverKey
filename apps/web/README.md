@@ -1,39 +1,61 @@
-# HandoverKey Web UI
+# HandoverKey Web App
 
-This is the frontend application for HandoverKey, built with React, Vite, and Tailwind CSS.
+React 19 + Vite single-page application for HandoverKey.
 
-## Getting Started
+## What This App Does
 
-1. Install dependencies:
+- registration, login, password reset, and email verification flows
+- vault management with client-side encryption
+- inactivity settings, manual check-in, and activity history
+- successor management and assigned-entry controls
+- session management and profile/security settings
+- realtime notifications and admin dashboard UX
+- public routes for successor access and secure check-in links
 
-   ```bash
-   npm install
-   ```
+## Local Development
 
-2. Run the development server:
+From the repo root:
 
-   ```bash
-   npm run dev
-   ```
+```bash
+cp apps/web/.env.example apps/web/.env
+npm install
+npm run dev -w @handoverkey/web
+```
 
-3. Build for production:
-   ```bash
-   npm run build
-   ```
+Default local URL:
 
-## Features
+- `http://localhost:5173`
 
-- **Apple-inspired Design**: Clean, minimalist UI with glassmorphism effects.
-- **Secure Vault**: Manage your encrypted secrets.
-- **Dead Man's Switch**: Configure your inactivity settings.
-- **Successor Management**: Designate who receives your keys.
+## Environment
 
-## Tech Stack
+```bash
+# Leave empty in local dev to use the Vite proxy.
+VITE_API_URL=
 
-- React 18
-- TypeScript
-- Tailwind CSS
-- Headless UI
-- Heroicons
-- Axios
-- React Router DOM
+# Optional explicit websocket URL for hosted deployments.
+VITE_WS_URL=
+```
+
+Hosted example:
+
+```bash
+VITE_API_URL=https://api.handoverkey.com/api/v1
+VITE_WS_URL=wss://api.handoverkey.com/ws
+```
+
+## Build And Test
+
+```bash
+npm run lint -w @handoverkey/web
+npm run test -w @handoverkey/web
+npm run build -w @handoverkey/web
+```
+
+## Deployment Notes
+
+- the build output is a standard Vite SPA
+- client-side routes need an `index.html` fallback
+- `apps/web/vercel.json` provides the rewrite rule needed for Vercel
+
+See `../../docs/deployment.md` and `../../docs/api.md` for the deployment and API
+contracts the frontend expects.

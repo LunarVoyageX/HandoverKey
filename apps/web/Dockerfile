@@ -23,7 +23,9 @@ COPY packages/crypto ./packages/crypto
 COPY packages/shared ./packages/shared
 
 ARG VITE_API_URL
+ARG VITE_WS_URL
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
 ENV CI=true
 
 # Build dependencies in order (crypto first, then shared, then web)

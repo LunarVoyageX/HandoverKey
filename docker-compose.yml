@@ -33,13 +33,13 @@ services:
 
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     ports:
       - "3001:3001"
     environment:
-      NODE_ENV: production
-      PORT: 3001
+      NODE_ENV: development
+      API_PORT: 3001
       # Database connection
       DB_HOST: postgres
       DB_PORT: 5432
@@ -49,11 +49,17 @@ services:
       # Redis connection
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      # App secrets (should serve from .env file)
-      JWT_SECRET: ${JWT_SECRET:-changeme_dev_secret}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme_32_byte_key_min_length!!}
-      # Web URL for CORS & Emails
+      # App secrets
+      JWT_SECRET: ${JWT_SECRET:-changeme_dev_jwt_secret_please_replace_32_chars}
+      ACTIVITY_HMAC_SECRET: ${ACTIVITY_HMAC_SECRET:-changeme_dev_activity_secret_please_replace}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      # Web URL for CORS and emails
       FRONTEND_URL: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      JOB_CONCURRENCY: ${JOB_CONCURRENCY:-5}
+      TWO_FACTOR_ISSUER: ${TWO_FACTOR_ISSUER:-HandoverKey}
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,8 +74,9 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        # Pass API URL to build time for Vite
+        # Pass API and WebSocket URLs to build time for Vite
         VITE_API_URL: http://localhost:3001/api/v1
+        VITE_WS_URL: ws://localhost:3001/ws
     ports:
       - "3000:3000"
     networks:
