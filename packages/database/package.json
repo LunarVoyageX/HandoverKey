@@ -17,7 +17,7 @@
     "migrate:rollback": "node dist/migrations/runner.js rollback"
   },
   "dependencies": {
-    "kysely": "^0.28.11",
+    "kysely": "^0.28.12",
     "pg": "^8.20.0"
   },
   "devDependencies": {
