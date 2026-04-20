@@ -86,5 +86,33 @@ describe("Admin Dashboard Integration", () => {
       .executeTakeFirstOrThrow();
     expect(unlocked.failed_login_attempts).toBe(0);
     expect(unlocked.locked_until).toBeNull();
+
+    const auditRecords = await db
+      .selectFrom("activity_records")
+      .select(["activity_type", "metadata"])
+      .where("user_id", "=", admin.userId)
+      .where("activity_type", "like", "ADMIN_%")
+      .orderBy("created_at", "asc")
+      .execute();
+
+    const types = auditRecords.map((r) => r.activity_type);
+    expect(types).toContain("ADMIN_VIEW_DASHBOARD");
+    expect(types).toContain("ADMIN_LIST_USERS");
+    expect(types).toContain("ADMIN_UNLOCKED_ACCOUNT");
+
+    const unlockRecord = auditRecords.find(
+      (r) => r.activity_type === "ADMIN_UNLOCKED_ACCOUNT",
+    );
+    expect(unlockRecord?.metadata).toMatchObject({
+      targetUserId: target.userId,
+      targetEmail: target.email,
+    });
+
+    const listRecord = auditRecords.find(
+      (r) => r.activity_type === "ADMIN_LIST_USERS",
+    );
+    expect(listRecord?.metadata).toMatchObject({
+      search: target.email,
+    });
   });
 });

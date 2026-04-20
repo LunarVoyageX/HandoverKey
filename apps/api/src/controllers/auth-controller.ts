@@ -11,6 +11,11 @@ import {
   NotFoundError,
   EmailVerificationRequiredError,
 } from "../errors";
+import { getAdminEmails } from "../middleware/admin";
+
+function isAdmin(email: string): boolean {
+  return getAdminEmails().includes(email.toLowerCase());
+}
 
 function getCookieDomain(): string | undefined {
   return process.env.COOKIE_DOMAIN || undefined;
@@ -184,6 +189,7 @@ export class AuthController {
           id: user.id,
           email: user.email,
           name: user.name,
+          role: isAdmin(user.email) ? "admin" : "user",
           twoFactorEnabled: user.twoFactorEnabled,
           lastActivity: user.lastActivity,
           salt: Buffer.from(user.salt).toString("base64"),
@@ -430,6 +436,7 @@ export class AuthController {
           id: user.id,
           email: user.email,
           name: user.name,
+          role: isAdmin(user.email) ? "admin" : "user",
           twoFactorEnabled: user.twoFactorEnabled,
           lastActivity: user.lastActivity,
           createdAt: user.createdAt,
@@ -469,6 +476,7 @@ export class AuthController {
           id: updatedUser.id,
           email: updatedUser.email,
           name: updatedUser.name,
+          role: isAdmin(updatedUser.email) ? "admin" : "user",
           twoFactorEnabled: updatedUser.twoFactorEnabled,
           lastActivity: updatedUser.lastActivity,
           createdAt: updatedUser.createdAt,

@@ -28,6 +28,8 @@ async function registerVerifyLogin(emailPrefix: string) {
 }
 
 describe("Auth Full Flow Integration", () => {
+  const originalAdminEmails = process.env.ADMIN_EMAILS;
+
   beforeAll(async () => {
     const dbClient = getDatabaseClient();
     await dbClient.initialize({
@@ -45,6 +47,7 @@ describe("Auth Full Flow Integration", () => {
   });
 
   afterAll(async () => {
+    process.env.ADMIN_EMAILS = originalAdminEmails;
     await closeRedis();
     await getDatabaseClient().close();
   });
@@ -60,6 +63,41 @@ describe("Auth Full Flow Integration", () => {
     expect(res.body.user).toHaveProperty("id");
     expect(res.body.user).toHaveProperty("email");
     expect(res.body.user).toHaveProperty("name");
+  });
+
+  it("should return role 'user' for non-admin login and profile", async () => {
+    const { token } = await registerVerifyLogin("role-user");
+    process.env.ADMIN_EMAILS = "someone-else@example.com";
+
+    const profileRes = await request(app)
+      .get("/api/v1/auth/profile")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body.user.role).toBe("user");
+  });
+
+  it("should return role 'admin' for allowlisted email on login and profile", async () => {
+    const { email, password } = await registerVerifyLogin("role-admin");
+    process.env.ADMIN_EMAILS = email;
+
+    const loginRes = await request(app)
+      .post("/api/v1/auth/login")
+      .send({ email, password });
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.user.role).toBe("admin");
+
+    const cookies = loginRes.headers["set-cookie"];
+    const accessCookie = (Array.isArray(cookies) ? cookies : [cookies]).find(
+      (c: string) => c?.startsWith("accessToken="),
+    );
+    const token = accessCookie!.split(";")[0].split("=")[1];
+
+    const profileRes = await request(app)
+      .get("/api/v1/auth/profile")
+      .set("Authorization", `Bearer ${token}`);
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body.user.role).toBe("admin");
   });
 
   it("should reject profile request without auth", async () => {

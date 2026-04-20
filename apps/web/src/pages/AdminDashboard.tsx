@@ -10,6 +10,11 @@ interface DashboardStats {
   activeHandovers: number;
 }
 
+interface ActivityEntry {
+  type: string;
+  count: number;
+}
+
 interface UserRow {
   id: string;
   email: string;
@@ -24,6 +29,7 @@ interface UserRow {
 const AdminDashboard: React.FC = () => {
   const { success, error: showError } = useToast();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -36,6 +42,7 @@ const AdminDashboard: React.FC = () => {
         api.get("/admin/users?limit=25"),
       ]);
       setStats(statsResponse.data?.stats || null);
+      setActivity(statsResponse.data?.activityLast24h || []);
       setUsers(usersResponse.data?.users || []);
       setIsForbidden(false);
     } catch (err) {
@@ -133,6 +140,32 @@ const AdminDashboard: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {activity.length > 0 && (
+        <div className="card p-4 mb-8">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">
+            Activity (Last 24h)
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {activity.map((entry) => (
+              <div
+                key={entry.type}
+                className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"
+              >
+                <span className="text-sm text-gray-700 truncate mr-2">
+                  {entry.type
+                    .replace(/_/g, " ")
+                    .toLowerCase()
+                    .replace(/\b\w/g, (c) => c.toUpperCase())}
+                </span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {entry.count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card p-4 mb-4">
         <div className="flex gap-2">

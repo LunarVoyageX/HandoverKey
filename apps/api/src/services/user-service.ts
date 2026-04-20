@@ -445,6 +445,7 @@ export class UserService {
     userId: string,
     activityType: string,
     ipAddress?: string,
+    metadata?: Record<string, unknown>,
   ): Promise<void> {
     try {
       const activityRepo = this.getActivityRepository();
@@ -452,6 +453,7 @@ export class UserService {
         user_id: userId,
         activity_type: activityType,
         ip_address: ipAddress,
+        metadata: metadata ?? null,
       });
 
       // Also update user's last_activity

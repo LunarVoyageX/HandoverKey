@@ -64,6 +64,12 @@ export class AdminController {
           .execute(),
       ]);
 
+      await UserService.logActivity(
+        req.user.userId,
+        "ADMIN_VIEW_DASHBOARD",
+        req.ip,
+      );
+
       res.json({
         stats: {
           totalUsers: Number(totalUsersResult.count),
@@ -128,6 +134,14 @@ export class AdminController {
       }
 
       const users = await query.execute();
+
+      await UserService.logActivity(
+        req.user.userId,
+        "ADMIN_LIST_USERS",
+        req.ip,
+        { search: search || undefined, resultCount: users.length },
+      );
+
       res.json({
         users: users.map((user) => ({
           id: user.id,
@@ -169,11 +183,11 @@ export class AdminController {
       // Unlock the account
       await AccountLockoutService.unlockAccount(userId);
 
-      // Log the action
       await UserService.logActivity(
         req.user.userId,
         "ADMIN_UNLOCKED_ACCOUNT",
         req.ip,
+        { targetUserId: userId, targetEmail: user.email },
       );
 
       res.json({
@@ -213,6 +227,13 @@ export class AdminController {
       const attemptCount = await AccountLockoutService.getAttemptCount(userId);
       const timeUntilUnlock =
         await AccountLockoutService.getTimeUntilUnlock(userId);
+
+      await UserService.logActivity(
+        req.user.userId,
+        "ADMIN_VIEW_LOCKOUT_STATUS",
+        req.ip,
+        { targetUserId: userId, targetEmail: user.email },
+      );
 
       res.json({
         userId: user.id,

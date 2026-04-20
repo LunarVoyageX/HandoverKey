@@ -2,7 +2,7 @@ import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "./auth";
 import { AuthorizationError } from "../errors";
 
-function getAdminEmails(): string[] {
+export function getAdminEmails(): string[] {
   return (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
