@@ -52,11 +52,14 @@ async function migrateToLatest(): Promise<void> {
 }
 
 if (process.argv[2] === "rollback") {
-  // Implement rollback manually if needed or add fallback
-  // For now, this script only supports migrateToLatest unless expanded
-  console.log(
-    "Rollback not fully implemented in this custom runner yet, defaulting to latest logic or exiting.",
+  console.error(
+    "Error: Rollback is not implemented. Revert migrations manually or restore from a database backup.",
   );
+  process.exit(1);
 } else {
-  migrateToLatest();
+  void migrateToLatest().catch((error) => {
+    console.error("Failed to migrate");
+    console.error(error);
+    process.exit(1);
+  });
 }

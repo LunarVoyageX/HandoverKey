@@ -246,45 +246,16 @@ app.use(notFoundHandler);
 // Global error handler - must be last
 app.use(errorHandler);
 
-// Graceful shutdown
-process.on("SIGTERM", async () => {
-  logger.info("SIGTERM received, shutting down gracefully");
-
+/**
+ * Shuts down background services (jobs, Redis, database).
+ * Called from index.ts after the HTTP server is closed.
+ */
+export async function shutdownServices(): Promise<void> {
   jobManager.stop();
-  realtimeService.close();
-
-  // Close job processors and queues
   await JobProcessor.close();
   await closeAllQueues();
-
-  // Close Redis
   await closeRedis();
-
-  // Close database
   await dbClient.close();
-
-  logger.info("Shutdown complete");
-  process.exit(0);
-});
-
-process.on("SIGINT", async () => {
-  logger.info("SIGINT received, shutting down gracefully");
-
-  jobManager.stop();
-  realtimeService.close();
-
-  // Close job processors and queues
-  await JobProcessor.close();
-  await closeAllQueues();
-
-  // Close Redis
-  await closeRedis();
-
-  // Close database
-  await dbClient.close();
-
-  logger.info("Shutdown complete");
-  process.exit(0);
-});
+}
 
 export default app;
