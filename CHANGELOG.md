@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3](https://github.com/HandoverKey/HandoverKey/compare/v1.1.2...v1.1.3) (2026-04-20)
+
+
+### Bug Fixes
+
+* admin panel nav visibility, audit trail, and activity display ([#234](https://github.com/HandoverKey/HandoverKey/issues/234)) ([be2d43e](https://github.com/HandoverKey/HandoverKey/commit/be2d43ef1f27441180836a902512e63f6e9c6bff))
+* resolve Redis initialization race condition on startup ([#232](https://github.com/HandoverKey/HandoverKey/issues/232)) ([962cb7b](https://github.com/HandoverKey/HandoverKey/commit/962cb7b7230c07d17dc2daa91199e255c71b405b))
+
 ## [1.1.2](https://github.com/HandoverKey/HandoverKey/compare/v1.1.1...v1.1.2) (2026-04-20)
 
 
