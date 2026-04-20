@@ -165,4 +165,72 @@ describe("Shamir Secret Sharing", () => {
     const reconstructed = reconstructSecret(shares.slice(0, 8));
     expect(reconstructed).toEqual(secret);
   });
+
+  describe("threshold parameter in reconstructSecret", () => {
+    it("should throw ValidationError when fewer shares than threshold", () => {
+      const secret = new Uint8Array([1, 2, 3, 4, 5]);
+      const shares = splitSecret(secret, 5, 3);
+
+      expect(() => reconstructSecret(shares.slice(0, 2), 3)).toThrow(
+        ValidationError,
+      );
+      expect(() => reconstructSecret(shares.slice(0, 2), 3)).toThrow(
+        /At least 3 shares are required/,
+      );
+    });
+
+    it("should succeed when shares meet the threshold", () => {
+      const secret = new Uint8Array([1, 2, 3, 4, 5]);
+      const shares = splitSecret(secret, 5, 3);
+
+      const reconstructed = reconstructSecret(shares.slice(0, 3), 3);
+      expect(reconstructed).toEqual(secret);
+    });
+
+    it("should succeed when shares exceed the threshold", () => {
+      const secret = new Uint8Array([1, 2, 3, 4, 5]);
+      const shares = splitSecret(secret, 5, 3);
+
+      const reconstructed = reconstructSecret(shares.slice(0, 4), 3);
+      expect(reconstructed).toEqual(secret);
+    });
+
+    it("should throw ValidationError for non-integer threshold", () => {
+      const secret = new Uint8Array([1, 2, 3, 4, 5]);
+      const shares = splitSecret(secret, 5, 3);
+
+      expect(() => reconstructSecret(shares.slice(0, 3), 3.5)).toThrow(
+        ValidationError,
+      );
+      expect(() => reconstructSecret(shares.slice(0, 3), 3.5)).toThrow(
+        /finite integer/,
+      );
+    });
+
+    it("should throw ValidationError for NaN threshold", () => {
+      const secret = new Uint8Array([1, 2, 3, 4, 5]);
+      const shares = splitSecret(secret, 5, 3);
+
+      expect(() => reconstructSecret(shares.slice(0, 3), NaN)).toThrow(
+        ValidationError,
+      );
+    });
+
+    it("should throw ValidationError for Infinity threshold", () => {
+      const secret = new Uint8Array([1, 2, 3, 4, 5]);
+      const shares = splitSecret(secret, 5, 3);
+
+      expect(() => reconstructSecret(shares.slice(0, 3), Infinity)).toThrow(
+        ValidationError,
+      );
+    });
+
+    it("should work normally when threshold is undefined", () => {
+      const secret = new Uint8Array([1, 2, 3, 4, 5]);
+      const shares = splitSecret(secret, 5, 3);
+
+      const reconstructed = reconstructSecret(shares.slice(0, 3));
+      expect(reconstructed).toEqual(secret);
+    });
+  });
 });

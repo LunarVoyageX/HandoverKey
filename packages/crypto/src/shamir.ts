@@ -161,13 +161,29 @@ export function splitSecret(
  * Reconstructs a secret from K or more shares
  *
  * @param shares - Array of shares (at least K shares)
+ * @param threshold - The minimum number of shares required (K). When provided,
+ *   the function rejects calls with fewer shares to prevent silent wrong results.
  * @returns The reconstructed secret
  * @throws {ValidationError} If shares are invalid or insufficient
  */
-export function reconstructSecret(shares: Uint8Array[]): Uint8Array {
-  // Validate inputs
+export function reconstructSecret(
+  shares: Uint8Array[],
+  threshold?: number,
+): Uint8Array {
   if (!Array.isArray(shares) || shares.length < 2) {
     throw new ValidationError("At least 2 shares are required");
+  }
+
+  if (threshold !== undefined) {
+    if (!Number.isFinite(threshold) || !Number.isInteger(threshold)) {
+      throw new ValidationError("Threshold must be a finite integer");
+    }
+
+    if (threshold < 2 || shares.length < threshold) {
+      throw new ValidationError(
+        `At least ${threshold} shares are required to reconstruct the secret, but only ${shares.length} were provided`,
+      );
+    }
   }
 
   // Parse shares

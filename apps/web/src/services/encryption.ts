@@ -1,9 +1,3 @@
-// This service handles client-side encryption/decryption
-// In a real app, the key would be derived from the user's password and not stored in localStorage
-
-// Mock implementation using Web Crypto API directly to avoid dependency issues for now
-// We will try to match the interface expected by the backend
-
 export interface EncryptedPayload {
   encryptedData: string;
   iv: string;
@@ -15,7 +9,7 @@ const ALGORITHM = "AES-GCM";
 const SALT_LENGTH = 16;
 const IV_LENGTH = 12;
 const PBKDF2_ITERATIONS = 100000;
-const AUTH_KEY_ITERATIONS = 10000; // Lower iterations for auth key (server will hash it again)
+const AUTH_KEY_ITERATIONS = 100000;
 
 let cachedKey: CryptoKey | null = null;
 

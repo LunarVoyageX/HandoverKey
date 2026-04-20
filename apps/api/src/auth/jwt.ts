@@ -34,45 +34,53 @@ export class JWTManager {
     process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 
   /**
-   * Generate access token and create session in database
+   * Parse a duration string like "1h", "7d", "30m" into milliseconds.
+   */
+  private static parseDurationMs(duration: string): number {
+    const match = duration.match(/^(\d+)([smhd])$/);
+    if (!match) {
+      return 60 * 60 * 1000; // default 1h
+    }
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+    const multipliers: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
+    return value * (multipliers[unit] ?? 60 * 60 * 1000);
+  }
+
+  /**
+   * Generate access token and create session in database.
+   * The token hash stored in the DB matches the final token the client receives.
    */
   static async generateAccessToken(
     userId: string,
     email: string,
     options?: TokenGenerationOptions,
   ): Promise<{ token: string; sessionId: string }> {
-    const payload: JWTPayload = {
-      userId,
-      email,
-      sessionId: "", // Will be set after session creation
-    };
-
-    // Generate token without sessionId first to get expiration
     const secret = this.getJwtSecret();
-    const tempToken = jwt.sign(payload, secret, {
-      expiresIn: this.ACCESS_TOKEN_EXPIRES_IN,
-    } as jwt.SignOptions);
 
-    const expiration = this.getTokenExpiration(tempToken);
-    if (!expiration) {
-      throw new Error("Failed to get token expiration");
-    }
+    const durationMs = this.parseDurationMs(this.ACCESS_TOKEN_EXPIRES_IN);
+    const expiresAt = new Date(Date.now() + durationMs);
 
-    // Create session in database
-    const tokenHash = SessionService.hashToken(tempToken);
     const sessionId = await SessionService.createSession({
       userId,
-      tokenHash,
-      expiresAt: expiration,
+      tokenHash: "pending",
+      expiresAt,
       ipAddress: options?.ipAddress,
       userAgent: options?.userAgent,
     });
 
-    // Generate final token with sessionId
-    payload.sessionId = sessionId;
-    const token = jwt.sign(payload, secret, {
+    const finalPayload: JWTPayload = { userId, email, sessionId };
+    const token = jwt.sign(finalPayload, secret, {
       expiresIn: this.ACCESS_TOKEN_EXPIRES_IN,
     } as jwt.SignOptions);
+
+    const tokenHash = SessionService.hashToken(token);
+    await SessionService.updateSessionTokenHash(sessionId, tokenHash);
 
     return { token, sessionId };
   }

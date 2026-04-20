@@ -1,13 +1,15 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import helmet from "helmet";
 import dotenv from "dotenv";
 dotenv.config();
-import { validateEnv } from "./config/env";
+import { validateEnv, type Env } from "./config/env";
 import { getDatabaseClient } from "@handoverkey/database";
 
+let validatedEnv: Env | undefined;
 if (process.env.NODE_ENV !== "test") {
-  validateEnv();
+  validatedEnv = validateEnv();
 }
 
 const app = express();
@@ -38,20 +40,20 @@ import { SessionService } from "./services/session-service";
 import { initializeRedis, closeRedis, checkRedisHealth } from "./config/redis";
 import { JobManager } from "./services/job-manager";
 import { realtimeService } from "./services/realtime-service";
+import { authenticateJWT, requireAuth } from "./middleware/auth";
 
-// Initialize database connection
 const dbClient = getDatabaseClient();
 const jobManager = JobManager.getInstance();
 export let appInit: Promise<void> = Promise.resolve();
 
-if (process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "test" && validatedEnv) {
   appInit = dbClient
     .initialize({
-      host: process.env.DB_HOST || "localhost",
-      port: parseInt(process.env.DB_PORT || "5432"),
-      database: process.env.DB_NAME || "handoverkey_dev",
-      user: process.env.DB_USER || "postgres",
-      password: process.env.DB_PASSWORD || "postgres",
+      host: validatedEnv.DB_HOST,
+      port: validatedEnv.DB_PORT,
+      database: validatedEnv.DB_NAME,
+      user: validatedEnv.DB_USER,
+      password: validatedEnv.DB_PASSWORD,
       min: 2,
       max: 10,
     })
@@ -80,6 +82,26 @@ if (process.env.NODE_ENV !== "test") {
 
 // Request ID middleware (must be first)
 app.use(requestIdMiddleware);
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        formAction: ["'self'"],
+        baseUri: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }) as unknown as express.RequestHandler,
+);
 
 const ALLOWED_ORIGINS = (
   process.env.CORS_ORIGINS ||
@@ -123,11 +145,11 @@ app.use(metricsMiddleware);
 app.use(rateLimiter as unknown as express.RequestHandler);
 
 // Body parsing middleware
-app.use(express.json({ limit: "1mb" }) as express.RequestHandler);
+app.use(express.json({ limit: "10mb" }) as express.RequestHandler);
 app.use(
   express.urlencoded({
     extended: true,
-    limit: "1mb",
+    limit: "10mb",
   }) as express.RequestHandler,
 );
 app.use(cookieParser() as unknown as express.RequestHandler);
@@ -193,8 +215,8 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// Prometheus metrics endpoint
-app.get("/metrics", async (req, res) => {
+// Prometheus metrics endpoint (protected -- requires authentication)
+app.get("/metrics", authenticateJWT, requireAuth, async (req, res) => {
   try {
     res.set("Content-Type", getMetricsContentType());
     const metrics = await getMetrics();

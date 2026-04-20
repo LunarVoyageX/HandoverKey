@@ -21,7 +21,7 @@ function cookieOpts(maxAgeMs: number, path?: string) {
   return {
     httpOnly: true,
     secure: isProd,
-    sameSite: (isProd ? "none" : "strict") as "none" | "strict",
+    sameSite: (isProd ? "lax" : "strict") as "lax" | "strict",
     ...(isProd && { domain: getCookieDomain() }),
     ...(path && { path }),
     maxAge: maxAgeMs,
@@ -70,7 +70,6 @@ export class AuthController {
             req.body.email,
           );
           if (existingUser) {
-            // TODO: Re-enable after fixing activity schema mismatch
             await UserService.logActivity(
               existingUser.id,
               "REGISTRATION_FAILED_DUPLICATE_EMAIL",

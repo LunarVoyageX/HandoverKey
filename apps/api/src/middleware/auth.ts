@@ -6,6 +6,7 @@ import { logger } from "../config/logger";
 
 export interface AuthenticatedRequest extends Request {
   user?: JWTPayload;
+  rawToken?: string;
 }
 
 function extractToken(req: AuthenticatedRequest): string | null {
@@ -57,6 +58,7 @@ export const authenticateJWT = (
     }
 
     req.user = decoded;
+    req.rawToken = token;
     next();
   } catch (error) {
     logger.warn(
