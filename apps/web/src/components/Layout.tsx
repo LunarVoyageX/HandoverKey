@@ -18,21 +18,35 @@ import { useToast } from "../contexts/ToastContext";
 import { realtimeClient } from "../services/realtime";
 import clsx from "clsx";
 
-const navigation = [
+const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
   { name: "Vault", href: "/vault", icon: LockClosedIcon },
   { name: "Successors", href: "/successors", icon: UserGroupIcon },
   { name: "Activity", href: "/activity", icon: ClipboardDocumentListIcon },
   { name: "Sessions", href: "/sessions", icon: ComputerDesktopIcon },
-  { name: "Admin", href: "/admin", icon: ShieldCheckIcon },
   { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
 ];
+
+const adminNavItem = {
+  name: "Admin",
+  href: "/admin",
+  icon: ShieldCheckIcon,
+};
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { logout, user } = useAuth();
   const { success } = useToast();
   const location = useLocation();
+
+  const navigation =
+    user?.role === "admin"
+      ? [
+          ...baseNavigation.slice(0, 5),
+          adminNavItem,
+          ...baseNavigation.slice(5),
+        ]
+      : baseNavigation;
 
   useEffect(() => {
     const unsubReminder = realtimeClient.subscribe(

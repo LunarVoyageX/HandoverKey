@@ -396,11 +396,31 @@ const SuccessorAccess: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className=" prose prose-sm max-w-none text-gray-600">
+                      <div className="prose prose-sm max-w-none text-gray-600">
                         {typeof entry.decryptedData === "object" ? (
-                          <pre className="bg-gray-50 p-4 rounded-md overflow-auto text-xs">
-                            {JSON.stringify(entry.decryptedData, null, 2)}
-                          </pre>
+                          <dl className="divide-y divide-gray-100">
+                            {Object.entries(entry.decryptedData)
+                              .filter(
+                                ([key]) => !["title", "name"].includes(key),
+                              )
+                              .map(([key, value]) => (
+                                <div
+                                  key={key}
+                                  className="py-3 sm:grid sm:grid-cols-3 sm:gap-4"
+                                >
+                                  <dt className="text-sm font-medium text-gray-500 capitalize">
+                                    {key
+                                      .replace(/([A-Z])/g, " $1")
+                                      .replace(/_/g, " ")}
+                                  </dt>
+                                  <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 break-all font-mono">
+                                    {typeof value === "string"
+                                      ? value
+                                      : JSON.stringify(value)}
+                                  </dd>
+                                </div>
+                              ))}
+                          </dl>
                         ) : (
                           <p>{entry.decryptedData}</p>
                         )}

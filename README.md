@@ -33,18 +33,21 @@ The platform works as a dead man's switch:
 
 ## Project Status
 
-`v2.0.0` is the current major release.
+`v1.0.0` is the current release.
 
 The repository now ships a production-grade web app and API with:
 
 - client-side encrypted vault storage
-- TOTP 2FA and recovery codes
-- secure session management
+- TOTP 2FA with recovery codes and password strength enforcement
+- secure session management with httpOnly cookies
 - activity logs and secure check-in links
 - vault import/export
-- successor verification and per-entry access restrictions
-- realtime notifications
-- admin dashboard and operational APIs
+- successor verification, per-entry access restrictions, and key share generation
+- handover orchestration with HTTP endpoints for status, cancellation, and successor response
+- guided onboarding checklist for new users
+- interactive FAQ covering zero-knowledge security and handover mechanics
+- realtime WebSocket notifications
+- role-based admin dashboard and operational APIs
 
 Roadmap items such as mobile clients, passkeys, and broader multi-platform support
 remain future work.
@@ -55,15 +58,23 @@ remain future work.
   before they are sent to the API.
 - **Dead man's switch orchestration**: configurable inactivity thresholds, reminders,
   grace period handling, and manual/public check-in flows.
-- **Successor controls**: verified successors, encrypted share distribution, and
-  optional per-successor vault entry restrictions.
+- **Handover API**: dedicated endpoints for handover status, cancellation, and
+  public successor accept/decline with rate limiting and Zod validation.
+- **Successor controls**: verified successors, Shamir's Secret Sharing key
+  distribution with threshold enforcement, and optional per-successor vault entry
+  restrictions.
 - **Strong account security**: httpOnly cookie auth, server-side session validation,
-  TOTP 2FA, recovery codes, lockout protection, and request validation.
-- **Operational visibility**: admin dashboard, activity logs, health checks,
-  background job monitoring, and structured logging.
+  TOTP 2FA with collapsible login UI, recovery codes, password strength enforcement,
+  lockout protection, and request validation.
+- **Guided onboarding**: first-time users see a checklist tracking vault setup,
+  successor designation, key share generation, and inactivity configuration.
+- **Operational visibility**: role-gated admin dashboard, activity logs, health
+  checks, background job monitoring, and structured logging.
 - **Realtime UX**: WebSocket-based user notifications for reminders and handover
   state changes.
 - **Portable data**: encrypted vault export/import to support backup and migration.
+- **Accessible UI**: consistent component library, ARIA-compliant tooltips,
+  keyboard-navigable controls, and formatted successor vault views.
 
 ## Architecture
 
@@ -83,12 +94,12 @@ graph TD
 
 ```text
 apps/
-  api/   Express 5 API, jobs, controllers, routes, validation
-  web/   React 19 SPA, React Router, Tailwind, Vite
+  api/   Express 5 API -- controllers, routes, services, validation, jobs
+  web/   React 19 SPA -- pages, components, contexts, services (Vite + Tailwind)
 packages/
-  crypto/    AES-256-GCM, PBKDF2, Shamir's Secret Sharing
-  database/  Kysely client, repository layer, schema types
-  shared/    Shared types, validation helpers, vault utilities
+  crypto/    AES-256-GCM, PBKDF2, Shamir's Secret Sharing (Web Crypto API)
+  database/  Kysely client, repository layer, schema types (PostgreSQL)
+  shared/    Cross-package types, constants, validation helpers
 docs/
   API, architecture, deployment, security, testing
 ```
@@ -140,9 +151,9 @@ npm run build
 
 Test tooling by workspace:
 
-- `apps/web`: Vitest + Testing Library
-- `apps/api`: Jest integration tests
-- `packages/crypto`: Jest with coverage thresholds
+- `apps/web`: Vitest + Testing Library (component, integration, and UX flow tests)
+- `apps/api`: Jest integration tests against PostgreSQL + Redis (auth, vault, successors, handover routes)
+- `packages/crypto`: Jest with 80% coverage threshold
 - `packages/database`: Jest repository/client tests
 - `packages/shared`: Jest utility tests
 

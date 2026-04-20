@@ -9,6 +9,7 @@ interface User {
   name?: string;
   createdAt?: string;
   twoFactorEnabled?: boolean;
+  role?: string;
 }
 
 interface AuthContextType {

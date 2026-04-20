@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
+import Spinner from "../components/Spinner";
 import api from "../services/api";
 
 const VerifyEmail: React.FC = () => {
@@ -117,7 +118,7 @@ const VerifyEmail: React.FC = () => {
         <div className="card p-8">
           {status === "loading" && (
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <Spinner className="h-12 w-12 text-blue-600 mx-auto mb-4" />
               <p className="text-gray-600">Verifying your email...</p>
             </div>
           )}
@@ -199,7 +200,7 @@ const VerifyEmail: React.FC = () => {
                     required
                     value={resendEmail}
                     onChange={(e) => setResendEmail(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="input mt-1"
                     placeholder="Enter your email address"
                   />
                 </div>
@@ -207,7 +208,7 @@ const VerifyEmail: React.FC = () => {
                 <button
                   type="submit"
                   disabled={resendLoading}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full btn btn-primary flex justify-center"
                 >
                   {resendLoading ? "Sending..." : "Send Verification Email"}
                 </button>
@@ -216,13 +217,13 @@ const VerifyEmail: React.FC = () => {
               <div className="mt-6 space-y-4">
                 <button
                   onClick={() => navigate("/login")}
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full btn btn-secondary flex justify-center"
                 >
                   Go to Login
                 </button>
                 <button
                   onClick={() => navigate("/register")}
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full btn btn-secondary flex justify-center"
                 >
                   Register Again
                 </button>
@@ -251,13 +252,13 @@ const VerifyEmail: React.FC = () => {
               <div className="space-y-4">
                 <button
                   onClick={() => navigate("/login")}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full btn btn-primary flex justify-center"
                 >
                   Go to Login
                 </button>
                 <button
                   onClick={() => navigate("/register")}
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full btn btn-secondary flex justify-center"
                 >
                   Register Again
                 </button>

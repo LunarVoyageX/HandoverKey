@@ -305,6 +305,16 @@ const Vault: React.FC = () => {
             <p className="mt-1 text-sm text-gray-500">
               Get started by adding your first secret.
             </p>
+            <button
+              onClick={() => {
+                setSelectedEntry(null);
+                setIsModalOpen(true);
+              }}
+              className="mt-4 btn btn-primary inline-flex items-center gap-2"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Add Your First Secret
+            </button>
           </div>
         ) : filteredEntries.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">

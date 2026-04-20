@@ -3,7 +3,10 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import api from "../services/api";
 import { deriveAuthKey, generateEncryptionSalt } from "../services/encryption";
-import { ShieldCheckIcon } from "@heroicons/react/24/outline";
+import {
+  ShieldCheckIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 import Spinner from "../components/Spinner";
 import { getApiErrorMessage } from "../services/api-error";
 
@@ -104,6 +107,23 @@ const ResetPassword: React.FC = () => {
             Set new password
           </h2>
         </div>
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-semibold text-amber-800">
+                This will erase all encrypted data
+              </h3>
+              <p className="mt-1 text-sm text-amber-700">
+                HandoverKey uses zero-knowledge encryption. Because we never
+                store your password, resetting it means your existing vault
+                entries cannot be decrypted and will be permanently lost.
+              </p>
+            </div>
+          </div>
+        </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
@@ -115,7 +135,7 @@ const ResetPassword: React.FC = () => {
                 name="email"
                 type="email"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                className="input"
                 placeholder="Confirm Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -130,7 +150,7 @@ const ResetPassword: React.FC = () => {
                 name="password"
                 type="password"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                className="input"
                 placeholder="New Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -145,7 +165,7 @@ const ResetPassword: React.FC = () => {
                 name="confirm-password"
                 type="password"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                className="input"
                 placeholder="Confirm New Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
