@@ -25,6 +25,8 @@ vi.mock("@heroicons/react/24/outline", () => ({
   CheckCircleIcon: () => <div data-testid="check-icon" />,
   XCircleIcon: () => <div data-testid="error-icon" />,
   InformationCircleIcon: () => <div data-testid="info-icon" />,
+  ChevronDownIcon: () => <div data-testid="chevron-down-icon" />,
+  LockOpenIcon: () => <div data-testid="lock-open-icon" />,
 }));
 
 // Mock the API

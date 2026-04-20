@@ -51,5 +51,11 @@ export {
   CheckInTokenSchema,
 } from "./activity.schemas";
 
+// Handover schemas
+export {
+  HandoverRespondSchema,
+  HandoverCancelSchema,
+} from "./handover.schemas";
+
 // Contact schemas
 export { ContactFormSchema } from "./contact.schemas";

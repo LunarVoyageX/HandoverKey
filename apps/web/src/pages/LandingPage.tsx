@@ -1,5 +1,6 @@
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ShieldCheckIcon,
   ClockIcon,
@@ -7,7 +8,62 @@ import {
   UserGroupIcon,
   LockClosedIcon,
   DocumentTextIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
+
+const faqItems = [
+  {
+    question: "What exactly is a Dead Man's Switch?",
+    answer:
+      "A Dead Man's Switch is a safety mechanism that activates when you stop responding. You set a check-in interval (e.g., every 30 days). If you fail to check in within that window, HandoverKey assumes something has happened and begins the handover process to your designated successors. Simply logging in or clicking a link in a reminder email resets the timer.",
+  },
+  {
+    question: "Can HandoverKey staff read my data?",
+    answer:
+      "No. HandoverKey uses zero-knowledge encryption — your data is encrypted on your device using a key derived from your master password before it ever leaves your browser. Our servers only store ciphertext. We never see your password or your decrypted data, and we have no way to recover it. If you lose your master password, your data is unrecoverable.",
+  },
+  {
+    question: "What happens if I forget to check in?",
+    answer:
+      "First, we'll send you multiple reminders via email as your timer approaches expiration. If you still don't check in, HandoverKey enters a Warning Phase (a grace period, typically 48 hours) where we attempt to reach you more aggressively. Only after this grace period passes without any response does the handover to your successors actually begin. You can cancel the handover at any time during the grace period by simply logging in.",
+  },
+  {
+    question: "What is Shamir's Secret Sharing and why does it matter?",
+    answer:
+      "Shamir's Secret Sharing is a cryptographic technique that splits your encryption key into multiple shares distributed among your successors. You can configure it so that a minimum number of successors (e.g., 3 out of 5) must combine their shares to reconstruct the key. This means no single successor can access your data alone — they must cooperate, preventing premature or unauthorized access.",
+  },
+  {
+    question: "Can I give different secrets to different successors?",
+    answer:
+      "Yes. You can assign specific vault entries to specific successors. For example, your spouse might receive financial credentials while a business partner receives company-related secrets. You can also restrict successors to only see the entries explicitly assigned to them.",
+  },
+  {
+    question: "Do my successors need a HandoverKey account?",
+    answer:
+      "No. Successors are identified by their email address and verified through a one-time email link. When a handover triggers, they receive their key share and a secure access link. They combine the required shares in their browser to decrypt the data — no account, no installation, everything happens in the browser.",
+  },
+  {
+    question: "What can I store in my vault?",
+    answer:
+      "You can store passwords, API keys, cryptocurrency seed phrases, personal notes, legal documents, and files. Everything is organized by category and tags, and you can search, export, and import your vault data at any time. All data is encrypted client-side before storage.",
+  },
+  {
+    question: "What happens if HandoverKey shuts down?",
+    answer:
+      "HandoverKey is open source, so you can always self-host it. Additionally, the Export feature lets you download your entire encrypted vault as a JSON file at any time. Your encryption keys and data are never locked into our platform. We recommend keeping regular exports as a backup.",
+  },
+  {
+    question: "Can I pause the Dead Man's Switch temporarily?",
+    answer:
+      "Yes. If you're going on vacation or know you'll be unavailable, you can pause your inactivity monitoring from your Settings page. While paused, missing a check-in won't trigger any handover process. You can resume monitoring whenever you're ready.",
+  },
+  {
+    question:
+      "How is this different from just sharing my passwords with someone?",
+    answer:
+      "Sharing passwords directly means someone else has access to your accounts right now, which is a security risk. HandoverKey ensures your successors only gain access after the Dead Man's Switch triggers — not before. Combined with Shamir's Secret Sharing, even the successors can't access your data prematurely since no individual holds enough key material alone.",
+  },
+];
 
 export default function LandingPage() {
   return (
@@ -138,6 +194,51 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* FAQ Section */}
+      <div className="py-24 bg-gray-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-lg text-gray-600">
+              Everything you need to know about securing your digital legacy
+              with HandoverKey.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {faqItems.map((item, index) => (
+              <FAQItem
+                key={index}
+                question={item.question}
+                answer={item.answer}
+              />
+            ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-gray-600">
+              Still have questions?{" "}
+              <Link
+                to="/contact"
+                className="text-blue-600 font-medium hover:text-blue-700 transition-colors"
+              >
+                Get in touch
+              </Link>{" "}
+              or read our detailed{" "}
+              <Link
+                to="/how-it-works"
+                className="text-blue-600 font-medium hover:text-blue-700 transition-colors"
+              >
+                How it Works
+              </Link>{" "}
+              guide.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* CTA Section */}
       <div className="bg-gray-900 py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -204,5 +305,43 @@ function FeatureCard({
       <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
       <p className="text-gray-600 leading-relaxed">{description}</p>
     </motion.div>
+  );
+}
+
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"
+      >
+        <span className="text-lg font-semibold text-gray-900 pr-4">
+          {question}
+        </span>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex-shrink-0"
+        >
+          <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+        </motion.div>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            <div className="px-6 pb-6 text-gray-600 leading-relaxed">
+              {answer}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

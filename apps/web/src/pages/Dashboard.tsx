@@ -8,6 +8,9 @@ import {
 import api from "../services/api";
 import { Link } from "react-router-dom";
 import { useToast } from "../contexts/ToastContext";
+import OnboardingChecklist, {
+  type SetupStatus,
+} from "../components/OnboardingChecklist";
 
 interface ActivityLog {
   id: string;
@@ -42,21 +45,56 @@ const Dashboard: React.FC = () => {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+
+  useEffect(() => {
+    try {
+      setOnboardingDismissed(
+        window.localStorage.getItem("onboarding_dismissed") === "true",
+      );
+    } catch {
+      /* restricted storage mode */
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
-      const [vaultRes, successorsRes, activityRes] = await Promise.all([
-        api.get("/vault/entries"),
-        api.get("/successors"),
-        api.get("/activity?limit=5"),
-      ]);
+      const [vaultRes, successorsRes, activityRes, inactivityRes] =
+        await Promise.all([
+          api.get("/vault/entries"),
+          api.get("/successors"),
+          api.get("/activity?limit=5"),
+          api.get("/inactivity/settings").catch((err: unknown) => {
+            const status = (err as { response?: { status?: number } })?.response
+              ?.status;
+            if (status === 404) return null;
+            throw err;
+          }),
+        ]);
 
       // Vault returns array directly
       const vaultCount = Array.isArray(vaultRes.data)
         ? vaultRes.data.length
         : 0;
       // Successors returns { successors: [...] }
-      const successorCount = successorsRes.data.successors?.length || 0;
+      const successors = successorsRes.data.successors || [];
+      const successorCount = successors.length;
+
+      const hasKeyShares = successors.some(
+        (s: { encryptedShare?: string | null }) => !!s.encryptedShare,
+      );
+
+      const inactivitySettings = inactivityRes?.data;
+      const hasInactivityConfig =
+        !!inactivitySettings && inactivitySettings.thresholdDays > 0;
+
+      setSetupStatus({
+        hasSecrets: vaultCount > 0,
+        hasSuccessors: successorCount > 0,
+        hasKeyShares,
+        hasInactivityConfig,
+      });
 
       // Calculate days active from user account creation date
       const daysActive = user?.createdAt
@@ -156,6 +194,18 @@ const Dashboard: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {setupStatus && !onboardingDismissed && !loading && (
+        <div className="mt-8">
+          <OnboardingChecklist
+            status={setupStatus}
+            onDismiss={() => {
+              setOnboardingDismissed(true);
+              localStorage.setItem("onboarding_dismissed", "true");
+            }}
+          />
+        </div>
+      )}
 
       <div className="mt-8">
         <h3 className="text-base font-semibold leading-6 text-gray-900">

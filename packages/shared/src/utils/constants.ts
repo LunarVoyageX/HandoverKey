@@ -16,8 +16,8 @@ export const API_ENDPOINTS = {
   },
   HANDOVER: {
     STATUS: "/api/v1/handover/status",
-    CHECK_IN: "/api/v1/handover/check-in",
-    AUDIT_LOGS: "/api/v1/handover/audit-logs",
+    CANCEL: "/api/v1/handover/cancel",
+    RESPOND: "/api/v1/handover/respond",
   },
 } as const;
 
