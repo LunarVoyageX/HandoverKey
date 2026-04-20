@@ -15,6 +15,23 @@ npm run lint && npm run build && npm test
 
 If any step fails, fix the issue and re-run all gates before pushing.
 
+## Local Verification
+
+When fixing runtime or deployment issues, verify the fix locally before pushing. Spin up the required infrastructure (Redis, Postgres) via Docker containers, run the app, and confirm the fix works end-to-end.
+
+```bash
+docker run -d --name redis-test -p 6379:6379 redis:7-alpine
+docker run -d --name postgres-test -p 5432:5432 \
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=handoverkey_dev postgres:16-alpine
+```
+
+Clean up containers after verification:
+
+```bash
+docker stop redis-test postgres-test && docker rm redis-test postgres-test
+```
+
 ## Git Branch Hygiene
 
 - Before starting new work, always check whether the current PR/branch has already been merged.

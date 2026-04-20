@@ -7,7 +7,8 @@ let cachedSendCommand: SendCommandFn | null = null;
 
 async function getSendCommand(): Promise<SendCommandFn> {
   if (!cachedSendCommand) {
-    const { getRedisClient } = await import("../config/redis");
+    const { initializeRedis, getRedisClient } = await import("../config/redis");
+    await initializeRedis();
     const client = getRedisClient();
     cachedSendCommand = ((...args: string[]) =>
       client.sendCommand(args)) as SendCommandFn;
