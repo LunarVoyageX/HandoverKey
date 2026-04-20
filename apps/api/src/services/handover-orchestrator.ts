@@ -161,28 +161,76 @@ export class HandoverOrchestrator implements IHandoverOrchestrator {
   }
 
   /**
-   * Processes a successor's response to handover notification
+   * Processes a successor's response to a handover notification.
+   * Marks the notification as accepted or declined and, when all notified
+   * successors have responded, transitions the handover to COMPLETED.
    */
   async processSuccessorResponse(
     handoverId: string,
     successorId: string,
-    _response: unknown,
+    response: { accepted: boolean; message?: string },
   ): Promise<void> {
     try {
-      // TODO: Implement successor response processing
-      // This will handle successor verification and consent
       logger.info(
-        `Processing successor response for handover ${handoverId}, successor ${successorId}`,
+        { handoverId, successorId, accepted: response.accepted },
+        "Processing successor response",
       );
+
+      const handoverRepo = HandoverOrchestrator.getHandoverProcessRepository();
+      const handoverProcess = await handoverRepo.findById(handoverId);
+
+      if (!handoverProcess) {
+        logger.warn({ handoverId }, "Handover process not found");
+        return;
+      }
 
       const notificationRepo =
         HandoverOrchestrator.getSuccessorNotificationRepository();
       await notificationRepo.update(handoverId, successorId, {
-        verification_status: "verified",
+        verification_status: response.accepted ? "VERIFIED" : "DECLINED",
         verified_at: new Date(),
       });
+
+      realtimeService.broadcastToUser(
+        handoverProcess.user_id,
+        "handover.successor_responded",
+        { handoverId, successorId, accepted: response.accepted },
+      );
+
+      const allNotifications =
+        await notificationRepo.findByHandoverProcess(handoverId);
+      const allResponded = allNotifications.every(
+        (n) =>
+          n.verification_status === "VERIFIED" ||
+          n.verification_status === "DECLINED",
+      );
+
+      if (allResponded) {
+        if (
+          handoverProcess.status === HandoverProcessStatus.COMPLETED ||
+          handoverProcess.status === HandoverProcessStatus.CANCELLED
+        ) {
+          logger.info(
+            { handoverId, status: handoverProcess.status },
+            "Skipping completion -- handover already in terminal state",
+          );
+          return;
+        }
+
+        await handoverRepo.update(handoverId, {
+          status: HandoverProcessStatus.COMPLETED,
+          completed_at: new Date(),
+        });
+
+        realtimeService.broadcastToUser(
+          handoverProcess.user_id,
+          "handover.status_changed",
+          { handoverId, status: HandoverProcessStatus.COMPLETED },
+        );
+
+        logger.info({ handoverId }, "Handover process completed");
+      }
     } catch (error) {
-      // Only log errors in non-test environments
       if (process.env.NODE_ENV !== "test") {
         logger.error(
           { err: error },

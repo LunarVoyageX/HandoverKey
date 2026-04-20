@@ -253,6 +253,99 @@ describe("Handover Flow Integration", () => {
     );
   });
 
+  it("should complete handover when all successors respond via processSuccessorResponse", async () => {
+    const email = `respond-test-${Date.now()}@example.com`;
+    const { userId } = await register(email);
+    const token = await login(email);
+    const auth = { Authorization: `Bearer ${token}` };
+
+    // 1. Add two successors
+    const s1 = await request(app).post("/api/v1/successors").set(auth).send({
+      email: "resp-successor-1@example.com",
+      name: "Resp Successor 1",
+      handoverDelayDays: 7,
+      encryptedShare: "share-1",
+    });
+    const s2 = await request(app).post("/api/v1/successors").set(auth).send({
+      email: "resp-successor-2@example.com",
+      name: "Resp Successor 2",
+      handoverDelayDays: 7,
+      encryptedShare: "share-2",
+    });
+
+    const successorId1 = s1.body.successor.id;
+    const successorId2 = s2.body.successor.id;
+
+    // 2. Initiate handover and move past grace period
+    const orchestrator = new HandoverOrchestrator();
+    const handover = await orchestrator.initiateHandover(userId);
+    await orchestrator.processGracePeriodExpiration(handover.id);
+
+    // 3. Create successor_notifications for both successors
+    const db = getDatabaseClient().getKysely();
+    const deadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await db
+      .insertInto("successor_notifications")
+      .values([
+        {
+          handover_process_id: handover.id,
+          successor_id: successorId1,
+          response_deadline: deadline,
+          verification_token: null,
+        },
+        {
+          handover_process_id: handover.id,
+          successor_id: successorId2,
+          response_deadline: deadline,
+          verification_token: null,
+        },
+      ])
+      .execute();
+
+    // 4. First successor responds -- handover should NOT complete yet
+    await orchestrator.processSuccessorResponse(handover.id, successorId1, {
+      accepted: true,
+    });
+
+    const afterFirst = await db
+      .selectFrom("handover_processes")
+      .select("status")
+      .where("id", "=", handover.id)
+      .executeTakeFirstOrThrow();
+    expect(afterFirst.status).toBe(HandoverProcessStatus.AWAITING_SUCCESSORS);
+
+    // Verify notification status updated to VERIFIED
+    const n1 = await db
+      .selectFrom("successor_notifications")
+      .select("verification_status")
+      .where("handover_process_id", "=", handover.id)
+      .where("successor_id", "=", successorId1)
+      .executeTakeFirstOrThrow();
+    expect(n1.verification_status).toBe("VERIFIED");
+
+    // 5. Second successor responds -- handover should now COMPLETE
+    await orchestrator.processSuccessorResponse(handover.id, successorId2, {
+      accepted: false,
+    });
+
+    const afterSecond = await db
+      .selectFrom("handover_processes")
+      .select("status")
+      .where("id", "=", handover.id)
+      .executeTakeFirstOrThrow();
+    expect(afterSecond.status).toBe(HandoverProcessStatus.COMPLETED);
+
+    // Verify second notification status is DECLINED
+    const n2 = await db
+      .selectFrom("successor_notifications")
+      .select("verification_status")
+      .where("handover_process_id", "=", handover.id)
+      .where("successor_id", "=", successorId2)
+      .executeTakeFirstOrThrow();
+    expect(n2.verification_status).toBe("DECLINED");
+  });
+
   it("should handle bulk update of successor shares", async () => {
     const email = `bulk-test-${Date.now()}@example.com`;
     await register(email);

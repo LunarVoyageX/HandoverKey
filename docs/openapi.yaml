@@ -1,0 +1,990 @@
+openapi: 3.1.0
+info:
+  title: HandoverKey API
+  description: >
+    REST API for the HandoverKey digital legacy platform. All protected
+    endpoints require a valid JWT access token sent as a Bearer header or
+    httpOnly cookie.
+  version: 2.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: HandoverKey
+    url: https://handoverkey.com
+
+servers:
+  - url: /api/v1
+    description: Default (relative)
+  - url: http://localhost:3001/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Registration, login, 2FA, password management
+  - name: Vault
+    description: Encrypted vault entry CRUD
+  - name: Successors
+    description: Manage trusted successors
+  - name: Activity
+    description: Activity logs and check-ins
+  - name: Inactivity
+    description: Dead man's switch / inactivity settings
+  - name: Sessions
+    description: Session management
+  - name: Admin
+    description: Admin dashboard (requires ADMIN_EMAILS)
+  - name: Contact
+    description: Contact form
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: accessToken
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+
+    VaultEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        encryptedData:
+          type: string
+          description: Base64-encoded AES-256-GCM ciphertext
+        iv:
+          type: string
+          description: Base64-encoded initialisation vector
+        salt:
+          type: string
+          description: Base64-encoded salt
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Successor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        verified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+
+paths:
+  # ── Auth ──────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, confirmPassword]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                confirmPassword:
+                  type: string
+                salt:
+                  type: string
+                  description: Client-generated encryption salt (base64)
+      responses:
+        "201":
+          description: User registered -- verification email sent
+        "409":
+          description: Email already registered
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                twoFactorCode:
+                  type: string
+                recoveryCode:
+                  type: string
+      responses:
+        "200":
+          description: Login successful (sets httpOnly cookies)
+        "401":
+          description: Invalid credentials or 2FA required
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log out and invalidate session
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/profile:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: User profile
+        "401":
+          description: Not authenticated
+    put:
+      tags: [Auth]
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        "200":
+          description: Profile updated
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        "200":
+          description: New tokens issued
+
+  /auth/verify-email:
+    get:
+      tags: [Auth]
+      summary: Verify email address
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email verified
+
+  /auth/resend-verification:
+    post:
+      tags: [Auth]
+      summary: Resend verification email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Verification email resent
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Reset email sent (always 200 to prevent enumeration)
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password with token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password, confirmPassword]
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                confirmPassword:
+                  type: string
+                salt:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Password reset
+
+  /auth/change-password:
+    put:
+      tags: [Auth]
+      summary: Change password (requires current password)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword, confirmNewPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                confirmNewPassword:
+                  type: string
+                salt:
+                  type: string
+      responses:
+        "200":
+          description: Password changed
+
+  /auth/2fa/setup:
+    post:
+      tags: [Auth]
+      summary: Initialise two-factor authentication setup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Returns TOTP secret and QR code URL
+
+  /auth/2fa/enable:
+    post:
+      tags: [Auth]
+      summary: Enable 2FA after verifying TOTP code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+      responses:
+        "200":
+          description: 2FA enabled, returns recovery codes
+
+  /auth/2fa/disable:
+    post:
+      tags: [Auth]
+      summary: Disable two-factor authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                code:
+                  type: string
+      responses:
+        "200":
+          description: 2FA disabled
+
+  /auth/delete-account:
+    delete:
+      tags: [Auth]
+      summary: Delete user account
+      responses:
+        "200":
+          description: Account deleted
+
+  # ── Vault ─────────────────────────────────────────────────────────
+  /vault/entries:
+    get:
+      tags: [Vault]
+      summary: List vault entries
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Array of vault entries
+    post:
+      tags: [Vault]
+      summary: Create a vault entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [encryptedData, iv, salt]
+              properties:
+                title:
+                  type: string
+                encryptedData:
+                  type: string
+                iv:
+                  type: string
+                salt:
+                  type: string
+                category:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Entry created
+
+  /vault/entries/{id}:
+    get:
+      tags: [Vault]
+      summary: Get a vault entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Vault entry
+        "404":
+          description: Not found
+    put:
+      tags: [Vault]
+      summary: Update a vault entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                encryptedData:
+                  type: string
+                iv:
+                  type: string
+                salt:
+                  type: string
+                category:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Entry updated
+    delete:
+      tags: [Vault]
+      summary: Delete a vault entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Entry deleted
+
+  /vault/export:
+    get:
+      tags: [Vault]
+      summary: Export encrypted vault entries as JSON backup
+      responses:
+        "200":
+          description: JSON payload of all vault entries
+
+  /vault/import:
+    post:
+      tags: [Vault]
+      summary: Import vault entries from JSON payload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entries]
+              properties:
+                entries:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/VaultEntry"
+      responses:
+        "200":
+          description: Entries imported
+
+  /vault/successor-access:
+    get:
+      tags: [Vault]
+      summary: Successor access to vault entries (public, token-verified)
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Vault entries accessible to the successor
+        "403":
+          description: Invalid or expired token
+
+  # ── Successors ────────────────────────────────────────────────────
+  /successors:
+    get:
+      tags: [Successors]
+      summary: List successors
+      responses:
+        "200":
+          description: Array of successors
+    post:
+      tags: [Successors]
+      summary: Add a successor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                handoverDelayDays:
+                  type: integer
+      responses:
+        "201":
+          description: Successor added
+
+  /successors/verify:
+    get:
+      tags: [Successors]
+      summary: Verify a successor via email link (public)
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successor verified
+
+  /successors/shares:
+    put:
+      tags: [Successors]
+      summary: Update Shamir secret shares for all successors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shares]
+              properties:
+                shares:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      successorId:
+                        type: string
+                        format: uuid
+                      encryptedShare:
+                        type: string
+      responses:
+        "200":
+          description: Shares updated
+
+  /successors/{id}:
+    get:
+      tags: [Successors]
+      summary: Get a single successor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successor details
+    put:
+      tags: [Successors]
+      summary: Update a successor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                handoverDelayDays:
+                  type: integer
+      responses:
+        "200":
+          description: Successor updated
+    delete:
+      tags: [Successors]
+      summary: Remove a successor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successor removed
+
+  /successors/{id}/assigned-entries:
+    get:
+      tags: [Successors]
+      summary: Get vault entries assigned to a successor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Array of assigned vault entry IDs
+    put:
+      tags: [Successors]
+      summary: Update vault entries assigned to a successor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vaultEntryIds]
+              properties:
+                vaultEntryIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        "200":
+          description: Assigned entries updated
+
+  /successors/{id}/resend-verification:
+    post:
+      tags: [Successors]
+      summary: Resend verification email to a successor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Verification email resent
+
+  /successors/{id}/verify:
+    post:
+      tags: [Successors]
+      summary: Verify a successor with token (authenticated)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Successor verified
+
+  # ── Activity ──────────────────────────────────────────────────────
+  /activity:
+    get:
+      tags: [Activity]
+      summary: Get activity logs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Paginated activity logs
+
+  /activity/check-in:
+    post:
+      tags: [Activity]
+      summary: Manual check-in (resets inactivity timer)
+      responses:
+        "200":
+          description: Check-in recorded
+
+  /activity/check-in-link:
+    get:
+      tags: [Activity]
+      summary: Validate a secure check-in link (public)
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token is valid
+        "400":
+          description: Invalid or expired token
+    post:
+      tags: [Activity]
+      summary: Execute secure check-in via link (public)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Check-in completed
+
+  # ── Inactivity ────────────────────────────────────────────────────
+  /inactivity/settings:
+    get:
+      tags: [Inactivity]
+      summary: Get inactivity settings
+      responses:
+        "200":
+          description: Current inactivity settings
+    put:
+      tags: [Inactivity]
+      summary: Update inactivity settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                thresholdDays:
+                  type: integer
+                requireMajority:
+                  type: boolean
+                isPaused:
+                  type: boolean
+      responses:
+        "200":
+          description: Settings updated
+
+  /inactivity/pause:
+    post:
+      tags: [Inactivity]
+      summary: Pause the dead man's switch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pauseUntil:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: Switch paused
+
+  /inactivity/resume:
+    post:
+      tags: [Inactivity]
+      summary: Resume the dead man's switch
+      responses:
+        "200":
+          description: Switch resumed
+
+  # ── Sessions ──────────────────────────────────────────────────────
+  /sessions:
+    get:
+      tags: [Sessions]
+      summary: List active sessions
+      responses:
+        "200":
+          description: Array of sessions
+
+  /sessions/{id}:
+    delete:
+      tags: [Sessions]
+      summary: Invalidate a session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Session invalidated
+
+  /sessions/invalidate-others:
+    post:
+      tags: [Sessions]
+      summary: Invalidate all sessions except the current one
+      responses:
+        "200":
+          description: Other sessions invalidated
+
+  # ── Admin ─────────────────────────────────────────────────────────
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Dashboard data
+        "403":
+          description: Not an admin
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: List users (admin)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Array of users
+        "403":
+          description: Not an admin
+
+  /admin/users/{userId}/unlock:
+    post:
+      tags: [Admin]
+      summary: Unlock a locked user account
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Account unlocked
+
+  /admin/users/{userId}/lockout-status:
+    get:
+      tags: [Admin]
+      summary: Get lockout status for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Lockout status
+
+  # ── Contact ───────────────────────────────────────────────────────
+  /contact:
+    post:
+      tags: [Contact]
+      summary: Submit contact form
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, message]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                message:
+                  type: string
+      responses:
+        "200":
+          description: Message sent

@@ -1,46 +1,82 @@
 import { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
+import { RedisStore, type SendCommandFn } from "rate-limit-redis";
 import { logger } from "../config/logger";
 
-export const rateLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"), // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100"), // limit each IP to 100 requests per windowMs
-  message: {
-    error: "Too many requests from this IP, please try again later.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-}) as unknown as (req: Request, res: Response, next: NextFunction) => void;
+let cachedSendCommand: SendCommandFn | null = null;
 
-export const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === "production" ? 5 : 1000, // strict in production, relaxed in dev/test
-  message: {
-    error: "Too many authentication attempts, please try again later.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+async function getSendCommand(): Promise<SendCommandFn> {
+  if (!cachedSendCommand) {
+    const { getRedisClient } = await import("../config/redis");
+    const client = getRedisClient();
+    cachedSendCommand = ((...args: string[]) =>
+      client.sendCommand(args)) as SendCommandFn;
+  }
+  return cachedSendCommand;
+}
 
-export const registerRateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: process.env.NODE_ENV === "production" ? 20 : 1000, // strict in production, relaxed in dev/test
-  message: {
-    error: "Too many accounts created from this IP, please try again later.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const useRedisStore =
+  process.env.NODE_ENV === "production" ||
+  process.env.RATE_LIMIT_STORE === "redis";
 
-export const contactRateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: process.env.NODE_ENV === "development" ? 1000 : 3, // limit each IP to 3 contact form submissions per hour (1000 in dev)
-  message: {
-    error: "Too many contact form submissions, please try again later.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+/**
+ * Creates a rate limiter. In production, uses a Redis-backed store so
+ * rate-limit state survives deploys. Falls back to in-memory otherwise.
+ */
+export function createRateLimiter(
+  windowMs: number,
+  max: number,
+  message: string,
+  redisPrefix?: string,
+) {
+  const opts: Parameters<typeof rateLimit>[0] = {
+    windowMs,
+    max,
+    message: { error: message },
+    standardHeaders: true,
+    legacyHeaders: false,
+  };
+
+  if (redisPrefix && useRedisStore) {
+    opts.store = new RedisStore({
+      sendCommand: async (...args: string[]) => {
+        const fn = await getSendCommand();
+        return fn(...args);
+      },
+      prefix: redisPrefix,
+    });
+  }
+
+  return rateLimit(opts);
+}
+
+export const rateLimiter = createRateLimiter(
+  parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"),
+  parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100"),
+  "Too many requests from this IP, please try again later.",
+  "rl:global:",
+) as unknown as (req: Request, res: Response, next: NextFunction) => void;
+
+export const authRateLimiter = createRateLimiter(
+  15 * 60 * 1000,
+  process.env.NODE_ENV === "production" ? 5 : 1000,
+  "Too many authentication attempts, please try again later.",
+  "rl:auth:",
+);
+
+export const registerRateLimiter = createRateLimiter(
+  60 * 60 * 1000,
+  process.env.NODE_ENV === "production" ? 20 : 1000,
+  "Too many accounts created from this IP, please try again later.",
+  "rl:register:",
+);
+
+export const contactRateLimiter = createRateLimiter(
+  60 * 60 * 1000,
+  process.env.NODE_ENV === "development" ? 1000 : 3,
+  "Too many contact form submissions, please try again later.",
+  "rl:contact:",
+);
 
 export const validateContentType = (
   req: Request,
