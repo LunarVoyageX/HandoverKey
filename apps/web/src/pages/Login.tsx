@@ -5,6 +5,7 @@ import api from "../services/api";
 import { setMasterKey, deriveAuthKey } from "../services/encryption";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import Spinner from "../components/Spinner";
+import { getApiErrorMessage } from "../services/api-error";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -49,19 +50,7 @@ const Login: React.FC = () => {
       login(userData);
       navigate("/dashboard");
     } catch (err: unknown) {
-      const error = err as {
-        response?: {
-          data?: {
-            error?: { message?: string };
-            message?: string;
-          };
-        };
-      };
-      setError(
-        error.response?.data?.error?.message ||
-          error.response?.data?.message ||
-          "Failed to login",
-      );
+      setError(getApiErrorMessage(err, "Failed to login"));
     } finally {
       setLoading(false);
     }

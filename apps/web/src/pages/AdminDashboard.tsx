@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AxiosError } from "axios";
+import axios from "axios";
 import api from "../services/api";
 import { useToast } from "../contexts/ToastContext";
 
@@ -39,8 +39,7 @@ const AdminDashboard: React.FC = () => {
       setUsers(usersResponse.data?.users || []);
       setIsForbidden(false);
     } catch (err) {
-      const error = err as AxiosError;
-      if (error.response?.status === 403) {
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
         setIsForbidden(true);
       } else {
         showError("Failed to load admin dashboard");

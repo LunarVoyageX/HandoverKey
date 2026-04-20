@@ -1,30 +1,50 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Analytics } from "@vercel/analytics/react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
-import LandingPage from "./pages/LandingPage";
-import HowItWorks from "./pages/HowItWorks";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import Contact from "./pages/Contact";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import VerifySuccessor from "./pages/VerifySuccessor";
-import VerifyEmail from "./pages/VerifyEmail";
-import CheckIn from "./pages/CheckIn";
-import Dashboard from "./pages/Dashboard";
-import Vault from "./pages/Vault";
-import Successors from "./pages/Successors";
-import SuccessorAccess from "./pages/SuccessorAccess";
-import Settings from "./pages/Settings";
-import Sessions from "./pages/Sessions";
-import ActivityLogs from "./pages/ActivityLogs";
-import AdminDashboard from "./pages/AdminDashboard";
-import Layout from "./components/Layout";
+import Spinner from "./components/Spinner";
 import ProtectedRoute from "./components/ProtectedRoute";
+import NotFound from "./pages/NotFound";
+
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const VerifySuccessor = lazy(() => import("./pages/VerifySuccessor"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const CheckIn = lazy(() => import("./pages/CheckIn"));
+const Layout = lazy(() => import("./components/Layout"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Vault = lazy(() => import("./pages/Vault"));
+const Successors = lazy(() => import("./pages/Successors"));
+const SuccessorAccess = lazy(() => import("./pages/SuccessorAccess"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Sessions = lazy(() => import("./pages/Sessions"));
+const ActivityLogs = lazy(() => import("./pages/ActivityLogs"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+
+const enableAnalytics = import.meta.env.VITE_ENABLE_ANALYTICS === "true";
+const VercelAnalytics = enableAnalytics
+  ? lazy(() =>
+      import("@vercel/analytics/react").then((m) => ({
+        default: m.Analytics,
+      })),
+    )
+  : null;
+
+function PageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Spinner />
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -32,38 +52,46 @@ function App() {
       <Router>
         <AuthProvider>
           <ToastProvider>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/checkin" element={<CheckIn />} />
-              <Route path="/verify-successor" element={<VerifySuccessor />} />
-              <Route path="/successor-access" element={<SuccessorAccess />} />
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/checkin" element={<CheckIn />} />
+                <Route path="/verify-successor" element={<VerifySuccessor />} />
+                <Route path="/successor-access" element={<SuccessorAccess />} />
 
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/vault" element={<Vault />} />
-                <Route path="/successors" element={<Successors />} />
-                <Route path="/activity" element={<ActivityLogs />} />
-                <Route path="/sessions" element={<Sessions />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
-            </Routes>
-            <Analytics />
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <Layout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/vault" element={<Vault />} />
+                  <Route path="/successors" element={<Successors />} />
+                  <Route path="/activity" element={<ActivityLogs />} />
+                  <Route path="/sessions" element={<Sessions />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+            {VercelAnalytics && (
+              <Suspense fallback={null}>
+                <VercelAnalytics />
+              </Suspense>
+            )}
           </ToastProvider>
         </AuthProvider>
       </Router>

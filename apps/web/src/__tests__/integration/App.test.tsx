@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import App from "../../App";
@@ -54,17 +54,26 @@ vi.mock("framer-motion", () => ({
 }));
 
 describe("App Integration", () => {
-  it("renders landing page by default", () => {
+  it("renders landing page by default", async () => {
     render(<App />);
-    expect(screen.getAllByText(/HandoverKey/i)[0]).toBeInTheDocument();
+    const heading = await screen.findAllByText(/HandoverKey/i);
+    expect(heading[0]).toBeInTheDocument();
   });
 
   it("navigates to register page", async () => {
     render(<App />);
-    const registerLink = screen.getByRole("link", { name: /get started/i });
+    const registerLink = await screen.findByRole("link", {
+      name: /get started/i,
+    });
     expect(registerLink).toBeInTheDocument();
-    // We can't easily test navigation with BrowserRouter inside App unless we mock window.location or use userEvent to click
-    // But since it's a Link, we can check if it has the right href
     expect(registerLink).toHaveAttribute("href", "/register");
+  });
+
+  it("renders NotFound page for unknown routes", async () => {
+    window.history.pushState({}, "", "/some-unknown-page");
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByText(/page not found/i)).toBeInTheDocument();
+    });
   });
 });

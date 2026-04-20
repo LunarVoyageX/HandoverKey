@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import api from "../services/api";
+import { getApiErrorMessage } from "../services/api-error";
 
 type CheckInStatus = "loading" | "ready" | "success" | "error";
 
@@ -29,16 +30,12 @@ const CheckIn: React.FC = () => {
           "Your secure check-in link is valid. Confirm check-in to reset inactivity tracking.",
         );
       } catch (err) {
-        const error = err as {
-          response?: {
-            data?: { message?: string; error?: { message?: string } };
-          };
-        };
         setStatus("error");
         setMessage(
-          error.response?.data?.message ||
-            error.response?.data?.error?.message ||
+          getApiErrorMessage(
+            err,
             "This check-in link is invalid or has expired.",
+          ),
         );
       }
     };
@@ -57,16 +54,9 @@ const CheckIn: React.FC = () => {
       setStatus("success");
       setMessage(response.data.message || "Check-in completed successfully.");
     } catch (err) {
-      const error = err as {
-        response?: {
-          data?: { message?: string; error?: { message?: string } };
-        };
-      };
       setStatus("error");
       setMessage(
-        error.response?.data?.message ||
-          error.response?.data?.error?.message ||
-          "Failed to complete secure check-in.",
+        getApiErrorMessage(err, "Failed to complete secure check-in."),
       );
     } finally {
       setSubmitting(false);

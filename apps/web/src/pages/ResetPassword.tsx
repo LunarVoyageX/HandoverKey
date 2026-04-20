@@ -5,6 +5,7 @@ import api from "../services/api";
 import { deriveAuthKey, generateEncryptionSalt } from "../services/encryption";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import Spinner from "../components/Spinner";
+import { getApiErrorMessage } from "../services/api-error";
 
 const ResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -64,16 +65,7 @@ const ResetPassword: React.FC = () => {
         navigate("/login");
       }, 3000);
     } catch (err) {
-      const error = err as {
-        response?: {
-          data?: { error?: { message?: string }; message?: string };
-        };
-      };
-      setError(
-        error.response?.data?.error?.message ||
-          error.response?.data?.message ||
-          "Failed to reset password",
-      );
+      setError(getApiErrorMessage(err, "Failed to reset password"));
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import api from "../services/api";
 import { deriveAuthKey, generateEncryptionSalt } from "../services/encryption";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import LoadingButton from "../components/LoadingButton";
+import { getApiErrorMessage } from "../services/api-error";
 
 const Register: React.FC = () => {
   const [name, setName] = useState("");
@@ -59,21 +60,7 @@ const Register: React.FC = () => {
         navigate("/login");
       }, 3000);
     } catch (err) {
-      const error = err as {
-        response?: {
-          data?: {
-            error?: { message?: string; details?: Array<{ message?: string }> };
-            message?: string;
-          };
-        };
-      };
-      // Handle Zod validation errors which might be an array
-      const message =
-        error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        "Failed to register";
-      const details = error.response?.data?.error?.details?.[0]?.message;
-      setError(details ? `${message}: ${details}` : message);
+      setError(getApiErrorMessage(err, "Failed to register"));
     } finally {
       setLoading(false);
     }

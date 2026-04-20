@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "../services/api";
+import { getApiErrorMessage } from "../services/api-error";
 
 const VerifySuccessor: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -29,16 +30,12 @@ const VerifySuccessor: React.FC = () => {
           "Your successor status has been verified successfully!",
       );
     } catch (err) {
-      const error = err as {
-        response?: {
-          data?: { error?: { message?: string }; message?: string };
-        };
-      };
       setStatus("error");
       setMessage(
-        error.response?.data?.error?.message ||
-          error.response?.data?.message ||
+        getApiErrorMessage(
+          err,
           "Failed to verify successor. The link may be invalid or expired.",
+        ),
       );
     }
   };

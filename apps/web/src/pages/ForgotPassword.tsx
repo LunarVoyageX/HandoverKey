@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../services/api";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import Spinner from "../components/Spinner";
+import { getApiErrorMessage } from "../services/api-error";
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -22,16 +23,7 @@ const ForgotPassword: React.FC = () => {
         "If an account exists with this email, a password reset link has been sent.",
       );
     } catch (err) {
-      const error = err as {
-        response?: {
-          data?: { error?: { message?: string }; message?: string };
-        };
-      };
-      setError(
-        error.response?.data?.error?.message ||
-          error.response?.data?.message ||
-          "Failed to request password reset",
-      );
+      setError(getApiErrorMessage(err, "Failed to request password reset"));
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { AxiosError } from "axios";
 import { PlusIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import api from "../services/api";
+import { getApiErrorMessage } from "../services/api-error";
 import { useToast } from "../contexts/ToastContext";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { splitSecret } from "@handoverkey/crypto";
@@ -88,15 +88,7 @@ const Successors: React.FC = () => {
       fetchSuccessors();
       success("Successor added successfully!");
     } catch (err) {
-      const error = err as AxiosError<{
-        error?: { message: string };
-        message?: string;
-      }>;
-      setError(
-        error.response?.data?.error?.message ||
-          error.response?.data?.message ||
-          "Failed to add successor",
-      );
+      setError(getApiErrorMessage(err, "Failed to add successor"));
     }
   };
 
@@ -126,24 +118,7 @@ const Successors: React.FC = () => {
       await api.post(`/successors/${successorId}/resend-verification`, {});
       success("Verification email has been resent successfully!");
     } catch (err) {
-      const error = err as {
-        response?: {
-          data?: {
-            error?: { message?: string; details?: Array<{ message?: string }> };
-            message?: string;
-          };
-        };
-      };
-      console.error("Failed to resend verification", error);
-
-      const message =
-        error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        "Failed to resend verification email";
-
-      const details = error.response?.data?.error?.details?.[0]?.message;
-
-      showError(details ? `${message}: ${details}` : message);
+      showError(getApiErrorMessage(err, "Failed to resend verification email"));
     }
   };
 
