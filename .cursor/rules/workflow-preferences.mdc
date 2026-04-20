@@ -1,0 +1,32 @@
+---
+description: User workflow preferences — git hygiene, validation gates, and branch management
+alwaysApply: true
+---
+
+# Workflow Preferences
+
+## Pre-Push Validation
+
+Always run lint, build, and test (in that order) **before** pushing any commit. Never push code that hasn't passed all three gates locally.
+
+```bash
+npm run lint && npm run build && npm test
+```
+
+If any step fails, fix the issue and re-run all gates before pushing.
+
+## Git Branch Hygiene
+
+- Before starting new work, always check whether the current PR/branch has already been merged.
+- For new tasks: switch to `main`, pull the latest, then create a fresh branch.
+- Never push new work to a branch whose PR is already merged.
+
+```bash
+git checkout main && git pull origin main
+git checkout -b <new-branch>
+```
+
+## Commit Style
+
+- Follow Conventional Commits: `feat:`, `fix:`, `build:`, `docs:`, `test:`, `refactor:`.
+- Commit messages should focus on the "why", not the "what".

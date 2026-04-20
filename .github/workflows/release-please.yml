@@ -13,5 +13,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v4
+        id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/checkout@v4
+        if: steps.release.outputs.releases_created == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.release.outputs.releases_created == 'true'
+        with:
+          node-version: "22"
+
+      - name: Format generated files
+        if: steps.release.outputs.releases_created == 'true'
+        run: npx prettier --write CHANGELOG.md .release-please-manifest.json
+
+      - name: Commit formatted files
+        if: steps.release.outputs.releases_created == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md .release-please-manifest.json
+          git diff --cached --quiet || git commit -m "chore: format release files with Prettier"
+          git push

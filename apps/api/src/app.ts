@@ -1,3 +1,4 @@
+import { URL } from "node:url";
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -104,18 +105,55 @@ app.use(
   }) as unknown as express.RequestHandler,
 );
 
-const ALLOWED_ORIGINS = (
+// Build the CORS allowlist. For each configured origin we also allow the
+// www / non-www counterpart (apex domains only) so that
+// FRONTEND_URL=https://handoverkey.com automatically permits
+// https://www.handoverkey.com and vice-versa.
+export function buildAllowedOrigins(raw: string): Set<string> {
+  const origins = new Set<string>();
+
+  for (const entry of raw.split(",")) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+
+    let parsed: URL;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      logger.warn({ origin: trimmed }, "Ignoring malformed CORS origin");
+      continue;
+    }
+
+    // url.origin normalises scheme + host + port (strips paths, trailing slashes)
+    origins.add(parsed.origin);
+
+    const parts = parsed.hostname.split(".");
+    if (parsed.hostname.startsWith("www.") && parts.length === 3) {
+      // www.example.com -> also allow example.com
+      const bare = new URL(parsed.origin);
+      bare.hostname = parsed.hostname.slice(4);
+      origins.add(bare.origin);
+    } else if (parts.length === 2) {
+      // example.com -> also allow www.example.com
+      const www = new URL(parsed.origin);
+      www.hostname = `www.${parsed.hostname}`;
+      origins.add(www.origin);
+    }
+  }
+
+  return origins;
+}
+
+const ALLOWED_ORIGINS = buildAllowedOrigins(
   process.env.CORS_ORIGINS ||
-  process.env.FRONTEND_URL ||
-  "http://localhost:5173"
-)
-  .split(",")
-  .map((o) => o.trim());
+    process.env.FRONTEND_URL ||
+    "http://localhost:5173",
+);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      if (!origin || ALLOWED_ORIGINS.has(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`Origin ${origin} not allowed by CORS`));
