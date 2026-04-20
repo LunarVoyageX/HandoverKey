@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/HandoverKey/HandoverKey/compare/v1.0.0...v1.1.0) (2026-04-20)
+
+
+### Features
+
+* add FAQ section, handover routes, and onboarding checklist ([#222](https://github.com/HandoverKey/HandoverKey/issues/222)) ([f94cbaf](https://github.com/HandoverKey/HandoverKey/commit/f94cbaf0abcddfc936752da83d9e8497c257ffe8))
+
+
+### Bug Fixes
+
+* improve UX across auth, vault, and successor flows ([#223](https://github.com/HandoverKey/HandoverKey/issues/223)) ([bac8cb1](https://github.com/HandoverKey/HandoverKey/commit/bac8cb14216ed9daa8ca324c1910bae066a38c84))
+* resolve all Dependabot security vulnerabilities ([#226](https://github.com/HandoverKey/HandoverKey/issues/226)) ([e12c7e6](https://github.com/HandoverKey/HandoverKey/commit/e12c7e681ffbf3678bc72b062e92bd5212ff0d16))
+
 ## [1.0.0] - 2026-04-20
 
 ### Added
