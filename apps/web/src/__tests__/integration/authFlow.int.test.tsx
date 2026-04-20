@@ -34,6 +34,11 @@ vi.mock("@heroicons/react/24/outline", () => ({
   InformationCircleIcon: () => <div data-testid="info-icon" />,
   ChevronDownIcon: () => <div data-testid="chevron-down-icon" />,
   LockOpenIcon: () => <div data-testid="lock-open-icon" />,
+  BellAlertIcon: () => <div data-testid="bell-alert-icon" />,
+  HandRaisedIcon: () => <div data-testid="hand-raised-icon" />,
+  EnvelopeIcon: () => <div data-testid="envelope-icon" />,
+  ArrowPathIcon: () => <div data-testid="arrow-path-icon" />,
+  PauseCircleIcon: () => <div data-testid="pause-circle-icon" />,
 }));
 
 // Mock framer-motion

@@ -1,5 +1,10 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
@@ -8,7 +13,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
 const LandingPage = lazy(() => import("./pages/LandingPage"));
-const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -55,7 +59,10 @@ function App() {
             <Suspense fallback={<PageFallback />}>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
-                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route
+                  path="/how-it-works"
+                  element={<Navigate to="/#how-it-works" replace />}
+                />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/contact" element={<Contact />} />
