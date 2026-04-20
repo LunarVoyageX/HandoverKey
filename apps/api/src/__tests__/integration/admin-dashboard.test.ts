@@ -3,46 +3,9 @@ import app, { appInit } from "../../app";
 import { getDatabaseClient } from "@handoverkey/database";
 import { SessionService } from "../../services/session-service";
 import { initializeRedis, closeRedis } from "../../config/redis";
+import { registerVerifyLogin } from "../helpers";
 
 jest.setTimeout(30000);
-
-async function registerVerifyLogin(prefix: string) {
-  const email = `${prefix}-${Date.now()}@example.com`;
-  const password = "Password123!@$";
-
-  await request(app)
-    .post("/api/v1/auth/register")
-    .send({ name: "Admin Test", email, password, confirmPassword: password });
-
-  const db = getDatabaseClient().getKysely();
-  const user = await db
-    .selectFrom("users")
-    .select(["id", "verification_token"])
-    .where("email", "=", email)
-    .executeTakeFirstOrThrow();
-
-  await request(app).get(
-    `/api/v1/auth/verify-email?token=${user.verification_token}`,
-  );
-
-  const loginRes = await request(app)
-    .post("/api/v1/auth/login")
-    .send({ email, password });
-  const cookies = loginRes.headers["set-cookie"] || [];
-  const cookieList = Array.isArray(cookies) ? cookies : [cookies];
-  const accessCookie = cookieList.find((c: string) =>
-    c?.startsWith("accessToken="),
-  );
-  if (!accessCookie) {
-    throw new Error("Missing access token cookie");
-  }
-
-  return {
-    userId: user.id,
-    email,
-    token: accessCookie.split(";")[0].split("=")[1],
-  };
-}
 
 describe("Admin Dashboard Integration", () => {
   const originalAdminEmails = process.env.ADMIN_EMAILS;

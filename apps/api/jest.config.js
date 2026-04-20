@@ -22,8 +22,23 @@ module.exports = {
       "<rootDir>/../../packages/database/src/$1",
     "^@handoverkey/crypto$": "<rootDir>/../../packages/crypto/src/index.ts",
     "^@handoverkey/crypto/src/(.*)$": "<rootDir>/../../packages/crypto/src/$1",
-    // Strip .js extension for local imports when running in Jest/CommonJS
     "^(\\.{1,2}/.*)\\.js$": "$1",
+  },
+  collectCoverageFrom: [
+    "src/**/*.ts",
+    "!src/**/*.d.ts",
+    "!src/**/*.test.ts",
+    "!src/**/__tests__/**",
+    "!src/database/**",
+    "!src/scripts/**",
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 50,
+      functions: 50,
+      lines: 60,
+      statements: 60,
+    },
   },
   rootDir: ".",
 };

@@ -4,41 +4,12 @@ import app, { appInit } from "../../app";
 import { getDatabaseClient } from "@handoverkey/database";
 import { SessionService } from "../../services/session-service";
 import { initializeRedis, closeRedis } from "../../config/redis";
+import { registerVerifyLogin } from "../helpers";
 
 jest.setTimeout(30000);
 
 let authToken: string;
 let entryId: string;
-
-async function registerVerifyLogin(emailPrefix: string) {
-  const email = `${emailPrefix}-${Date.now()}@example.com`;
-  const password = "Password123!@$";
-
-  await request(app)
-    .post("/api/v1/auth/register")
-    .send({ name: "Test", email, password, confirmPassword: password });
-
-  const db = getDatabaseClient().getKysely();
-  const user = await db
-    .selectFrom("users")
-    .select("verification_token")
-    .where("email", "=", email)
-    .executeTakeFirstOrThrow();
-
-  await request(app).get(
-    `/api/v1/auth/verify-email?token=${user.verification_token}`,
-  );
-
-  const loginRes = await request(app)
-    .post("/api/v1/auth/login")
-    .send({ email, password });
-
-  const cookies = loginRes.headers["set-cookie"];
-  const accessCookie = (Array.isArray(cookies) ? cookies : [cookies]).find(
-    (c: string) => c?.startsWith("accessToken="),
-  );
-  return accessCookie!.split(";")[0].split("=")[1];
-}
 
 describe("Vault CRUD Integration", () => {
   beforeAll(async () => {
@@ -56,7 +27,7 @@ describe("Vault CRUD Integration", () => {
     await initializeRedis();
     await appInit;
 
-    authToken = await registerVerifyLogin("vault-crud");
+    ({ token: authToken } = await registerVerifyLogin("vault-crud"));
   });
 
   afterAll(async () => {

@@ -3,88 +3,28 @@ import app, { appInit } from "../../app";
 import { getDatabaseClient } from "@handoverkey/database";
 import { SessionService } from "../../services/session-service";
 import { initializeRedis, closeRedis } from "../../config/redis";
-import crypto from "crypto";
 import { URL } from "node:url";
+import {
+  registerVerifyLogin as baseRegisterVerifyLogin,
+  generateTotp,
+} from "../helpers";
 
 jest.setTimeout(30000);
 
 async function registerVerifyLogin(emailPrefix: string) {
-  const email = `${emailPrefix}-${Date.now()}@example.com`;
-  const password = "Password123!@$";
-
-  await request(app)
-    .post("/api/v1/auth/register")
-    .send({ name: "Test", email, password, confirmPassword: password });
-
-  const db = getDatabaseClient().getKysely();
-  const user = await db
-    .selectFrom("users")
-    .select(["verification_token", "id"])
-    .where("email", "=", email)
-    .executeTakeFirstOrThrow();
-
-  await request(app).get(
-    `/api/v1/auth/verify-email?token=${user.verification_token}`,
-  );
+  const result = await baseRegisterVerifyLogin(emailPrefix);
 
   const loginRes = await request(app)
     .post("/api/v1/auth/login")
-    .send({ email, password });
+    .send({ email: result.email, password: result.password });
 
   const cookies: string[] = loginRes.headers["set-cookie"] || [];
   const cookieList = Array.isArray(cookies) ? cookies : [cookies];
-  const accessCookie = cookieList.find((c: string) =>
-    c?.startsWith("accessToken="),
-  );
   const refreshCookie = cookieList.find((c: string) =>
     c?.startsWith("refreshToken="),
   );
-  if (!accessCookie) throw new Error("No accessToken cookie");
-  const token = accessCookie.split(";")[0].split("=")[1];
 
-  return { email, password, userId: user.id, token, refreshCookie };
-}
-
-const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-
-function base32Decode(secret: string): Uint8Array {
-  const normalized = secret.toUpperCase().replace(/=+$/g, "");
-  let bits = 0;
-  let value = 0;
-  const bytes: number[] = [];
-
-  for (const char of normalized) {
-    const index = BASE32_ALPHABET.indexOf(char);
-    if (index === -1) {
-      throw new Error("Invalid base32 secret");
-    }
-    value = (value << 5) | index;
-    bits += 5;
-
-    if (bits >= 8) {
-      bytes.push((value >>> (bits - 8)) & 0xff);
-      bits -= 8;
-    }
-  }
-
-  return new Uint8Array(bytes);
-}
-
-function generateTotp(secret: string): string {
-  const counter = Math.floor(Date.now() / 1000 / 30);
-  const hmac = crypto.createHmac("sha1", Buffer.from(base32Decode(secret)));
-  const counterBuffer = Buffer.alloc(8);
-  counterBuffer.writeBigUInt64BE(BigInt(counter));
-  hmac.update(counterBuffer);
-  const digest = hmac.digest();
-
-  const offset = digest[digest.length - 1] & 0x0f;
-  const binary =
-    ((digest[offset] & 0x7f) << 24) |
-    ((digest[offset + 1] & 0xff) << 16) |
-    ((digest[offset + 2] & 0xff) << 8) |
-    (digest[offset + 3] & 0xff);
-  return (binary % 1000000).toString().padStart(6, "0");
+  return { ...result, refreshCookie };
 }
 
 describe("Auth Full Flow Integration", () => {

@@ -5,42 +5,9 @@ import { SessionService } from "../../services/session-service";
 import { initializeRedis, closeRedis } from "../../config/redis";
 import { NotificationService } from "../../services/notification-service";
 import { URL } from "node:url";
+import { registerVerifyLogin } from "../helpers";
 
 jest.setTimeout(30000);
-
-async function registerVerifyLogin(emailPrefix: string) {
-  const email = `${emailPrefix}-${Date.now()}@example.com`;
-  const password = "Password123!@$";
-
-  await request(app)
-    .post("/api/v1/auth/register")
-    .send({ name: "Test", email, password, confirmPassword: password });
-
-  const db = getDatabaseClient().getKysely();
-  const user = await db
-    .selectFrom("users")
-    .select(["verification_token", "id"])
-    .where("email", "=", email)
-    .executeTakeFirstOrThrow();
-
-  await request(app).get(
-    `/api/v1/auth/verify-email?token=${user.verification_token}`,
-  );
-
-  const loginRes = await request(app)
-    .post("/api/v1/auth/login")
-    .send({ email, password });
-
-  const cookies: string[] = loginRes.headers["set-cookie"] || [];
-  const cookieList = Array.isArray(cookies) ? cookies : [cookies];
-  const accessCookie = cookieList.find((c: string) =>
-    c?.startsWith("accessToken="),
-  );
-  if (!accessCookie) throw new Error("No accessToken cookie");
-  const token = accessCookie.split(";")[0].split("=")[1];
-
-  return { email, password, userId: user.id, token };
-}
 
 describe("Sessions & Activity Integration", () => {
   beforeAll(async () => {
