@@ -1,6 +1,6 @@
 {
   "name": "handoverkey",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A stupidly secure, open-source digital legacy platform with dead man's switch functionality",
   "private": true,
   "packageManager": "npm@11.6.4",

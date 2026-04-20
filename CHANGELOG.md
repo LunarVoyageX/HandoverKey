@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1](https://github.com/HandoverKey/HandoverKey/compare/v1.1.0...v1.1.1) (2026-04-20)
+
+
+### Bug Fixes
+
+* auto-include www variant in CORS allowed origins ([#228](https://github.com/HandoverKey/HandoverKey/issues/228)) ([1e8b63c](https://github.com/HandoverKey/HandoverKey/commit/1e8b63c51600c2150a820d00cffcaaeb39cfbe1b))
+
 ## [1.1.0](https://github.com/HandoverKey/HandoverKey/compare/v1.0.0...v1.1.0) (2026-04-20)
 
 ### Features
