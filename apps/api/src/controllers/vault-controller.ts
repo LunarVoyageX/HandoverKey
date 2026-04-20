@@ -148,7 +148,7 @@ export class VaultController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
       const entry = await VaultService.getEntry(req.user.userId, id);
 
       if (!entry) {
@@ -182,7 +182,7 @@ export class VaultController {
       }
 
       // Data is already validated and sanitized by Zod middleware
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { encryptedData, iv, algorithm, category, tags } = req.body;
 
       const entry = await VaultService.updateEntry(
@@ -219,7 +219,7 @@ export class VaultController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
 
       const deleted = await VaultService.deleteEntry(req.user.userId, id);
 

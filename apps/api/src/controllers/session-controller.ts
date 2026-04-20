@@ -48,7 +48,7 @@ export class SessionController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { sessionId } = req.params;
+      const sessionId = String(req.params.sessionId);
 
       // Verify the session belongs to the user
       const sessions = await SessionService.getUserSessions(req.user.userId);

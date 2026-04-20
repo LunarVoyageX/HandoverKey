@@ -158,7 +158,7 @@ export class AdminController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { userId } = req.params;
+      const userId = String(req.params.userId);
 
       // Verify user exists
       const user = await UserService.findUserById(userId);
@@ -201,7 +201,7 @@ export class AdminController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { userId } = req.params;
+      const userId = String(req.params.userId);
 
       // Verify user exists
       const user = await UserService.findUserById(userId);

@@ -63,7 +63,7 @@ export class SuccessorController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
       const successor = await SuccessorService.getSuccessor(
         req.user.userId,
         id,
@@ -89,7 +89,7 @@ export class SuccessorController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { name, handoverDelayDays } = req.body;
 
       const successor = await SuccessorService.updateSuccessor(
@@ -130,7 +130,7 @@ export class SuccessorController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
       const deleted = await SuccessorService.deleteSuccessor(
         req.user.userId,
         id,
@@ -162,7 +162,7 @@ export class SuccessorController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { verificationToken } = req.body;
 
       const verified = await SuccessorService.verifySuccessor(
@@ -200,7 +200,7 @@ export class SuccessorController {
         throw new AuthenticationError("User not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
 
       await SuccessorService.resendVerification(userId, id);
 
@@ -294,7 +294,7 @@ export class SuccessorController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
       const assignment = await SuccessorService.getAssignedVaultEntries(
         req.user.userId,
         id,
@@ -320,7 +320,7 @@ export class SuccessorController {
         throw new AuthenticationError("Not authenticated");
       }
 
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { entryIds, restrictToAssignedEntries } = req.body;
       const assignment = await SuccessorService.updateAssignedVaultEntries(
         req.user.userId,
