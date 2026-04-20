@@ -5,7 +5,7 @@ info:
     REST API for the HandoverKey digital legacy platform. All protected
     endpoints require a valid JWT access token sent as a Bearer header or
     httpOnly cookie.
-  version: 2.0.0
+  version: 1.0.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
